@@ -466,6 +466,8 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   height: var(--viewport-height);
   max-height: none;
   border-radius: 0;
+  /* The page runs under the status bar (viewport-fit=cover); keep Done below it. */
+  padding-top: calc(env(safe-area-inset-top) + 12px);
 }
 .writing .note-sheet .grabber { display: none; }
 /* Only the text inside the box scrolls while writing; the timeline returns afterwards. */
@@ -553,16 +555,6 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   resize: none;
   outline: none;
 }
-.note-save {
-  align-self: flex-end;
-  margin: 0 12px 12px;
-  padding: 6px 12px;
-  border-radius: 14px;
-  background: var(--glass);
-  font-size: 14px;
-  font-weight: 600;
-}
-
 /* ---------- Jump to ---------- */
 
 .search {

@@ -540,7 +540,6 @@ visualViewport?.addEventListener('scroll', trackKeyboard);
 
 const timeline = document.getElementById('timeline');
 const composerText = document.getElementById('composerText');
-const composerSave = document.getElementById('composerSave');
 let timelineVerse = null;
 
 function stamp(comment) {
@@ -584,7 +583,6 @@ async function renderTimeline() {
 function sizeComposer() {
   composerText.style.height = 'auto';
   composerText.style.height = `${composerText.scrollHeight}px`;
-  composerSave.hidden = !composerText.value.trim();
 }
 composerText.addEventListener('input', sizeComposer);
 
@@ -603,10 +601,6 @@ async function saveDraft() {
   }
 }
 
-composerSave.addEventListener('click', async () => {
-  await saveDraft();
-  composerText.focus();
-});
 // Done or a tap outside closes the sheet; neither loses the text.
 timeline.addEventListener('close', saveDraft);
 
