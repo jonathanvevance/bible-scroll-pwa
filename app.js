@@ -258,7 +258,11 @@ function scrubTo(clientY) {
 
 rail.addEventListener('pointerdown', (e) => {
   if (!railState.ids.length) return;
-  try { rail.setPointerCapture(e.pointerId); } catch {}
+  // Touches are captured to the element under the finger anyway. Capturing to the rail would
+  // retarget the tap's click away from the haptic switch, silencing it.
+  if (e.pointerType !== 'touch') {
+    try { rail.setPointerCapture(e.pointerId); } catch {}
+  }
   railState.scrubbing = true;
   railState.scrubIndex = -1;
   clearTimeout(state.advanceTimer);
@@ -275,25 +279,19 @@ for (const type of ['pointerup', 'pointercancel']) {
 }
 
 /**
- * A light haptic tap. Android has the Vibration API; iOS Safari does not, but toggling
- * a native switch control (iOS 18+) plays the system's switch haptic.
+ * Haptics. Android has the Vibration API. iOS Safari has none, and since iOS 26.5 script can
+ * no longer trigger one; the only path left is the user directly tapping a native switch,
+ * which plays the system tick. So tappable elements carry an invisible
+ * `<input type="checkbox" switch class="haptic">` over their whole area: one tick per tap,
+ * and the click still bubbles to the element's own handler.
  */
 function tick() {
-  if (navigator.vibrate) {
-    navigator.vibrate(8);
-    return;
-  }
-  const label = document.createElement('label');
-  label.ariaHidden = 'true';
-  label.style.display = 'none';
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.setAttribute('switch', '');
-  label.append(input);
-  document.head.append(label);
-  label.click();
-  label.remove();
+  navigator.vibrate?.(8);
 }
+// The rail ticks from scrubTo on every verse it passes, so its switch need not add another.
+document.addEventListener('click', (e) => {
+  if (e.target.matches?.('input.haptic') && !e.target.closest('#rail')) tick();
+}, true);
 
 // ---------- Settling and auto-advance ----------
 

@@ -204,6 +204,21 @@ button {
 }
 .rail-label[hidden] { display: block; opacity: 0; }
 
+/* Invisible native switch over a tappable element; tapping it plays the iOS haptic tick.
+   It must keep its native appearance (opacity 0, not display: none) to count as a switch. */
+.haptic {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  -webkit-appearance: switch;
+  appearance: auto;
+  opacity: 0;
+}
+
 /* Press feedback, like native buttons. */
 .action svg, .chapter-pill, .glass-button {
   transition: transform 0.2s var(--ease-ios), opacity 0.2s;
