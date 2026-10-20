@@ -325,7 +325,7 @@ function scheduleAdvance(item, previousID) {
   const target = advanceTarget(item, previousID);
   if (!target) return;
   state.advanceTimer = setTimeout(() => {
-    if (state.touching || anySheetOpen() || currentItem()?.id !== item.id) return;
+    if (state.touching || anySheetOpen() || tab !== 'bible' || currentItem()?.id !== item.id) return;
     glideTo(state.items.findIndex((i) => i.id === target));
   }, ADVANCE_DELAY_MS);
 }
@@ -743,6 +743,38 @@ jump.addEventListener('click', (e) => {
     e.stopPropagation();
   }
 }, true);
+
+// ---------- Tabs ----------
+
+const tabBar = document.getElementById('tabBar');
+const reflectionsView = document.getElementById('reflectionsView');
+const bibleView = [feed, rail, document.querySelector('.topbar')];
+let tab = 'bible';
+
+/** The Bible view is only hidden, never removed, so the feed keeps its place. */
+function showTab(name) {
+  if (name === tab) return;
+  tab = name;
+  const reading = name === 'bible';
+  document.documentElement.classList.toggle('tab-reflections', !reading);
+  for (const button of tabBar.querySelectorAll('[data-tab]')) {
+    const selected = button.dataset.tab === name;
+    button.classList.toggle('selected', selected);
+    if (selected) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  }
+  for (const node of bibleView) node.inert = !reading;
+  reflectionsView.hidden = reading;
+  if (!reading) {
+    clearTimeout(state.advanceTimer);
+    endGlide();
+  }
+}
+
+tabBar.addEventListener('click', (e) => {
+  const name = e.target.closest('[data-tab]')?.dataset.tab;
+  if (name) showTab(name);
+});
 
 // ---------- Start ----------
 

@@ -19,6 +19,12 @@
   --viewport-top: 0px;
   /* The curve iOS uses for sheets and navigation pushes. */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --bar: rgba(255, 255, 255, 0.75);
+  /* The floating tab bar dips into the home-indicator area, as iOS 26 tab bars do. */
+  --tab-bar-bottom: max(12px, calc(env(safe-area-inset-bottom) - 12px));
+  --tab-bar-height: 62px;
+  /* Everything that sits along the bottom of the screen stays above this line. */
+  --tab-bar-space: calc(var(--tab-bar-bottom) + var(--tab-bar-height));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -34,6 +40,7 @@
     --accent: #0a84ff;
     --destructive: #ff453a;
     --press: #3a3a3c;
+    --bar: rgba(44, 44, 48, 0.75);
   }
 }
 
@@ -82,13 +89,13 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(env(safe-area-inset-top) + 56px) 36px calc(env(safe-area-inset-bottom) + 56px);
+  padding: calc(env(safe-area-inset-top) + 56px) 36px calc(var(--tab-bar-space) + 24px);
 }
 
 /* The rail's segments end 16px in, so equal visible gaps need 16px more on the left. */
 .page.verse { padding-left: 48px; padding-right: 32px; }
 /* Long verses sit higher and smaller so they clear the action column. */
-.page.verse.long { padding-bottom: calc(env(safe-area-inset-bottom) + 250px); }
+.page.verse.long { padding-bottom: calc(var(--tab-bar-space) + 210px); }
 
 .verse-body {
   display: flex;
@@ -154,7 +161,7 @@ button {
   position: fixed;
   left: 0;
   top: calc(env(safe-area-inset-top) + 64px);
-  bottom: calc(env(safe-area-inset-bottom) + 40px);
+  bottom: calc(var(--tab-bar-space) + 16px);
   width: 30px;
   padding-left: 10px;
   touch-action: none;
@@ -284,7 +291,7 @@ button {
 .actions {
   position: absolute;
   right: 10px;
-  bottom: calc(env(safe-area-inset-bottom) + 20px);
+  bottom: calc(var(--tab-bar-space) + 12px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -317,7 +324,7 @@ button {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 90px);
+  bottom: calc(var(--tab-bar-space) + 16px);
   margin: 0;
   padding: 10px 16px;
   border-radius: 18px;
@@ -330,6 +337,109 @@ button {
   pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Tab bar: a floating glass capsule, as in Photos ---------- */
+
+.tab-bar {
+  position: fixed;
+  left: 50%;
+  bottom: var(--tab-bar-bottom);
+  height: var(--tab-bar-height);
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: calc(var(--tab-bar-height) / 2);
+  background: var(--bar);
+  box-shadow: inset 0 0 0 0.5px var(--glass-edge), 0 6px 24px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
+  transform: translateX(-50%);
+  transition: opacity 0.2s, transform 0.3s var(--ease-ios);
+}
+/* Out of the way while a sheet is up (which includes writing a reflection). */
+html:has(dialog[open]) .tab-bar {
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  pointer-events: none;
+}
+
+.tab {
+  position: relative;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: calc((var(--tab-bar-height) - 8px) / 2);
+  color: var(--fg);
+  font-size: 10px;
+  font-weight: 600;
+  transition: background-color 0.25s var(--ease-ios), color 0.25s;
+}
+.tab.selected { background: var(--glass); color: var(--accent); }
+.tab svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s var(--ease-ios);
+}
+.tab:active svg { transform: scale(0.88); }
+
+/* ---------- Reflections tab ---------- */
+
+/* The Bible view stays laid out underneath, so the feed keeps its place. */
+.tab-reflections .feed,
+.tab-reflections .topbar,
+.tab-reflections .rail { visibility: hidden; }
+
+.reflections-view {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: calc(env(safe-area-inset-top) + 10px) 20px calc(var(--tab-bar-space) + 24px);
+  background: var(--bg);
+}
+
+.reflections-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.reflections-header h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: 0.01em; }
+
+.round-glass {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--glass);
+  box-shadow: inset 0 0 0 0.5px var(--glass-edge);
+  color: var(--fg);
+  transition: transform 0.2s var(--ease-ios), opacity 0.2s;
+}
+.round-glass:active { transform: scale(0.88); opacity: 0.7; }
+.round-glass svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reflections-empty { margin: 30vh 0 0; text-align: center; }
 
 /* ---------- Bottom sheets ---------- */
 
