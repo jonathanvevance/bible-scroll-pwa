@@ -72,6 +72,9 @@ button {
   padding: env(safe-area-inset-top) 36px calc(env(safe-area-inset-bottom) + 64px);
 }
 
+/* The rail's segments end 16px in, so equal visible gaps need 16px more on the left. */
+.page.verse { padding-left: 48px; padding-right: 32px; }
+
 .verse-body {
   display: flex;
   flex-direction: column;
