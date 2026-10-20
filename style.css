@@ -37,7 +37,8 @@
   }
 }
 
-* { box-sizing: border-box; }
+/* No double-tap zoom; touch-action is not inherited, so it goes on every element. */
+* { box-sizing: border-box; touch-action: manipulation; }
 
 html, body {
   height: 100%;
