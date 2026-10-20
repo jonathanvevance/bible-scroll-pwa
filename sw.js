@@ -3,10 +3,10 @@
 // cache is the offline fallback. The large Bible text is served from the cache first.
 // Only runs over HTTPS (service workers need a secure origin).
 
-const CACHE = 'bible-scroll-v26';
+const CACHE = 'bible-scroll-v27';
 const ASSETS = [
   './', 'index.html', 'style.css', 'app.js', 'journal.js', 'books.js', 'bsb.json',
-  'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+  'manifest.webmanifest', 'icons/cross-180.png', 'icons/cross-192.png', 'icons/cross-512.png',
 ];
 
 self.addEventListener('install', (event) => {

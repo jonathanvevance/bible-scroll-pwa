@@ -8,6 +8,7 @@ Usage: python3 build.py [path/to/bible-scroll]   (default: ../bible-scroll)
 """
 
 import json
+import math
 import re
 import shutil
 import struct
@@ -41,25 +42,34 @@ def build_books() -> None:
 
 
 def png(size: int) -> bytes:
-    """A blue tile with a white rounded page and three text lines."""
-    bg, page, ink = (31, 58, 95), (250, 248, 242), (150, 160, 175)
-    pw, ph = size * 0.52, size * 0.64
-    x0, y0 = (size - pw) / 2, (size - ph) / 2
-    r = size * 0.05
-    lines = [y0 + ph * f for f in (0.30, 0.46, 0.62)]
+    """A warm off-white Latin cross on a deep charcoal tile.
+
+    Opaque and full-bleed: iOS rounds the corners itself. The cross stays inside the
+    central 80%, so Android can crop it as a maskable icon.
+    """
+    top, bottom, cross, glow = (40, 40, 44), (12, 12, 14), (244, 238, 224), (120, 96, 60)
+    centre, bar = size / 2, size * 0.078
+    stem_top, stem_bottom = size * 0.20, size * 0.80
+    arm_y, arm_half = size * 0.38, size * 0.20  # crossbar a third of the way down
+
+    def inside(x: float, y: float) -> bool:
+        stem = abs(x - centre) <= bar / 2 and stem_top <= y <= stem_bottom
+        arm = abs(y - arm_y) <= bar / 2 and abs(x - centre) <= arm_half
+        return stem or arm
+
+    samples = [(i + 0.5) / 4 for i in range(4)]  # 4x4 supersampling for smooth edges
     rows = []
     for y in range(size):
+        t = y / (size - 1)
+        base = [a + (b - a) * t for a, b in zip(top, bottom)]
         row = bytearray([0])
         for x in range(size):
-            cx = min(max(x, x0 + r), x0 + pw - r)
-            cy = min(max(y, y0 + r), y0 + ph - r)
-            inside = (x - cx) ** 2 + (y - cy) ** 2 <= r * r
-            color = bg
-            if inside:
-                color = page
-                if x0 + pw * 0.18 <= x <= x0 + pw * 0.82 and any(abs(y - ly) <= size * 0.012 for ly in lines):
-                    color = ink
-            row += bytes(color)
+            # A soft warm glow centred where the arms meet.
+            d2 = ((x - centre) ** 2 + (y - arm_y) ** 2) / (size * 0.32) ** 2
+            g = 0.55 * math.exp(-d2)
+            bg = [b + (w - b) * g for b, w in zip(base, glow)]
+            cover = sum(inside(x + sx, y + sy) for sx in samples for sy in samples) / 16
+            row += bytes(round(b + (c - b) * cover) for b, c in zip(bg, cross))
         rows.append(bytes(row))
     raw = zlib.compress(b"".join(rows), 9)
 
@@ -70,12 +80,17 @@ def png(size: int) -> bytes:
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", raw) + chunk(b"IEND", b"")
 
 
+def write_icons() -> None:
+    # Renamed when the design changes: iOS and the service worker cache icons by URL.
+    for size in (180, 192, 512):
+        (PWA / "icons" / f"cross-{size}.png").write_bytes(png(size))
+
+
 def main() -> None:
     build_books()
     shutil.copyfile(BSB, PWA / "bsb.json")
     (PWA / "icons").mkdir(exist_ok=True)
-    for size in (180, 192, 512):
-        (PWA / "icons" / f"icon-{size}.png").write_bytes(png(size))
+    write_icons()
     print("books.js, bsb.json, icons written to", PWA)
 
 
