@@ -71,6 +71,7 @@ button {
 .feed::-webkit-scrollbar { display: none; }
 
 .page {
+  position: relative;
   height: 100%;
   scroll-snap-align: start;
   scroll-snap-stop: always;
@@ -144,10 +145,6 @@ button {
   margin: 0;
   color: var(--fg-2);
 }
-
-/* Elements that only make sense on a verse page. */
-body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
-.verse-only { transition: opacity 0.2s; }
 
 /* ---------- Verse rail: one segment per verse of the current chapter ---------- */
 
@@ -262,8 +259,9 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
 
 /* ---------- Right-hand action column ---------- */
 
+/* Part of each verse page, so it scrolls in and out with its verse. */
 .actions {
-  position: fixed;
+  position: absolute;
   right: 10px;
   bottom: calc(env(safe-area-inset-bottom) + 20px);
   display: flex;

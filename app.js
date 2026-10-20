@@ -146,6 +146,8 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
+const actionsTemplate = document.getElementById('actionsTemplate');
+
 function page(item) {
   const node = el('section', { className: `page ${item.type}` });
   node.dataset.id = item.id;
@@ -156,6 +158,9 @@ function page(item) {
     node.append(el('div', { className: 'verse-body' },
       el('p', { className: 'verse-text', textContent: v.text }),
       el('p', { className: 'reference', textContent: verseName(v) })));
+    const actions = actionsTemplate.content.firstElementChild.cloneNode(true);
+    actions.querySelector('.action-count').textContent = journal.count(v.key) || '';
+    node.append(actions);
   } else {
     node.append(el('div', { className: 'boundary-body' },
       item.before ? el('p', { className: 'end-of', textContent: `End of ${chapterName(item.before)}` }) : null,
@@ -176,25 +181,24 @@ function show(window, pinID) {
 }
 
 const chapterLabel = document.getElementById('chapterLabel');
-const reflectCount = document.getElementById('reflectCount');
 
 /** Cheap enough to run on every scroll event: each part only writes when it changes. */
 function updateControls() {
   const item = currentItem();
   const v = currentVerse();
-  document.body.classList.toggle('on-boundary', !v);
   const chapter = v ?? item?.after ?? item?.before;
   const label = chapter ? chapterName(chapter) : '';
   if (chapterLabel.textContent !== label) chapterLabel.textContent = label;
-  if (v) updateActions(v);
   updateRail();
 }
 
-function updateActions(v = currentVerse()) {
-  if (!v) return;
-  const n = journal.count(v.key);
-  const text = n ? String(n) : '';
-  if (reflectCount.textContent !== text) reflectCount.textContent = text;
+/** Refreshes the reflection counts on the rendered pages after reflections change. */
+function updateActions() {
+  for (const node of feed.querySelectorAll('.page.verse')) {
+    const text = String(journal.count(Number(node.dataset.id.slice(1))) || '');
+    const count = node.querySelector('.action-count');
+    if (count.textContent !== text) count.textContent = text;
+  }
 }
 
 let toastTimer = 0;
@@ -386,9 +390,16 @@ const jumpTo = (chapter) => fadeToVerse(chapter.key + 1);
 
 // ---------- Verse actions ----------
 
-document.getElementById('shareButton').addEventListener('click', async () => {
-  const v = currentVerse();
-  if (!v) return;
+/** Handlers for the buttons on each verse page, keyed by their data-action. */
+const verseActions = {};
+feed.addEventListener('click', (e) => {
+  const action = e.target.closest('[data-action]')?.dataset.action;
+  if (!action) return;
+  const id = e.target.closest('.page').dataset.id;
+  verseActions[action](state.items.find((i) => i.id === id).verse);
+});
+
+verseActions.share = async (v) => {
   const text = `“${v.text}” (${verseName(v)}, BSB)`;
   if (navigator.share) {
     try { await navigator.share({ text }); } catch { /* cancelled */ }
@@ -400,7 +411,7 @@ document.getElementById('shareButton').addEventListener('click', async () => {
   } catch {
     toast("Couldn't share");
   }
-});
+};
 
 // ---------- Sheets ----------
 
@@ -533,9 +544,8 @@ async function saveDraft() {
 // Done or a tap outside closes the sheet; neither loses the text.
 timeline.addEventListener('close', saveDraft);
 
-document.getElementById('reflectButton').addEventListener('click', () => {
-  timelineVerse = currentVerse();
-  if (!timelineVerse) return;
+verseActions.reflect = (v) => {
+  timelineVerse = v;
   document.getElementById('timelineTitle').textContent = verseName(timelineVerse);
   document.getElementById('timelineVerse').textContent = timelineVerse.text;
   document.getElementById('timelineCount').textContent = '';
@@ -544,7 +554,7 @@ document.getElementById('reflectButton').addEventListener('click', () => {
   sizeComposer();
   timeline.showModal();
   renderTimeline().then(scrollTimelineToEnd);
-});
+};
 
 // While writing, the sheet fills the visible screen above the keyboard. Keyed off focus because a
 // Home Screen app may shrink innerHeight along with the visual viewport, hiding the keyboard height.
@@ -570,9 +580,7 @@ const study = document.getElementById('study');
 const debug = location.hash.includes('debug');
 document.getElementById('debugSection').hidden = !debug;
 
-document.getElementById('studyButton').addEventListener('click', () => {
-  const v = currentVerse();
-  if (!v) return;
+verseActions.study = (v) => {
   document.getElementById('studyTitle').textContent = verseName(v);
   document.getElementById('studyVerse').textContent = v.text;
   document.getElementById('studyLinks').replaceChildren(...HUB_TOOLS.map(([title, tool, icon]) => {
@@ -582,7 +590,7 @@ document.getElementById('studyButton').addEventListener('click', () => {
     return el('li', {}, link);
   }));
   study.showModal();
-});
+};
 
 document.getElementById('seedButton').addEventListener('click', async () => {
   const verses = bible.chapters.flatMap((ch) => bible.verses(ch)).filter((v) => v.text);
