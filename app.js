@@ -920,6 +920,110 @@ reflectionsList.addEventListener('click', (e) => {
   else document.startViewTransition(go);
 });
 
+// ---------- Backup ----------
+// A backup is one readable JSON file the person saves to iCloud Drive through the share sheet.
+// Restoring only needs id, verseKey, body, createdAt, timeZoneID and updatedAt; the reference,
+// verse text and ISO date are there so the file still makes sense without the app.
+
+const LAST_BACKUP = 'lastBackupAt';
+const BACKUP_FORMAT = 1;
+const backup = document.getElementById('backup');
+const backupStatus = document.getElementById('backupStatus');
+const backupNow = document.getElementById('backupNow');
+/** Built when the sheet opens: iOS only allows sharing straight after a tap, with no waiting in between. */
+let backupReady = null;
+let backupBuild = 0;
+
+const reflectionTotal = () => [...journal.counts.values()].reduce((sum, n) => sum + n, 0);
+const localDate = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+async function backupFile() {
+  const reflections = (await journal.allComments()).map((c) => {
+    const v = unpackKey(c.verseKey);
+    return {
+      id: c.id,
+      verseKey: c.verseKey,
+      reference: v ? verseName(v) : null,
+      verseText: v ? bible.books[v.book - 1]?.[v.chapter - 1]?.[v.verse - 1] ?? null : null,
+      body: c.body,
+      createdAt: c.createdAt,
+      createdAtISO: new Date(c.createdAt).toISOString(),
+      timeZoneID: c.timeZoneID,
+      updatedAt: c.updatedAt ?? null,
+    };
+  });
+  const now = new Date();
+  const data = {
+    app: 'Bible Scroll',
+    format: BACKUP_FORMAT,
+    exportedAt: now.toISOString(),
+    translation: 'BSB',
+    count: reflections.length,
+    reflections,
+  };
+  return new File([JSON.stringify(data, null, 2)], `Bible Scroll backup ${localDate(now)}.json`, { type: 'application/json' });
+}
+
+function setBackupEnabled(on) {
+  backupNow.disabled = !on;
+  backupNow.querySelector('.haptic').disabled = !on;
+}
+
+function updateBackupStatus() {
+  const last = Number(localStorage.getItem(LAST_BACKUP));
+  const total = reflectionTotal();
+  const count = `${total} reflection${total === 1 ? '' : 's'} on this phone`;
+  const when = last
+    ? `Last backup ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(last)}`
+    : 'Never backed up';
+  backupStatus.textContent = `${when} · ${count}`;
+}
+
+document.getElementById('backupButton').addEventListener('click', () => {
+  updateBackupStatus();
+  backupReady = null;
+  setBackupEnabled(false);
+  const build = ++backupBuild;
+  if (reflectionTotal()) {
+    backupFile()
+      .then((file) => {
+        if (build !== backupBuild) return;
+        backupReady = file;
+        setBackupEnabled(true);
+      })
+      .catch((error) => alert(`Couldn't prepare the backup: ${error?.message ?? error}`));
+  }
+  backup.showModal();
+});
+
+function backedUp(count) {
+  localStorage.setItem(LAST_BACKUP, String(Date.now()));
+  updateBackupStatus();
+  closeSheet(backup);
+  toast(`Backed up ${count} reflection${count === 1 ? '' : 's'}`);
+}
+
+backupNow.addEventListener('click', async () => {
+  const file = backupReady;
+  if (!file) return;
+  const count = reflectionTotal();
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      backedUp(count);
+    } catch (error) {
+      // Cancelling the share sheet is not a failure.
+      if (error?.name !== 'AbortError') alert(`Couldn't back up: ${error?.message ?? error}`);
+    }
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  el('a', { href: url, download: file.name }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  backedUp(count);
+});
+
 // ---------- Start ----------
 
 async function start() {

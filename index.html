@@ -130,6 +130,29 @@
     </div>
   </dialog>
 
+  <dialog id="backup" class="sheet fit floating">
+    <div class="sheet-inner">
+      <div class="grabber" aria-hidden="true"></div>
+      <header class="note-header">
+        <button class="glass-button leading" data-close>Cancel</button>
+        <h2>Backup</h2>
+        <p id="backupStatus" class="backup-status"></p>
+      </header>
+      <div class="sheet-body">
+        <ul class="menu-list">
+          <li>
+            <button id="backupNow">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5"/><path d="M12 20v-8m-3 3 3-3 3 3"/></svg>
+              <span>Back up reflections</span>
+              <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+            </button>
+          </li>
+        </ul>
+        <p class="backup-hint">Choose “Save to Files”, then iCloud Drive, so the backup is safe even if this phone is lost.</p>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="jump" class="sheet tall">
     <div class="sheet-inner">
       <header class="sheet-header">

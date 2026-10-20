@@ -94,6 +94,12 @@ export class Journal {
     return rows.sort((a, b) => b.createdAt - a.createdAt);
   }
 
+  /** Every reflection, oldest first. */
+  async allComments() {
+    const tx = this.#db.transaction(STORE);
+    return request(tx.objectStore(STORE).index('createdAt').getAll());
+  }
+
   /**
    * One page, newest first: up to `limit` reflections created since `from`, after skipping
    * the newest `offset`. Counting rather than resuming from a time keeps reflections with the
