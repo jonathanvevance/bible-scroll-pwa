@@ -43,15 +43,11 @@
         <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
       </button>
     </header>
-    <div id="reflectionsFilter" class="segmented three">
-      <button data-range="week">7 Days</button>
+    <div id="reflectionsFilter" class="segmented four">
+      <button data-range="today">Today</button>
+      <button data-range="week">This Week</button>
       <button data-range="month">This Month</button>
-      <!-- The month input covers the segment, so a tap opens iOS's month and year wheel. -->
-      <label class="month-pick" data-range="past">
-        <span id="pastMonthLabel"></span>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
-        <input id="pastMonth" class="month-input" type="month" aria-label="Pick a month">
-      </label>
+      <button data-range="all">All</button>
     </div>
     <div id="reflectionsList"></div>
     <p id="reflectionsEmpty" class="empty-note reflections-empty" hidden></p>

@@ -94,19 +94,31 @@ export class Journal {
     return rows.sort((a, b) => b.createdAt - a.createdAt);
   }
 
-  /** Newest first, created in [from, to); with no `to`, everything since `from`. */
-  async between(from, to) {
-    const range = to == null ? IDBKeyRange.lowerBound(from) : IDBKeyRange.bound(from, to, false, true);
-    const tx = this.#db.transaction(STORE);
-    const rows = await request(tx.objectStore(STORE).index('createdAt').getAll(range));
-    return rows.reverse();
-  }
-
-  /** When the first reflection was written, or null if there are none. */
-  async oldest() {
-    const tx = this.#db.transaction(STORE);
-    const cursor = await request(tx.objectStore(STORE).index('createdAt').openKeyCursor());
-    return cursor?.key ?? null;
+  /**
+   * One page, newest first: up to `limit` reflections created since `from`, after skipping
+   * the newest `offset`. Counting rather than resuming from a time keeps reflections with the
+   * same timestamp from being skipped.
+   */
+  async page(from, offset, limit) {
+    const index = this.#db.transaction(STORE).objectStore(STORE).index('createdAt');
+    const cursor = index.openCursor(IDBKeyRange.lowerBound(from), 'prev');
+    const rows = [];
+    let skipping = offset > 0;
+    await new Promise((resolve, reject) => {
+      cursor.onsuccess = () => {
+        const c = cursor.result;
+        if (!c) return resolve();
+        if (skipping) {
+          skipping = false;
+          return c.advance(offset);
+        }
+        rows.push(c.value);
+        if (rows.length < limit) c.continue();
+        else resolve();
+      };
+      cursor.onerror = () => reject(cursor.error);
+    });
+    return rows;
   }
 
   async deleteAll() {

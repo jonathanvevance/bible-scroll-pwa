@@ -783,47 +783,27 @@ const FILTER = 'reflectionsFilter';
 const reflectionsFilter = document.getElementById('reflectionsFilter');
 const reflectionsList = document.getElementById('reflectionsList');
 const reflectionsEmpty = document.getElementById('reflectionsEmpty');
-const pastMonth = document.getElementById('pastMonth');
-const pastMonthLabel = document.getElementById('pastMonthLabel');
+const PAGE_SIZE = 50;
 
-/** 'week', 'month', or a past month as 'YYYY-MM' (the month input's value format). */
 let filter = localStorage.getItem(FILTER) ?? 'week';
-if (!/^(week|month|\d{4}-\d{2})$/.test(filter)) filter = 'week';
-const isPastMonth = (f) => f !== 'week' && f !== 'month';
+if (!['today', 'week', 'month', 'all'].includes(filter)) filter = 'week';
 
-const monthValue = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-function monthStart(value) {
-  const [year, month] = value.split('-').map(Number);
-  return new Date(year, month - 1, 1);
+/** The week starts on the day the phone's region uses (Sunday in the US, Monday in much of Europe). */
+function weekStart(now) {
+  const locale = new Intl.Locale(navigator.language);
+  const firstDay = (locale.getWeekInfo?.() ?? locale.weekInfo)?.firstDay ?? 1; // 1 = Monday … 7 = Sunday
+  const daysBack = (now.getDay() - (firstDay % 7) + 7) % 7;
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysBack);
 }
-const monthName = (date, month) => new Intl.DateTimeFormat(undefined, { month, year: 'numeric' }).format(date);
 
-/** [from, to) in ms for a filter, and what to say when it holds nothing. */
+/** Where a filter's period starts, in ms, and what to say when it holds nothing. */
 function filterRange(f) {
   const now = new Date();
-  if (f === 'week') {
-    return { from: +new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6), empty: 'No reflections in the last 7 days' };
-  }
-  if (f === 'month') {
-    return { from: +new Date(now.getFullYear(), now.getMonth(), 1), empty: 'No reflections this month' };
-  }
-  const start = monthStart(f);
-  return {
-    from: +start,
-    to: +new Date(start.getFullYear(), start.getMonth() + 1, 1),
-    empty: `No reflections in ${monthName(start, 'long')}`,
-  };
+  if (f === 'today') return { from: +new Date(now.getFullYear(), now.getMonth(), now.getDate()), empty: 'No reflections today' };
+  if (f === 'week') return { from: +weekStart(now), empty: 'No reflections this week' };
+  if (f === 'month') return { from: +new Date(now.getFullYear(), now.getMonth(), 1), empty: 'No reflections this month' };
+  return { from: 0, empty: 'No reflections yet' };
 }
-
-/** The wheel offers last month back to the month of the first reflection. */
-async function pastMonthBounds() {
-  const now = new Date();
-  const max = monthValue(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-  const oldest = await journal.oldest();
-  const first = oldest == null ? max : monthValue(new Date(oldest));
-  return { min: first < max ? first : max, max };
-}
-const clampMonth = (value, { min, max }) => (value < min ? min : value > max ? max : value);
 
 const dayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 const dayFormatWithYear = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -853,40 +833,50 @@ function reflectionCard(comment) {
   return card;
 }
 
-let renderRun = 0;
-/** Newest first, under a heading for each day. */
-async function renderReflections() {
+/** The list shown so far; replaced whenever the list starts over, which cancels a load in flight. */
+let listing = null;
+
+/** Newest first, under a heading for each day, loaded a page at a time as the list scrolls. */
+function renderReflections() {
   if (!journal) return;
-  const run = ++renderRun;
-  const bounds = await pastMonthBounds();
-  if (isPastMonth(filter)) filter = clampMonth(filter, bounds);
-  const { from, to, empty } = filterRange(filter);
-  const comments = await journal.between(from, to);
-  if (run !== renderRun) return;
-
-  pastMonth.min = bounds.min;
-  pastMonth.max = bounds.max;
-  pastMonth.value = isPastMonth(filter) ? filter : bounds.max;
-  pastMonthLabel.textContent = monthName(monthStart(pastMonth.value), 'short');
-  const selected = isPastMonth(filter) ? 'past' : filter;
-  for (const node of reflectionsFilter.children) node.classList.toggle('selected', node.dataset.range === selected);
-
-  const days = [];
-  let day = null;
-  let list = null;
-  for (const comment of comments) {
-    const name = dayName(comment.createdAt);
-    if (name !== day) {
-      day = name;
-      list = el('ul', { className: 'reflection-cards' });
-      days.push(el('section', { className: 'reflection-day' }, el('h2', { className: 'section-label', textContent: name }), list));
-    }
-    list.append(el('li', {}, reflectionCard(comment)));
-  }
-  reflectionsList.replaceChildren(...days);
-  reflectionsEmpty.textContent = empty;
-  reflectionsEmpty.hidden = comments.length > 0;
+  for (const node of reflectionsFilter.children) node.classList.toggle('selected', node.dataset.range === filter);
+  listing = { ...filterRange(filter), loaded: 0, done: false, loading: false, day: null, list: null };
+  reflectionsList.replaceChildren();
+  reflectionsEmpty.hidden = true;
+  reflectionsView.scrollTop = 0;
+  loadMoreReflections();
 }
+
+async function loadMoreReflections() {
+  const run = listing;
+  if (!run || run.loading || run.done) return;
+  run.loading = true;
+  const rows = await journal.page(run.from, run.loaded, PAGE_SIZE);
+  if (run !== listing) return;
+  run.loading = false;
+  run.loaded += rows.length;
+  run.done = rows.length < PAGE_SIZE;
+  for (const comment of rows) {
+    const name = dayName(comment.createdAt);
+    if (name !== run.day) {
+      run.day = name;
+      run.list = el('ul', { className: 'reflection-cards' });
+      reflectionsList.append(el('section', { className: 'reflection-day' },
+        el('h2', { className: 'section-label', textContent: name }), run.list));
+    }
+    run.list.append(el('li', {}, reflectionCard(comment)));
+  }
+  reflectionsEmpty.textContent = run.empty;
+  reflectionsEmpty.hidden = run.loaded > 0;
+  loadIfNearEnd();
+}
+
+/** Keeps about a screen of cards ready below the visible ones. */
+function loadIfNearEnd() {
+  const v = reflectionsView;
+  if (v.scrollTop + v.clientHeight > v.scrollHeight - v.clientHeight) loadMoreReflections();
+}
+reflectionsView.addEventListener('scroll', loadIfNearEnd, { passive: true });
 
 function setFilter(next) {
   filter = next;
@@ -898,13 +888,6 @@ reflectionsFilter.addEventListener('click', (e) => {
   const range = e.target.closest('button[data-range]')?.dataset.range;
   if (range) setFilter(range);
 });
-// The wheel's Done blurs the input; change alone misses picking the month already shown.
-for (const type of ['change', 'blur']) {
-  pastMonth.addEventListener(type, () => {
-    if (/^\d{4}-\d{2}$/.test(pastMonth.value) && pastMonth.value !== filter) setFilter(pastMonth.value);
-    else if (!isPastMonth(filter)) setFilter(pastMonth.max);
-  });
-}
 
 reflectionsList.addEventListener('click', (e) => {
   const key = Number(e.target.closest('.reflection-card')?.dataset.key);

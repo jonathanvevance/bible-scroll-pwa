@@ -441,42 +441,11 @@ html:has(dialog[open]) .tab-bar {
 
 .reflections-empty { margin: 25vh 0 0; text-align: center; }
 
-.segmented.three { grid-template-columns: repeat(3, 1fr); margin-bottom: 22px; }
-.month-pick {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--fg);
-}
-.month-pick svg {
-  width: 13px;
-  height: 13px;
-  fill: none;
-  stroke: var(--fg-2);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.segmented .month-pick.selected { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.segmented.four { grid-template-columns: repeat(4, 1fr); margin-bottom: 22px; }
+.segmented.four button { padding: 8px 2px; font-size: 14px; white-space: nowrap; }
 /* On the dark grouped background the card colour barely shows; iOS uses a lighter grey. */
 @media (prefers-color-scheme: dark) {
-  .segmented.three > .selected { background: #636366; }
-}
-/* Invisible but tappable; 16px text stops iOS zooming in when it takes focus. */
-.month-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  font-size: 16px;
-  -webkit-appearance: none;
+  .segmented.four > .selected { background: #636366; }
 }
 
 .reflection-day + .reflection-day { margin-top: 22px; }
