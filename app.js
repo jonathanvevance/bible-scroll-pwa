@@ -756,7 +756,9 @@ async function start() {
   const begin = startFor(Number(localStorage.getItem(LAST_VERSE)));
   show(begin.window, begin.id);
   state.settledID = begin.id;
-  document.getElementById('loading').remove();
+  const loading = document.getElementById('loading');
+  loading.addEventListener('transitionend', () => loading.remove(), { once: true });
+  loading.classList.add('done');
 
   // Ask the browser not to evict our data under storage pressure.
   navigator.storage?.persist?.();
@@ -771,5 +773,7 @@ if ('serviceWorker' in navigator) {
 }
 
 start().catch((error) => {
-  document.getElementById('loading').textContent = `Couldn't load: ${error?.message ?? error}`;
+  const message = document.getElementById('loadingError');
+  message.textContent = `Couldn't load: ${error?.message ?? error}`;
+  message.hidden = false;
 });
