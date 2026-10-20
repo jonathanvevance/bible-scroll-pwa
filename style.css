@@ -363,6 +363,11 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
 .sheet { height: calc(var(--viewport-height) * 0.62); }
 .sheet.half { height: calc(var(--viewport-height) * 0.5); }
 .sheet.tall { height: calc(var(--viewport-height) - 56px); }
+/* Short menus hug their content. The body must not use flex: 1 here: with an auto-height
+   parent that collapses it to nothing, which is what hid sheets on device before. */
+.sheet.fit { height: auto; }
+.sheet.fit .sheet-inner { height: auto; }
+.sheet.fit .sheet-body { flex: 0 1 auto; min-height: 0; }
 .sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
 .sheet[open] { animation: sheet-up 0.5s var(--ease-ios); }
 .sheet[open]::backdrop { animation: fade-in 0.4s ease-out; }
