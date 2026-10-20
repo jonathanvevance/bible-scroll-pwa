@@ -123,6 +123,8 @@ const state = {
   touching: false,
   settleTimer: 0,
   advanceTimer: 0,
+  glideTop: null,
+  glideTimer: 0,
 };
 
 // Pages can be a fractional height; clientHeight rounds, which drifts over long chapters.
@@ -210,9 +212,37 @@ function scheduleAdvance(item, previousID) {
   if (!target) return;
   state.advanceTimer = setTimeout(() => {
     if (state.touching || anySheetOpen() || currentItem()?.id !== item.id) return;
-    const index = state.items.findIndex((i) => i.id === target);
-    feed.scrollTo({ top: index * pageHeight(), behavior: reduceMotion.matches ? 'instant' : 'smooth' });
+    glideTo(state.items.findIndex((i) => i.id === target));
   }, ADVANCE_DELAY_MS);
+}
+
+/**
+ * Animated scroll to a page. iOS snaps a smooth programmatic scroll back to the page the
+ * finger last snapped to, so snapping is switched off for the glide; if the animation is
+ * dropped anyway, land on the page directly.
+ */
+function glideTo(index) {
+  const top = index * pageHeight();
+  if (reduceMotion.matches) {
+    feed.scrollTop = top;
+    return;
+  }
+  state.glideTop = top;
+  feed.style.scrollSnapType = 'none';
+  feed.scrollTo({ top, behavior: 'smooth' });
+  clearTimeout(state.glideTimer);
+  state.glideTimer = setTimeout(() => {
+    if (!state.touching && Math.abs(feed.scrollTop - top) > 2) feed.scrollTop = top;
+    endGlide();
+  }, 900);
+}
+
+function endGlide() {
+  if (state.glideTop == null) return;
+  clearTimeout(state.glideTimer);
+  state.glideTop = null;
+  feed.style.scrollSnapType = '';
+  settleSoon();
 }
 
 function settleSoon() {
@@ -220,11 +250,16 @@ function settleSoon() {
   state.settleTimer = setTimeout(settle, SETTLE_DELAY_MS);
 }
 
-feed.addEventListener('scroll', () => { updateControls(); settleSoon(); }, { passive: true });
+feed.addEventListener('scroll', () => {
+  updateControls();
+  if (state.glideTop != null && Math.abs(feed.scrollTop - state.glideTop) <= 2) endGlide();
+  settleSoon();
+}, { passive: true });
 feed.addEventListener('scrollend', () => { clearTimeout(state.settleTimer); settle(); });
 feed.addEventListener('touchstart', () => {
   state.touching = true;
   clearTimeout(state.advanceTimer);
+  endGlide();
 }, { passive: true });
 for (const type of ['touchend', 'touchcancel']) {
   feed.addEventListener(type, () => { state.touching = false; settleSoon(); }, { passive: true });
