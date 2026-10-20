@@ -57,9 +57,10 @@ class Bible {
 }
 
 // ---------- Feed model (mirrors BibleCore's ChapterFeed) ----------
-// The feed shows a window of chapters bracketed by boundary pages. Reading: one chapter.
-// Settling on a boundary widens it to the chapters either side; settling on a verse
-// narrows it back. A boundary's id is the same in every window that contains it.
+// The feed shows a window of chapters bracketed by boundary pages: the chapter being
+// read plus one either side, so a boundary is never a dead end and the reader can
+// swipe straight through it. Settling on a verse in another chapter recentres the
+// window. A boundary's id is the same in every window that contains it.
 
 const boundary = (before, after) => ({ type: 'boundary', id: `b${before?.key ?? 0}-${after?.key ?? 0}`, before, after });
 const verseItem = (verse) => ({ type: 'verse', id: `v${verse.key}`, verse });
@@ -73,11 +74,11 @@ function itemsFor(window) {
   return items;
 }
 
+const windowAround = (ch) => [bible.before(ch), ch, bible.after(ch)].filter(Boolean);
+
 function windowAfterSettling(item) {
-  let next;
-  if (item.type === 'verse') next = [bible.chapter(item.verse.book, item.verse.chapter)];
-  else if (item.before && item.after) next = [item.before, item.after];
-  else return null;
+  if (item.type !== 'verse') return null;
+  const next = windowAround(bible.chapter(item.verse.book, item.verse.chapter));
   const same = next.length === state.window.length && next.every((ch, i) => ch.key === state.window[i].key);
   return same ? null : next;
 }
@@ -88,7 +89,7 @@ function startFor(key) {
   const chapter = (ref && bible.chapter(ref.book, ref.chapter)) ?? bible.chapters[0];
   const verses = itemsFor([chapter]).filter((i) => i.type === 'verse');
   const page = verses.find((i) => i.verse.key === key) ?? verses[0];
-  return { window: [chapter], id: page.id };
+  return { window: windowAround(chapter), id: page.id };
 }
 
 /**
@@ -124,7 +125,8 @@ const state = {
   advanceTimer: 0,
 };
 
-const pageHeight = () => feed.clientHeight;
+// Pages can be a fractional height; clientHeight rounds, which drifts over long chapters.
+const pageHeight = () => feed.firstElementChild?.getBoundingClientRect().height || feed.clientHeight;
 const currentIndex = () => Math.round(feed.scrollTop / pageHeight());
 const currentItem = () => state.items[currentIndex()];
 const currentVerse = () => (currentItem()?.type === 'verse' ? currentItem().verse : null);
