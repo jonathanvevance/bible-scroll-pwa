@@ -94,6 +94,30 @@ export class Journal {
     return rows.sort((a, b) => b.createdAt - a.createdAt);
   }
 
+  /**
+   * Adds the reflections whose id is not already here, in one transaction; never changes or
+   * removes existing ones. Returns how many were added and how many were already here.
+   */
+  async importMany(rows) {
+    const tx = this.#db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const fresh = [];
+    // Added from the callback, not after an await, so the transaction is still open.
+    const keys = store.getAllKeys();
+    keys.onsuccess = () => {
+      const seen = new Set(keys.result);
+      for (const row of rows) {
+        if (seen.has(row.id)) continue;
+        seen.add(row.id);
+        fresh.push(row);
+        store.add(row);
+      }
+    };
+    await committed(tx);
+    for (const row of fresh) this.counts.set(row.verseKey, this.count(row.verseKey) + 1);
+    return { added: fresh.length, skipped: rows.length - fresh.length };
+  }
+
   /** Every reflection, oldest first. */
   async allComments() {
     const tx = this.#db.transaction(STORE);

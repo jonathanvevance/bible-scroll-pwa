@@ -1030,6 +1030,60 @@ backupNow.addEventListener('click', async () => {
   backedUp(count);
 });
 
+// Restore: merge only. Reflections already on the phone (same id) are left as they are.
+
+const restoreFile = document.getElementById('restoreFile');
+const plural = (n) => `${n} reflection${n === 1 ? '' : 's'}`;
+
+/** The backup's reflections, checked in full first so a bad file writes nothing. */
+function readBackup(text) {
+  let data;
+  try { data = JSON.parse(text); } catch { data = null; }
+  if (data?.app !== 'Bible Scroll' || !Array.isArray(data.reflections)) {
+    throw new Error("This file isn't a Bible Scroll backup.");
+  }
+  if (!Number.isInteger(data.format) || data.format < 1) throw new Error("This file isn't a Bible Scroll backup.");
+  if (data.format > BACKUP_FORMAT) throw new Error('This backup was made by a newer version of the app. Update the app, then try again.');
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return data.reflections.map((r, i) => {
+    const valid = typeof r?.id === 'string' && r.id !== ''
+      && Number.isInteger(r.verseKey) && unpackKey(r.verseKey) !== null
+      && typeof r.body === 'string' && r.body.trim() !== ''
+      && Number.isFinite(r.createdAt);
+    if (!valid) throw new Error(`Reflection ${i + 1} in this backup is damaged, so nothing was restored.`);
+    return {
+      id: r.id,
+      verseKey: r.verseKey,
+      body: r.body,
+      createdAt: r.createdAt,
+      timeZoneID: typeof r.timeZoneID === 'string' ? r.timeZoneID : zone,
+      updatedAt: Number.isFinite(r.updatedAt) ? r.updatedAt : null,
+    };
+  });
+}
+
+async function restoreFrom(file) {
+  return journal.importMany(readBackup(await file.text()));
+}
+
+document.getElementById('restoreNow').addEventListener('click', () => restoreFile.click());
+
+restoreFile.addEventListener('change', async () => {
+  const file = restoreFile.files[0];
+  restoreFile.value = ''; // picking the same file again still fires change
+  if (!file) return;
+  try {
+    const { added, skipped } = await restoreFrom(file);
+    updateActions();
+    renderReflections();
+    await closeSheet(backup);
+    if (added === 0) toast('Everything in this backup is already here');
+    else toast(`Restored ${plural(added)}${skipped ? ` (${skipped} already here)` : ''}`);
+  } catch (error) {
+    alert(error?.message ?? String(error));
+  }
+});
+
 // ---------- Start ----------
 
 async function start() {
