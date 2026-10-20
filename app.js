@@ -937,6 +937,7 @@ reflectionsList.addEventListener('click', (e) => {
 // verse text and ISO date are there so the file still makes sense without the app.
 
 const LAST_BACKUP = 'lastBackupAt';
+const LAST_BACKUP_COUNT = 'lastBackupCount';
 const BACKUP_FORMAT = 1;
 const backup = document.getElementById('backup');
 const backupStatus = document.getElementById('backupStatus');
@@ -951,8 +952,6 @@ let backupBuild = 0;
 let backupBuilding = -1;
 
 const reflectionTotal = () => [...journal.counts.values()].reduce((sum, n) => sum + n, 0);
-const localDate = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 async function backupFile() {
   const reflections = (await journal.allComments()).map((c) => {
@@ -978,7 +977,8 @@ async function backupFile() {
     count: reflections.length,
     reflections,
   };
-  return new File([JSON.stringify(data, null, 2)], `Bible Scroll backup ${localDate(now)}.json`, { type: 'application/json' });
+  // One fixed name, so saving to the same folder offers to replace the last backup.
+  return new File([JSON.stringify(data, null, 2)], 'Bible Scroll backup.json', { type: 'application/json' });
 }
 
 function setBackupEnabled(on) {
@@ -990,6 +990,7 @@ function setBackupEnabled(on) {
 
 function invalidateBackup() {
   backupReady = null;
+  shrinkAccepted = false;
   backupBuild++;
   setBackupEnabled(false);
 }
@@ -1033,6 +1034,8 @@ document.getElementById('backupButton').addEventListener('click', () => {
 
 function backedUp(count) {
   localStorage.setItem(LAST_BACKUP, String(Date.now()));
+  localStorage.setItem(LAST_BACKUP_COUNT, String(count));
+  shrinkAccepted = false;
   updateBackupStatus();
   updateBackupReminder();
   closeSheet(backup);
@@ -1042,17 +1045,30 @@ function backedUp(count) {
 backupNow.addEventListener('click', shareBackup);
 bannerBackup.addEventListener('click', shareBackup);
 
+/**
+ * Set once the person agrees to a backup with fewer reflections than the last one. The backup
+ * replaces the previous file, so a smaller one could quietly drop reflections for good.
+ */
+let shrinkAccepted = false;
+
 async function shareBackup() {
   const file = backupReady;
   if (!file) return;
   const count = reflectionTotal();
+  const lastCount = Number(localStorage.getItem(LAST_BACKUP_COUNT));
+  if (count < lastCount && !shrinkAccepted) {
+    if (!confirm(`This backup has ${plural(count)}; your last one had ${lastCount}. Back up anyway?`)) return;
+    shrinkAccepted = true;
+  }
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file] });
       backedUp(count);
     } catch (error) {
-      // Cancelling the share sheet is not a failure.
-      if (error?.name !== 'AbortError') alert(`Couldn't back up: ${error?.message ?? error}`);
+      // Cancelling the share sheet is not a failure. Answering the warning can use up the tap
+      // iOS requires for sharing; the next tap goes straight to the share sheet.
+      if (error?.name === 'NotAllowedError') alert('Tap Back Up again to finish.');
+      else if (error?.name !== 'AbortError') alert(`Couldn't back up: ${error?.message ?? error}`);
     }
     return;
   }
