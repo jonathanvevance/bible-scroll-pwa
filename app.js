@@ -185,12 +185,95 @@ function show(window, pinID) {
 
 function updateControls() {
   controls.classList.toggle('reading-boundary', !currentVerse());
+  updateRail();
+}
+
+// ---------- Verse rail ----------
+
+const rail = document.getElementById('rail');
+const railTrack = document.getElementById('railTrack');
+const railLabel = document.getElementById('railLabel');
+const railState = { chapterKey: 0, ids: [], current: -1, scrubbing: false, scrubIndex: -1 };
+
+function updateRail() {
+  const v = currentVerse();
+  rail.hidden = !v;
+  if (!v) return;
+  const chapterKey = packKey(v.book, v.chapter);
+  if (chapterKey !== railState.chapterKey) {
+    railState.chapterKey = chapterKey;
+    railState.ids = state.items
+      .filter((i) => i.type === 'verse' && i.verse.book === v.book && i.verse.chapter === v.chapter)
+      .map((i) => i.id);
+    railTrack.style.gap = railState.ids.length > 80 ? '1px' : '2px';
+    railTrack.replaceChildren(...railState.ids.map(() => document.createElement('span')));
+    railState.current = -1;
+  }
+  const index = railState.ids.indexOf(`v${v.key}`);
+  if (index === railState.current) return;
+  railTrack.children[railState.current]?.classList.remove('current');
+  railTrack.children[index]?.classList.add('current');
+  railState.current = index;
+}
+
+function scrubTo(clientY) {
+  const box = railTrack.getBoundingClientRect();
+  const n = railState.ids.length;
+  const index = Math.min(n - 1, Math.max(0, Math.floor(((clientY - box.top) / box.height) * n)));
+  if (index === railState.scrubIndex) return;
+  railState.scrubIndex = index;
+  const id = railState.ids[index];
+  feed.scrollTop = state.items.findIndex((i) => i.id === id) * pageHeight();
+  const v = state.items.find((i) => i.id === id).verse;
+  railLabel.textContent = verseName(v);
+  railLabel.style.top = `${box.top + ((index + 0.5) / n) * box.height}px`;
+  railLabel.hidden = false;
+  tick();
+}
+
+rail.addEventListener('pointerdown', (e) => {
+  if (!railState.ids.length) return;
+  try { rail.setPointerCapture(e.pointerId); } catch {}
+  railState.scrubbing = true;
+  railState.scrubIndex = -1;
+  clearTimeout(state.advanceTimer);
+  endGlide();
+  scrubTo(e.clientY);
+});
+rail.addEventListener('pointermove', (e) => { if (railState.scrubbing) scrubTo(e.clientY); });
+for (const type of ['pointerup', 'pointercancel']) {
+  rail.addEventListener(type, () => {
+    railState.scrubbing = false;
+    railLabel.hidden = true;
+    settleSoon();
+  });
+}
+
+/**
+ * A light haptic tap. Android has the Vibration API; iOS Safari does not, but toggling
+ * a native switch control (iOS 18+) plays the system's switch haptic.
+ */
+function tick() {
+  if (navigator.vibrate) {
+    navigator.vibrate(8);
+    return;
+  }
+  const label = document.createElement('label');
+  label.ariaHidden = 'true';
+  label.style.display = 'none';
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.setAttribute('switch', '');
+  label.append(input);
+  document.head.append(label);
+  label.click();
+  label.remove();
 }
 
 // ---------- Settling and auto-advance ----------
 
 function settle() {
-  if (state.touching) return;
+  if (state.touching || railState.scrubbing) return;
   const index = currentIndex();
   if (Math.abs(feed.scrollTop - index * pageHeight()) > 2) return; // still between pages
   const item = state.items[index];
