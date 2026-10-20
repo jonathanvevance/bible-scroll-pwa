@@ -61,24 +61,26 @@
 
   <p id="toast" class="toast" hidden></p>
 
-  <dialog id="timeline" class="sheet">
+  <dialog id="timeline" class="sheet note-sheet">
     <div class="sheet-inner">
-      <header class="sheet-header">
-        <button class="text-button" data-close>Close</button>
+      <div class="grabber" aria-hidden="true"></div>
+      <header class="note-header">
+        <button class="glass-button" data-close>Done</button>
         <h2 id="timelineTitle"></h2>
-        <span></span>
+        <p id="timelineVerse" class="note-verse"></p>
       </header>
       <div class="sheet-body">
-        <blockquote id="timelineVerse" class="verse-card"></blockquote>
+        <div class="note-label">
+          <span>Your reflection</span>
+          <span class="note-hint">Saved when you tap Done</span>
+        </div>
+        <div class="note-card">
+          <textarea id="composerText" autofocus placeholder="What does this verse say to you today?"></textarea>
+          <button id="composerSave" class="note-save" hidden>Save &amp; write another</button>
+        </div>
         <p id="timelineCount" class="section-label"></p>
         <ul id="timelineList" class="card-list"></ul>
       </div>
-      <form id="composer" class="composer">
-        <textarea id="composerText" rows="1" placeholder="What does this verse say to you today?"></textarea>
-        <button id="composerSend" class="send" type="submit" aria-label="Save" disabled>
-          <svg viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>
-        </button>
-      </form>
     </div>
   </dialog>
 

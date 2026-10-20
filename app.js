@@ -487,7 +487,7 @@ visualViewport?.addEventListener('scroll', trackKeyboard);
 
 const timeline = document.getElementById('timeline');
 const composerText = document.getElementById('composerText');
-const composerSend = document.getElementById('composerSend');
+const composerSave = document.getElementById('composerSave');
 let timelineVerse = null;
 
 function stamp(comment) {
@@ -502,18 +502,10 @@ function stamp(comment) {
 }
 
 async function renderTimeline() {
-  const v = timelineVerse;
-  const comments = await journal.comments(v.key);
-  document.getElementById('timelineTitle').textContent = verseName(v);
-  document.getElementById('timelineVerse').textContent = v.text;
+  const comments = await journal.comments(timelineVerse.key);
   document.getElementById('timelineCount').textContent =
-    comments.length === 0 ? '' : comments.length === 1 ? '1 reflection' : `${comments.length} reflections`;
-  const list = document.getElementById('timelineList');
-  if (comments.length === 0) {
-    list.replaceChildren(el('li', { className: 'empty-note', textContent: 'Nothing written yet. What does this verse say to you today?' }));
-    return;
-  }
-  list.replaceChildren(...comments.map((c) => {
+    comments.length === 0 ? '' : comments.length === 1 ? 'Earlier reflection' : `Earlier reflections (${comments.length})`;
+  document.getElementById('timelineList').replaceChildren(...comments.map((c) => {
     const del = el('button', { className: 'delete', textContent: 'Delete' });
     del.addEventListener('click', async () => {
       if (!confirm('Delete this reflection?')) return;
@@ -530,15 +522,15 @@ async function renderTimeline() {
 function sizeComposer() {
   composerText.style.height = 'auto';
   composerText.style.height = `${composerText.scrollHeight}px`;
-  composerSend.disabled = !composerText.value.trim();
+  composerSave.hidden = !composerText.value.trim();
 }
 composerText.addEventListener('input', sizeComposer);
 
-document.getElementById('composer').addEventListener('submit', async (e) => {
-  e.preventDefault();
+/** Saves whatever is in the writing area as a new reflection. */
+async function saveDraft() {
+  if (!timelineVerse || !composerText.value.trim()) return;
   try {
-    const added = await journal.add(composerText.value, timelineVerse.key);
-    if (!added) return;
+    await journal.add(composerText.value, timelineVerse.key);
     composerText.value = '';
     sizeComposer();
     updateActions();
@@ -546,13 +538,28 @@ document.getElementById('composer').addEventListener('submit', async (e) => {
   } catch (error) {
     alert(`Couldn't save: ${error?.message ?? error}`);
   }
+}
+
+composerSave.addEventListener('click', async () => {
+  await saveDraft();
+  composerText.focus();
 });
+// Done or a tap outside closes the sheet; neither loses the text.
+timeline.addEventListener('close', saveDraft);
 
 document.getElementById('reflectButton').addEventListener('click', () => {
   timelineVerse = currentVerse();
   if (!timelineVerse) return;
-  renderTimeline();
+  document.getElementById('timelineTitle').textContent = verseName(timelineVerse);
+  document.getElementById('timelineVerse').textContent = timelineVerse.text;
+  document.getElementById('timelineCount').textContent = '';
+  document.getElementById('timelineList').replaceChildren();
+  composerText.value = '';
+  sizeComposer();
   timeline.showModal();
+  // Focus inside the tap's handler: iOS only raises the keyboard for a user gesture.
+  composerText.focus();
+  renderTimeline();
 });
 
 // Study (Bible Hub)
