@@ -448,6 +448,56 @@ html:has(dialog[open]) .tab-bar {
   .segmented.four > .selected { background: #636366; }
 }
 
+/* Overdue backup: a red badge dot, as iOS marks things that need attention. */
+.backup-due .tab[data-tab="reflections"]::after,
+.backup-due #backupButton::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--destructive);
+  pointer-events: none;
+}
+.backup-due .tab[data-tab="reflections"]::after { top: 8px; left: 58px; }
+.backup-due #backupButton::after { top: 3px; right: 3px; }
+
+.backup-banner {
+  margin-bottom: 22px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--card);
+}
+.backup-banner[hidden] { display: none; }
+.backup-banner-top { display: flex; align-items: flex-start; gap: 12px; }
+.backup-banner-top svg {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.backup-banner-title { margin: 0; font-size: 15px; font-weight: 600; }
+.backup-banner-detail { margin: 2px 0 0; font-size: 13px; color: var(--fg-2); }
+.backup-banner-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.banner-button {
+  position: relative;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 17px;
+  background: var(--glass);
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform 0.2s var(--ease-ios), opacity 0.2s;
+}
+.banner-button.primary { background: var(--accent); color: #fff; }
+.banner-button:active { transform: scale(0.94); opacity: 0.8; }
+.banner-button:disabled { opacity: 0.5; }
+
 .reflection-day + .reflection-day { margin-top: 22px; }
 .reflection-cards {
   list-style: none;

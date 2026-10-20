@@ -49,6 +49,19 @@
       <button data-range="month">Month<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
       <button data-range="all">All<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
     </div>
+    <div id="backupBanner" class="backup-banner" hidden>
+      <div class="backup-banner-top">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5"/><path d="M12 20v-8m-3 3 3-3 3 3"/></svg>
+        <div>
+          <p class="backup-banner-title">Back up your reflections</p>
+          <p id="backupBannerDetail" class="backup-banner-detail"></p>
+        </div>
+      </div>
+      <div class="backup-banner-actions">
+        <button id="bannerLater" class="banner-button">Not Now<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+        <button id="bannerBackup" class="banner-button primary">Back Up<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+      </div>
+    </div>
     <div id="reflectionsList"></div>
     <p id="reflectionsEmpty" class="empty-note reflections-empty" hidden></p>
   </section>

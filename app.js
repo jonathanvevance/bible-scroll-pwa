@@ -199,6 +199,8 @@ function updateActions() {
     const count = node.querySelector('.action-count');
     if (count.textContent !== text) count.textContent = text;
   }
+  invalidateBackup();
+  updateBackupReminder();
 }
 
 let toastTimer = 0;
@@ -845,6 +847,7 @@ function renderReflections() {
   reflectionsEmpty.hidden = true;
   reflectionsView.scrollTop = 0;
   loadMoreReflections();
+  updateBackupReminder();
 }
 
 async function loadMoreReflections() {
@@ -889,27 +892,35 @@ reflectionsFilter.addEventListener('click', (e) => {
   if (range) setFilter(range);
 });
 
-// The filter scrolls with the list. A native switch toggles when a drag ends on it, so once a
-// touch starting here moves, its switches are disabled: a scroll neither ticks nor switches.
-let filterTouch = null;
-const setFilterSwitches = (on) => {
-  for (const input of reflectionsFilter.querySelectorAll('.haptic')) input.disabled = !on;
-};
-reflectionsFilter.addEventListener('touchstart', (e) => {
-  filterTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY, moved: false };
-}, { passive: true });
-reflectionsFilter.addEventListener('touchmove', (e) => {
-  const t = e.touches[0];
-  if (filterTouch && !filterTouch.moved && Math.hypot(t.clientX - filterTouch.x, t.clientY - filterTouch.y) > DRAG_PX) {
-    filterTouch.moved = true;
-    setFilterSwitches(false);
+// The filter and the backup banner scroll with the list. A native switch toggles when a drag ends
+// on it, so once a touch starting on them moves, their switches are disabled: a scroll neither
+// ticks nor presses.
+const backupBanner = document.getElementById('backupBanner');
+const scrollingControls = [reflectionsFilter, backupBanner];
+let controlTouch = null;
+function setControlSwitches(on) {
+  for (const control of scrollingControls) {
+    for (const input of control.querySelectorAll('.haptic')) input.disabled = !on;
   }
-}, { passive: true });
-for (const type of ['touchend', 'touchcancel']) {
-  reflectionsFilter.addEventListener(type, () => {
-    if (filterTouch?.moved) setTimeout(() => setFilterSwitches(true), 400);
-    filterTouch = null;
+  if (on) setBackupEnabled(backupReady !== null);
+}
+for (const control of scrollingControls) {
+  control.addEventListener('touchstart', (e) => {
+    controlTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY, moved: false };
   }, { passive: true });
+  control.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    if (controlTouch && !controlTouch.moved && Math.hypot(t.clientX - controlTouch.x, t.clientY - controlTouch.y) > DRAG_PX) {
+      controlTouch.moved = true;
+      setControlSwitches(false);
+    }
+  }, { passive: true });
+  for (const type of ['touchend', 'touchcancel']) {
+    control.addEventListener(type, () => {
+      if (controlTouch?.moved) setTimeout(() => setControlSwitches(true), 400);
+      controlTouch = null;
+    }, { passive: true });
+  }
 }
 
 reflectionsList.addEventListener('click', (e) => {
@@ -930,9 +941,14 @@ const BACKUP_FORMAT = 1;
 const backup = document.getElementById('backup');
 const backupStatus = document.getElementById('backupStatus');
 const backupNow = document.getElementById('backupNow');
-/** Built when the sheet opens: iOS only allows sharing straight after a tap, with no waiting in between. */
+const bannerBackup = document.getElementById('bannerBackup');
+/**
+ * Built ahead of the tap: iOS only allows sharing straight after one, with no waiting in between.
+ * Any change to the reflections makes it stale (`invalidateBackup`).
+ */
 let backupReady = null;
 let backupBuild = 0;
+let backupBuilding = -1;
 
 const reflectionTotal = () => [...journal.counts.values()].reduce((sum, n) => sum + n, 0);
 const localDate = (d) =>
@@ -966,8 +982,31 @@ async function backupFile() {
 }
 
 function setBackupEnabled(on) {
-  backupNow.disabled = !on;
-  backupNow.querySelector('.haptic').disabled = !on;
+  for (const button of [backupNow, bannerBackup]) {
+    button.disabled = !on;
+    button.querySelector('.haptic').disabled = !on;
+  }
+}
+
+function invalidateBackup() {
+  backupReady = null;
+  backupBuild++;
+  setBackupEnabled(false);
+}
+
+/** Builds the file once per version of the reflections; the backup buttons wait for it. */
+function prepareBackup() {
+  if (backupReady || !reflectionTotal()) return setBackupEnabled(backupReady !== null);
+  if (backupBuilding === backupBuild) return;
+  const build = backupBuilding = backupBuild;
+  setBackupEnabled(false);
+  backupFile()
+    .then((file) => {
+      if (build !== backupBuild) return;
+      backupReady = file;
+      setBackupEnabled(true);
+    })
+    .catch((error) => alert(`Couldn't prepare the backup: ${error?.message ?? error}`));
 }
 
 /** "Today at 3:51 PM", "Yesterday at …", or "20 Oct 2026 at …", like Settings. */
@@ -988,29 +1027,22 @@ function updateBackupStatus() {
 
 document.getElementById('backupButton').addEventListener('click', () => {
   updateBackupStatus();
-  backupReady = null;
-  setBackupEnabled(false);
-  const build = ++backupBuild;
-  if (reflectionTotal()) {
-    backupFile()
-      .then((file) => {
-        if (build !== backupBuild) return;
-        backupReady = file;
-        setBackupEnabled(true);
-      })
-      .catch((error) => alert(`Couldn't prepare the backup: ${error?.message ?? error}`));
-  }
+  prepareBackup();
   backup.showModal();
 });
 
 function backedUp(count) {
   localStorage.setItem(LAST_BACKUP, String(Date.now()));
   updateBackupStatus();
+  updateBackupReminder();
   closeSheet(backup);
   toast(`Backed up ${count} reflection${count === 1 ? '' : 's'}`);
 }
 
-backupNow.addEventListener('click', async () => {
+backupNow.addEventListener('click', shareBackup);
+bannerBackup.addEventListener('click', shareBackup);
+
+async function shareBackup() {
   const file = backupReady;
   if (!file) return;
   const count = reflectionTotal();
@@ -1028,6 +1060,38 @@ backupNow.addEventListener('click', async () => {
   el('a', { href: url, download: file.name }).click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
   backedUp(count);
+}
+
+// Reminder: a backup is due when there are reflections newer than the last backup and that
+// backup is over a week old (or there has never been one). A red dot marks the Reflections tab
+// and the backup button until then; the banner can be put off for a few days.
+
+const SNOOZED = 'backupSnoozedUntil';
+const DAY_MS = 86_400_000;
+const backupBannerDetail = document.getElementById('backupBannerDetail');
+
+async function backupOverdue() {
+  if (!reflectionTotal()) return false;
+  const last = Number(localStorage.getItem(LAST_BACKUP));
+  if (!last) return true;
+  if (Date.now() - last < 7 * DAY_MS) return false;
+  return (await journal.page(last + 1, 0, 1)).length > 0;
+}
+
+async function updateBackupReminder() {
+  const due = await backupOverdue();
+  document.documentElement.classList.toggle('backup-due', due);
+  backupBanner.hidden = !due || Date.now() < Number(localStorage.getItem(SNOOZED));
+  if (backupBanner.hidden) return;
+  const last = Number(localStorage.getItem(LAST_BACKUP));
+  const days = Math.floor((Date.now() - last) / DAY_MS);
+  backupBannerDetail.textContent = last ? `Your last backup was ${days} days ago.` : "You haven't backed up yet.";
+  if (tab === 'reflections') prepareBackup();
+}
+
+document.getElementById('bannerLater').addEventListener('click', () => {
+  localStorage.setItem(SNOOZED, String(Date.now() + 3 * DAY_MS));
+  backupBanner.hidden = true;
 });
 
 // Restore: merge only. Reflections already on the phone (same id) are left as they are.
@@ -1097,6 +1161,7 @@ async function start() {
   show(begin.window, begin.id);
   state.settledID = begin.id;
   document.getElementById('loading').remove();
+  updateBackupReminder();
 
   // Ask the browser not to evict our data under storage pressure.
   navigator.storage?.persist?.();
