@@ -468,8 +468,22 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   border-radius: 0;
 }
 .writing .note-sheet .grabber { display: none; }
-.writing .note-sheet .sheet-body { padding-bottom: 12px; }
-.writing .note-card textarea { min-height: 180px; }
+/* Only the text inside the box scrolls while writing; the timeline returns afterwards. */
+.writing .note-sheet .sheet-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 12px;
+}
+.writing #timelineCount, .writing #timelineList { display: none; }
+.writing .note-card { flex: 1; min-height: 0; margin-bottom: 0; }
+.writing .note-card textarea {
+  flex: 1;
+  min-height: 0;
+  height: auto !important; /* overrides the auto-grow height set from JS */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 .grabber {
   flex: none;

@@ -512,6 +512,16 @@ for (const dialog of document.querySelectorAll('dialog')) {
     if (e.target === dialog || e.target.closest('[data-close]')) closeSheet(dialog);
   });
   dialog.addEventListener('close', () => clearTimeout(state.advanceTimer));
+  // One scroller at a time: a swipe only moves the area under the finger if that area can
+  // scroll; otherwise it is swallowed, so the page behind never pans or scrolls.
+  dialog.addEventListener('touchmove', (e) => {
+    for (let node = e.target; node && node !== dialog; node = node.parentElement) {
+      if (!node.matches('.sheet-body, textarea')) continue;
+      const canScroll = node.scrollHeight > node.clientHeight + 1 && getComputedStyle(node).overflowY !== 'hidden';
+      if (canScroll) return;
+    }
+    e.preventDefault();
+  }, { passive: false });
 }
 
 // Keep sheets above the keyboard: the layout viewport does not shrink when it opens.
@@ -624,7 +634,10 @@ composerText.addEventListener('focus', () => {
 });
 // Delayed so a tap on Done lands before the sheet shrinks back under the finger.
 composerText.addEventListener('blur', () => {
-  leaveWriting = setTimeout(() => document.documentElement.classList.remove('writing'), 250);
+  leaveWriting = setTimeout(() => {
+    document.documentElement.classList.remove('writing');
+    scrollTimelineToEnd();
+  }, 250);
 });
 timeline.addEventListener('close', () => document.documentElement.classList.remove('writing'));
 
