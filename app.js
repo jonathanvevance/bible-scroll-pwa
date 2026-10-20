@@ -478,6 +478,7 @@ function trackKeyboard() {
   const keyboard = Math.max(0, innerHeight - vv.height - vv.offsetTop);
   document.documentElement.style.setProperty('--keyboard', `${keyboard}px`);
   document.documentElement.style.setProperty('--viewport-height', `${vv.height}px`);
+  document.documentElement.style.setProperty('--viewport-top', `${vv.offsetTop}px`);
   document.documentElement.classList.toggle('keyboard-up', keyboard > 80);
 }
 visualViewport?.addEventListener('resize', trackKeyboard);
@@ -503,6 +504,11 @@ function stamp(comment) {
 
 const timelineBody = document.getElementById('timelineBody');
 const scrollTimelineToEnd = () => { timelineBody.scrollTop = timelineBody.scrollHeight; };
+/** Brings the "New reflection" label to the top so what you type stays in view. */
+const scrollToComposer = () => {
+  const label = timelineBody.querySelector('.note-label');
+  timelineBody.scrollTop += label.getBoundingClientRect().top - timelineBody.getBoundingClientRect().top;
+};
 
 /** Oldest first, like a journal, with the box for a new reflection after the latest. */
 async function renderTimeline() {
@@ -565,8 +571,20 @@ document.getElementById('reflectButton').addEventListener('click', () => {
   renderTimeline().then(scrollTimelineToEnd);
 });
 
-// Once the keyboard has opened and the sheet has grown, keep the writing box in view.
-composerText.addEventListener('focus', () => setTimeout(scrollTimelineToEnd, 350));
+// While writing, the sheet fills the visible screen above the keyboard. Keyed off focus because a
+// Home Screen app may shrink innerHeight along with the visual viewport, hiding the keyboard height.
+let leaveWriting;
+composerText.addEventListener('focus', () => {
+  clearTimeout(leaveWriting);
+  trackKeyboard();
+  document.documentElement.classList.add('writing');
+  setTimeout(() => { trackKeyboard(); scrollToComposer(); }, 350);
+});
+// Delayed so a tap on Done lands before the sheet shrinks back under the finger.
+composerText.addEventListener('blur', () => {
+  leaveWriting = setTimeout(() => document.documentElement.classList.remove('writing'), 250);
+});
+timeline.addEventListener('close', () => document.documentElement.classList.remove('writing'));
 
 // Study (Bible Hub)
 
