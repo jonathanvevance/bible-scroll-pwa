@@ -428,8 +428,9 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
 
 /* ---------- Reflection sheet: notes-style writing area above the timeline ---------- */
 
-.note-sheet { border-radius: 30px 30px 0 0; }
-/* The keyboard comes up straight away; give the writing area the whole visible screen. */
+/* Tall enough to show the latest reflections above the writing box. */
+.note-sheet { height: calc(var(--viewport-height) * 0.86); border-radius: 30px 30px 0 0; }
+/* While writing, give the sheet the whole visible screen above the keyboard. */
 .keyboard-up .note-sheet { height: calc(var(--viewport-height) - 16px); }
 
 .grabber {
@@ -486,12 +487,12 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
 .note-card {
   display: flex;
   flex-direction: column;
-  margin-bottom: 22px;
+  margin-bottom: 8px;
   border-radius: 14px;
   background: var(--card);
 }
 .note-card textarea {
-  min-height: 190px;
+  min-height: 250px;
   padding: 14px 16px;
   border: 0;
   background: none;

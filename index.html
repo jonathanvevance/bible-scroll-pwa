@@ -69,17 +69,17 @@
         <h2 id="timelineTitle"></h2>
         <p id="timelineVerse" class="note-verse"></p>
       </header>
-      <div class="sheet-body">
+      <div id="timelineBody" class="sheet-body">
+        <p id="timelineCount" class="section-label"></p>
+        <ul id="timelineList" class="card-list"></ul>
         <div class="note-label">
-          <span>Your reflection</span>
+          <span>New reflection</span>
           <span class="note-hint">Saved when you tap Done</span>
         </div>
         <div class="note-card">
-          <textarea id="composerText" autofocus placeholder="What does this verse say to you today?"></textarea>
+          <textarea id="composerText" placeholder="What does this verse say to you today?"></textarea>
           <button id="composerSave" class="note-save" hidden>Save &amp; write another</button>
         </div>
-        <p id="timelineCount" class="section-label"></p>
-        <ul id="timelineList" class="card-list"></ul>
       </div>
     </div>
   </dialog>

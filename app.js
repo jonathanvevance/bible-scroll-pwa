@@ -501,10 +501,14 @@ function stamp(comment) {
   }
 }
 
+const timelineBody = document.getElementById('timelineBody');
+const scrollTimelineToEnd = () => { timelineBody.scrollTop = timelineBody.scrollHeight; };
+
+/** Oldest first, like a journal, with the box for a new reflection after the latest. */
 async function renderTimeline() {
-  const comments = await journal.comments(timelineVerse.key);
+  const comments = (await journal.comments(timelineVerse.key)).reverse();
   document.getElementById('timelineCount').textContent =
-    comments.length === 0 ? '' : comments.length === 1 ? 'Earlier reflection' : `Earlier reflections (${comments.length})`;
+    comments.length === 0 ? '' : comments.length === 1 ? 'Reflection' : `Reflections (${comments.length})`;
   document.getElementById('timelineList').replaceChildren(...comments.map((c) => {
     const del = el('button', { className: 'delete', textContent: 'Delete' });
     del.addEventListener('click', async () => {
@@ -534,7 +538,8 @@ async function saveDraft() {
     composerText.value = '';
     sizeComposer();
     updateActions();
-    renderTimeline();
+    await renderTimeline();
+    scrollTimelineToEnd();
   } catch (error) {
     alert(`Couldn't save: ${error?.message ?? error}`);
   }
@@ -557,10 +562,11 @@ document.getElementById('reflectButton').addEventListener('click', () => {
   composerText.value = '';
   sizeComposer();
   timeline.showModal();
-  // Focus inside the tap's handler: iOS only raises the keyboard for a user gesture.
-  composerText.focus();
-  renderTimeline();
+  renderTimeline().then(scrollTimelineToEnd);
 });
+
+// Once the keyboard has opened and the sheet has grown, keep the writing box in view.
+composerText.addEventListener('focus', () => setTimeout(scrollTimelineToEnd, 350));
 
 // Study (Bible Hub)
 
