@@ -20,11 +20,16 @@ function unpackKey(key) {
   return { book, chapter, verse };
 }
 
+/** [title, Bible Hub path, SVG icon paths (24×24, stroked)] */
 const HUB_TOOLS = [
-  ['Compare translations', (s, c, v) => `parallel/${s}/${c}-${v}.htm`],
-  ['Read chapter context', (s, c) => `${s}/${c}.htm`],
-  ['Cross-references', (s, c, v) => `crossref/${s}/${c}-${v}.htm`],
-  ['Commentaries', (s, c, v) => `commentaries/${s}/${c}-${v}.htm`],
+  ['Compare translations', (s, c, v) => `parallel/${s}/${c}-${v}.htm`,
+    '<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>'],
+  ['Read chapter context', (s, c) => `${s}/${c}.htm`,
+    '<path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/>'],
+  ['Cross-references', (s, c, v) => `crossref/${s}/${c}-${v}.htm`,
+    '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'],
+  ['Commentaries', (s, c, v) => `commentaries/${s}/${c}-${v}.htm`,
+    '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/>'],
 ];
 const hubURL = (tool, v) => `https://biblehub.com/${tool(bookInfo(v.book).slug, v.chapter, v.verse)}`;
 
@@ -645,8 +650,12 @@ document.getElementById('studyButton').addEventListener('click', () => {
   const v = currentVerse();
   if (!v) return;
   document.getElementById('studyTitle').textContent = verseName(v);
-  document.getElementById('studyLinks').replaceChildren(...HUB_TOOLS.map(([title, tool]) =>
-    el('li', {}, el('a', { href: hubURL(tool, v), target: '_blank', rel: 'noopener', textContent: title }))));
+  document.getElementById('studyLinks').replaceChildren(...HUB_TOOLS.map(([title, tool, icon]) => {
+    const link = el('a', { href: hubURL(tool, v), target: '_blank', rel: 'noopener' });
+    link.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;
+    link.append(el('span', { textContent: title }));
+    return el('li', {}, link);
+  }));
   study.showModal();
 });
 
