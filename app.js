@@ -639,7 +639,9 @@ function renderBooks() {
     ? BOOKS.filter((b) => [b.name, b.bsbName, b.usfm].some((n) => squash(n).includes(query)))
     : BOOKS.filter((b) => (b.order <= 39) === (testament === 'old'));
   document.getElementById('bookList').replaceChildren(...books.map((b) => {
-    const button = withHaptic(el('button', { className: 'chevron', textContent: b.name }));
+    const button = withHaptic(el('button', { className: 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
+      el('span', { className: 'book-name', textContent: b.name }),
+      el('span', { className: 'chapter-count', textContent: String(b.chapters) })));
     button.addEventListener('click', () => { showChapters(b.order); slideIn(chapterView, 40); });
     return el('li', {}, button);
   }));

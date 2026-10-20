@@ -440,6 +440,13 @@ button {
 }
 .links > li > a::after,
 .links > li > button.chevron::after { content: "›"; color: var(--fg-2); }
+/* Chapter count as a grey trailing value, like iOS Settings rows. */
+.links > li > button .book-name { flex: 1; }
+.links > li > button .chapter-count {
+  margin-right: 10px;
+  color: var(--fg-2);
+  font-variant-numeric: tabular-nums;
+}
 .links .destructive { color: var(--destructive); }
 /* Menu rows: icon, label, chevron, sitting directly on the sheet. */
 .menu-list { list-style: none; margin: 0; padding: 0; }
@@ -609,10 +616,11 @@ button {
   background: rgba(118, 118, 128, 0.12);
 }
 .segmented[hidden] { display: none; }
+/* Same height and text size as the search field above it. */
 .segmented button {
-  padding: 6px 0;
-  border-radius: 7px;
-  font-size: 13px;
+  padding: 8px 0;
+  border-radius: 8px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--fg);
 }
