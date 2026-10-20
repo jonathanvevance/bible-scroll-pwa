@@ -1,14 +1,18 @@
-// Offline support: serve every same-origin file from the cache, refreshing it in the
-// background. Only runs over HTTPS (service workers need a secure origin).
+// Offline support. The app's code is fetched from the network first so every file comes
+// from the same version (mixing an old journal.js with a new app.js breaks the app); the
+// cache is the offline fallback. The large Bible text is served from the cache first.
+// Only runs over HTTPS (service workers need a secure origin).
 
-const CACHE = 'bible-scroll-v7';
+const CACHE = 'bible-scroll-v8';
 const ASSETS = [
   './', 'index.html', 'style.css', 'app.js', 'journal.js', 'books.js', 'bsb.json',
   'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // 'reload' skips the browser's HTTP cache, which can still hold files from the last version.
+  const fresh = ASSETS.map((url) => new Request(url, { cache: 'reload' }));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(fresh)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -21,17 +25,29 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
-  event.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(request, { ignoreSearch: true });
-      const fresh = fetch(request)
-        .then((response) => {
-          if (response.ok) cache.put(request, response.clone());
-          return response;
-        })
-        .catch(() => cached);
-      return cached ?? fresh;
-    }),
-  );
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  event.respondWith(url.pathname.endsWith('/bsb.json') ? cacheFirst(request) : networkFirst(request));
 });
+
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.ok) cache.put(request, response.clone());
+  return response;
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE);
+  try {
+    const response = await fetch(request.mode === 'navigate' ? request : new Request(request, { cache: 'no-cache' }));
+    if (response.ok) cache.put(request, response.clone());
+    return response;
+  } catch {
+    const cached = await cache.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+    throw new Error(`Offline and not cached: ${request.url}`);
+  }
+}

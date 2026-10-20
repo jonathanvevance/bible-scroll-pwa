@@ -676,12 +676,14 @@ async function start() {
 
   // Ask the browser not to evict our data under storage pressure.
   navigator.storage?.persist?.();
-  if ('serviceWorker' in navigator) {
-    // A new version took over from an old one: reload once so the update shows now.
-    const hadController = Boolean(navigator.serviceWorker.controller);
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) location.reload(); });
-    navigator.serviceWorker.register('sw.js');
-  }
+}
+
+// Registered before start() so a broken version can still be replaced by the next one.
+if ('serviceWorker' in navigator) {
+  // A new version took over from an old one: reload once so the update shows now.
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) location.reload(); });
+  navigator.serviceWorker.register('sw.js');
 }
 
 start().catch((error) => {
