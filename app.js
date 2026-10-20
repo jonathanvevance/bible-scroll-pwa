@@ -544,65 +544,33 @@ async function saveDraft() {
 // Done or a tap outside closes the sheet; neither loses the text.
 timeline.addEventListener('close', saveDraft);
 
-verseActions.reflect = async (v) => {
+verseActions.reflect = (v) => {
   timelineVerse = v;
   document.getElementById('timelineTitle').textContent = verseName(timelineVerse);
   document.getElementById('timelineVerse').textContent = timelineVerse.text;
+  document.getElementById('timelineCount').textContent = '';
+  document.getElementById('timelineList').replaceChildren();
   composerText.value = '';
   sizeComposer();
-  // Load and lay out the timeline first: doing it mid-slide drops frames.
-  await renderTimeline();
   timeline.showModal();
-  scrollTimelineToEnd();
+  renderTimeline().then(scrollTimelineToEnd);
 };
 
 // While writing, the sheet fills the visible screen above the keyboard. Keyed off focus because a
 // Home Screen app may shrink innerHeight along with the visual viewport, hiding the keyboard height.
-const WRITING_MOTION = { duration: 450, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' };
-
-/** Switches writing mode, gliding the sheet and the writing box from where they were. */
-function setWriting(on) {
-  const root = document.documentElement;
-  if (root.classList.contains('writing') === on) return;
-  const moving = [timeline, ...timeline.querySelectorAll('.note-label, .note-card')];
-  const before = moving.map((n) => n.getBoundingClientRect().top);
-  root.classList.toggle('writing', on);
-  if (!on) scrollTimelineToEnd();
-  if (reduceMotion.matches) return;
-  const shift = moving.map((n, i) => before[i] - n.getBoundingClientRect().top);
-  moving.forEach((n, i) => {
-    // Children sit inside the sheet, which is already moving by shift[0].
-    const dy = i === 0 ? shift[0] : shift[i] - shift[0];
-    if (Math.abs(dy) > 1) n.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], WRITING_MOTION);
-  });
-  if (!on) {
-    for (const n of [document.getElementById('timelineCount'), document.getElementById('timelineList')]) {
-      n.animate([{ opacity: 0 }, { opacity: 1 }], WRITING_MOTION);
-    }
-  }
-}
-
-// Enter writing mode on the tap itself, then focus without scrolling. Left to itself, iOS
-// first pans the whole page to lift the low-sitting box above the keyboard: a visible stutter.
-composerText.addEventListener('touchend', (e) => {
-  if (document.activeElement === composerText) return;
-  e.preventDefault();
-  clearTimeout(leaveWriting);
-  trackKeyboard();
-  setWriting(true);
-  composerText.focus({ preventScroll: true });
-});
-
 let leaveWriting;
 composerText.addEventListener('focus', () => {
   clearTimeout(leaveWriting);
   trackKeyboard();
-  setWriting(true);
+  document.documentElement.classList.add('writing');
   setTimeout(() => { trackKeyboard(); scrollToComposer(); }, 350);
 });
 // Delayed so a tap on Done lands before the sheet shrinks back under the finger.
 composerText.addEventListener('blur', () => {
-  leaveWriting = setTimeout(() => setWriting(false), 250);
+  leaveWriting = setTimeout(() => {
+    document.documentElement.classList.remove('writing');
+    scrollTimelineToEnd();
+  }, 250);
 });
 timeline.addEventListener('close', () => document.documentElement.classList.remove('writing'));
 
