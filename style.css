@@ -193,6 +193,9 @@ button {
   color: var(--fg);
   box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
 }
+/* Explicit heights: on device, auto-height sheets collapsed to nothing. */
+.sheet { height: calc(var(--viewport-height) * 0.62); }
+.sheet.half { height: calc(var(--viewport-height) * 0.5); }
 .sheet.tall { height: calc(var(--viewport-height) - 56px); }
 .sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
 .sheet[open] { animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); }
