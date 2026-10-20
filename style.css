@@ -10,6 +10,7 @@
   --glass-edge: rgba(0, 0, 0, 0.06);
   --accent: #007aff;
   --destructive: #ff3b30;
+  --press: #d1d1d6; /* row highlight while pressed, as in iOS lists */
   --serif: ui-serif, "New York", Georgia, serif;
   --sans: system-ui, -apple-system, "Helvetica Neue", sans-serif;
   /* Set from visualViewport so sheets sit above the on-screen keyboard. */
@@ -32,6 +33,7 @@
     --glass-edge: rgba(255, 255, 255, 0.08);
     --accent: #0a84ff;
     --destructive: #ff453a;
+    --press: #3a3a3c;
   }
 }
 
@@ -220,6 +222,9 @@ button {
 }
 .chapter-pill, .links > li > button.chevron, .chapter-grid button { position: relative; }
 
+.links > li > button.pressed, .chapter-grid button.pressed { background: var(--press); }
+.chapter-grid button.current.pressed { background: var(--accent); filter: brightness(0.85); }
+
 /* Press feedback, like native buttons. */
 .action svg, .chapter-pill, .glass-button {
   transition: transform 0.2s var(--ease-ios), opacity 0.2s;
@@ -386,6 +391,8 @@ button {
   padding: 14px 16px 8px;
 }
 .sheet-header > :first-child { justify-self: start; }
+/* A hidden leading button keeps its slot, so the title stays centred and Done on the right. */
+.sheet-header > [hidden] { display: block; visibility: hidden; }
 .sheet-header > :last-child { justify-self: end; }
 .sheet-header h2 { margin: 0; font-size: 17px; font-weight: 600; }
 .text-button { font-size: 17px; padding: 6px 2px; }

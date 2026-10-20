@@ -642,7 +642,8 @@ function renderBooks() {
     const button = withHaptic(el('button', { className: 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
       el('span', { className: 'book-name', textContent: b.name }),
       el('span', { className: 'chapter-count', textContent: String(b.chapters) })));
-    button.addEventListener('click', () => { showChapters(b.order); slideIn(chapterView, 40); });
+    // A beat for the pressed highlight to show before the chapters slide in.
+    button.addEventListener('click', () => setTimeout(() => { showChapters(b.order); slideIn(chapterView, 40); }, 120));
     return el('li', {}, button);
   }));
 }
@@ -690,6 +691,58 @@ document.getElementById('jumpButton').addEventListener('click', () => {
   showChapters(here.book);
   jump.showModal();
 });
+
+// Pressing in the Jump sheet: the row or cell under the finger is highlighted and the highlight
+// follows a drag. Only a tap opens; once the finger moves, the gesture is a drag and the haptic
+// switches are disabled for it, since a native switch would otherwise toggle (and open) on release.
+const PRESSABLE = '#bookList button, #chapterGrid button';
+const DRAG_PX = 10;
+let press = null;
+let pressed = null;
+
+function setPressed(node) {
+  if (node === pressed) return;
+  pressed?.classList.remove('pressed');
+  pressed = node;
+  pressed?.classList.add('pressed');
+}
+function setSwitchesEnabled(on) {
+  for (const input of jump.querySelectorAll('.haptic')) input.disabled = !on;
+}
+
+jump.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  press = { x: t.clientX, y: t.clientY, moved: false };
+  setPressed(e.target.closest(PRESSABLE));
+}, { passive: true });
+jump.addEventListener('touchmove', (e) => {
+  if (!press) return;
+  const t = e.touches[0];
+  if (!press.moved && Math.hypot(t.clientX - press.x, t.clientY - press.y) > DRAG_PX) {
+    press.moved = true;
+    setSwitchesEnabled(false);
+  }
+  if (press.moved) setPressed(document.elementFromPoint(t.clientX, t.clientY)?.closest(PRESSABLE) ?? null);
+}, { passive: true });
+for (const type of ['touchend', 'touchcancel']) {
+  jump.addEventListener(type, () => {
+    const drag = press?.moved;
+    // A tap keeps its highlight a moment so it registers; a drag clears at once.
+    setTimeout(() => setPressed(null), drag ? 0 : 160);
+    if (drag) {
+      // Kept until the release's click (if any) has been swallowed below.
+      setTimeout(() => { setSwitchesEnabled(true); press = null; }, 400);
+    } else {
+      press = null;
+    }
+  }, { passive: true });
+}
+jump.addEventListener('click', (e) => {
+  if (press?.moved && e.target.closest(PRESSABLE)) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
 
 // ---------- Start ----------
 
