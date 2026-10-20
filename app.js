@@ -176,8 +176,6 @@ function show(window, pinID) {
 }
 
 const chapterLabel = document.getElementById('chapterLabel');
-const favouriteToggle = document.getElementById('favouriteToggle');
-const bookmarkToggle = document.getElementById('bookmarkToggle');
 const reflectCount = document.getElementById('reflectCount');
 
 /** Cheap enough to run on every scroll event: each part only writes when it changes. */
@@ -194,9 +192,6 @@ function updateControls() {
 
 function updateActions(v = currentVerse()) {
   if (!v) return;
-  const set = (node, attr, value) => { if (node.getAttribute(attr) !== value) node.setAttribute(attr, value); };
-  set(favouriteToggle, 'aria-pressed', String(journal.isMarked('favourite', v.key)));
-  set(bookmarkToggle, 'aria-pressed', String(journal.isMarked('bookmark', v.key)));
   const n = journal.count(v.key);
   const text = n ? String(n) : '';
   if (reflectCount.textContent !== text) reflectCount.textContent = text;
@@ -391,17 +386,6 @@ const jumpTo = (chapter) => fadeToVerse(chapter.key + 1);
 
 // ---------- Verse actions ----------
 
-for (const [button, kind] of [[favouriteToggle, 'favourite'], [bookmarkToggle, 'bookmark']]) {
-  button.addEventListener('click', async () => {
-    const v = currentVerse();
-    if (!v) return;
-    const marked = await journal.toggleMark(kind, v.key);
-    updateActions();
-    if (marked) pop(button.querySelector('svg'));
-    if (kind === 'bookmark') toast(marked ? 'Bookmarked' : 'Bookmark removed');
-  });
-}
-
 document.getElementById('shareButton').addEventListener('click', async () => {
   const v = currentVerse();
   if (!v) return;
@@ -417,57 +401,6 @@ document.getElementById('shareButton').addEventListener('click', async () => {
     toast("Couldn't share");
   }
 });
-
-// Saved: favourites and bookmarks
-
-const saved = document.getElementById('saved');
-const savedTabs = document.getElementById('savedTabs');
-let savedKind = 'favourite';
-
-const verseAt = (key) => {
-  const ref = unpackKey(key);
-  return ref && { ...ref, key, text: bible.books[ref.book - 1]?.[ref.chapter - 1]?.[ref.verse - 1] ?? '' };
-};
-
-async function renderSaved() {
-  for (const b of savedTabs.children) b.classList.toggle('selected', b.dataset.kind === savedKind);
-  const rows = await journal.marks(savedKind);
-  const empty = document.getElementById('savedEmpty');
-  empty.hidden = rows.length > 0;
-  empty.textContent = savedKind === 'favourite'
-    ? 'No favourites yet. Tap the heart on a verse you love.'
-    : 'No bookmarks yet. Tap the bookmark at the top to save your place.';
-  document.getElementById('savedList').replaceChildren(...rows.map((row) => {
-    const v = verseAt(row.verseKey);
-    const open = el('button', { className: 'saved-open' },
-      el('span', { className: 'saved-ref', textContent: verseName(v) }),
-      el('span', { className: 'saved-text', textContent: v.text }));
-    open.addEventListener('click', async () => {
-      await closeSheet(saved);
-      fadeToVerse(row.verseKey);
-    });
-    const remove = el('button', { className: 'delete', textContent: 'Remove' });
-    remove.addEventListener('click', async () => {
-      await journal.toggleMark(savedKind, row.verseKey);
-      updateActions();
-      renderSaved();
-    });
-    return el('li', {}, el('div', { className: 'saved-row' }, open, remove));
-  }));
-}
-
-savedTabs.addEventListener('click', (e) => {
-  const kind = e.target.closest('[data-kind]')?.dataset.kind;
-  if (kind) { savedKind = kind; renderSaved(); }
-});
-
-for (const [id, kind] of [['favouritesButton', 'favourite'], ['bookmarksButton', 'bookmark']]) {
-  document.getElementById(id).addEventListener('click', async () => {
-    savedKind = kind;
-    await renderSaved();
-    saved.showModal();
-  });
-}
 
 // ---------- Sheets ----------
 
@@ -489,15 +422,6 @@ function closeSheet(dialog) {
 function fadeToVerse(key) {
   if (reduceMotion.matches || !document.startViewTransition) goToVerse(key);
   else document.startViewTransition(() => goToVerse(key));
-}
-
-/** A small spring "pop" when a heart or bookmark turns on. */
-function pop(node) {
-  if (reduceMotion.matches) return;
-  node.animate(
-    [{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(1)' }],
-    { duration: 380, easing: 'cubic-bezier(0.3, 1.5, 0.5, 1)' },
-  );
 }
 
 /** Slides a view in from the side, like moving through a navigation stack. */
@@ -650,6 +574,7 @@ document.getElementById('studyButton').addEventListener('click', () => {
   const v = currentVerse();
   if (!v) return;
   document.getElementById('studyTitle').textContent = verseName(v);
+  document.getElementById('studyVerse').textContent = v.text;
   document.getElementById('studyLinks').replaceChildren(...HUB_TOOLS.map(([title, tool, icon]) => {
     const link = el('a', { href: hubURL(tool, v), target: '_blank', rel: 'noopener' });
     link.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;
