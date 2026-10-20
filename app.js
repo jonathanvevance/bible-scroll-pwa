@@ -111,7 +111,6 @@ function advanceTarget(item, previousID) {
 // ---------- State ----------
 
 const feed = document.getElementById('feed');
-const controls = document.querySelector('.controls');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
 let bible;
@@ -142,34 +141,22 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
-const BUBBLE = '<svg viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm3 5h8v1.5H8Zm0 3.5h5V14H8Z"/></svg>';
-
-function badge(count) {
-  const node = el('span', { className: 'badge', hidden: count === 0 });
-  node.innerHTML = BUBBLE;
-  node.append(String(count));
-  return node;
-}
-
 function page(item) {
   const node = el('section', { className: `page ${item.type}` });
   node.dataset.id = item.id;
   if (item.type === 'verse') {
     const v = item.verse;
+    if (v.text.length > 220) node.classList.add('long');
+    if (v.text.length > 380) node.classList.add('very-long');
     node.append(el('div', { className: 'verse-body' },
-      el('div', { className: 'reference' }, el('span', { textContent: verseName(v) }), badge(journal.count(v.key))),
-      el('p', { className: 'verse-text', textContent: v.text })));
+      el('p', { className: 'verse-text', textContent: v.text }),
+      el('p', { className: 'reference', textContent: verseName(v) })));
   } else {
     node.append(el('div', { className: 'boundary-body' },
       item.before ? el('p', { className: 'end-of', textContent: `End of ${chapterName(item.before)}` }) : null,
       el('h1', { className: 'chapter-title', textContent: item.after ? chapterName(item.after) : 'The end' })));
   }
   return node;
-}
-
-function refreshBadge(verseKey) {
-  const old = feed.querySelector(`[data-id="v${verseKey}"] .badge`);
-  old?.replaceWith(badge(journal.count(verseKey)));
 }
 
 /** Swap the feed's content and re-pin the same page in one synchronous step, so the
@@ -183,9 +170,40 @@ function show(window, pinID) {
   updateControls();
 }
 
+const chapterLabel = document.getElementById('chapterLabel');
+const favouriteToggle = document.getElementById('favouriteToggle');
+const bookmarkToggle = document.getElementById('bookmarkToggle');
+const reflectCount = document.getElementById('reflectCount');
+
+/** Cheap enough to run on every scroll event: each part only writes when it changes. */
 function updateControls() {
-  controls.classList.toggle('reading-boundary', !currentVerse());
+  const item = currentItem();
+  const v = currentVerse();
+  document.body.classList.toggle('on-boundary', !v);
+  const chapter = v ?? item?.after ?? item?.before;
+  const label = chapter ? chapterName(chapter) : '';
+  if (chapterLabel.textContent !== label) chapterLabel.textContent = label;
+  if (v) updateActions(v);
   updateRail();
+}
+
+function updateActions(v = currentVerse()) {
+  if (!v) return;
+  const set = (node, attr, value) => { if (node.getAttribute(attr) !== value) node.setAttribute(attr, value); };
+  set(favouriteToggle, 'aria-pressed', String(journal.isMarked('favourite', v.key)));
+  set(bookmarkToggle, 'aria-pressed', String(journal.isMarked('bookmark', v.key)));
+  const n = journal.count(v.key);
+  const text = n ? String(n) : '';
+  if (reflectCount.textContent !== text) reflectCount.textContent = text;
+}
+
+let toastTimer = 0;
+function toast(message) {
+  const node = document.getElementById('toast');
+  node.textContent = message;
+  node.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { node.hidden = true; }, 1600);
 }
 
 // ---------- Verse rail ----------
@@ -193,6 +211,7 @@ function updateControls() {
 const rail = document.getElementById('rail');
 const railTrack = document.getElementById('railTrack');
 const railLabel = document.getElementById('railLabel');
+const railNumber = document.getElementById('railNumber');
 const railState = { chapterKey: 0, ids: [], current: -1, scrubbing: false, scrubIndex: -1 };
 
 function updateRail() {
@@ -214,6 +233,8 @@ function updateRail() {
   railTrack.children[railState.current]?.classList.remove('current');
   railTrack.children[index]?.classList.add('current');
   railState.current = index;
+  railNumber.textContent = String(v.verse);
+  railNumber.style.top = `${((index + 0.5) / railState.ids.length) * 100}%`;
 }
 
 function scrubTo(clientY) {
@@ -353,12 +374,93 @@ addEventListener('resize', () => {
   if (index >= 0) feed.scrollTop = index * pageHeight();
 });
 
-function jumpTo(chapter) {
-  const { window, id } = startFor(chapter.key + 1);
+function goToVerse(key) {
+  const { window, id } = startFor(key);
   clearTimeout(state.advanceTimer);
   show(window, id);
   state.settledID = id;
   localStorage.setItem(LAST_VERSE, id.slice(1));
+}
+
+const jumpTo = (chapter) => goToVerse(chapter.key + 1);
+
+// ---------- Verse actions ----------
+
+for (const [button, kind] of [[favouriteToggle, 'favourite'], [bookmarkToggle, 'bookmark']]) {
+  button.addEventListener('click', async () => {
+    const v = currentVerse();
+    if (!v) return;
+    const marked = await journal.toggleMark(kind, v.key);
+    updateActions();
+    if (kind === 'bookmark') toast(marked ? 'Bookmarked' : 'Bookmark removed');
+  });
+}
+
+document.getElementById('shareButton').addEventListener('click', async () => {
+  const v = currentVerse();
+  if (!v) return;
+  const text = `“${v.text}” (${verseName(v)}, BSB)`;
+  if (navigator.share) {
+    try { await navigator.share({ text }); } catch { /* cancelled */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Verse copied');
+  } catch {
+    toast("Couldn't share");
+  }
+});
+
+// Saved: favourites and bookmarks
+
+const saved = document.getElementById('saved');
+const savedTabs = document.getElementById('savedTabs');
+let savedKind = 'favourite';
+
+const verseAt = (key) => {
+  const ref = unpackKey(key);
+  return ref && { ...ref, key, text: bible.books[ref.book - 1]?.[ref.chapter - 1]?.[ref.verse - 1] ?? '' };
+};
+
+async function renderSaved() {
+  for (const b of savedTabs.children) b.classList.toggle('selected', b.dataset.kind === savedKind);
+  const rows = await journal.marks(savedKind);
+  const empty = document.getElementById('savedEmpty');
+  empty.hidden = rows.length > 0;
+  empty.textContent = savedKind === 'favourite'
+    ? 'No favourites yet. Tap the heart on a verse you love.'
+    : 'No bookmarks yet. Tap the bookmark at the top to save your place.';
+  document.getElementById('savedList').replaceChildren(...rows.map((row) => {
+    const v = verseAt(row.verseKey);
+    const open = el('button', { className: 'saved-open' },
+      el('span', { className: 'saved-ref', textContent: verseName(v) }),
+      el('span', { className: 'saved-text', textContent: v.text }));
+    open.addEventListener('click', () => {
+      saved.close();
+      goToVerse(row.verseKey);
+    });
+    const remove = el('button', { className: 'delete', textContent: 'Remove' });
+    remove.addEventListener('click', async () => {
+      await journal.toggleMark(savedKind, row.verseKey);
+      updateActions();
+      renderSaved();
+    });
+    return el('li', {}, el('div', { className: 'saved-row' }, open, remove));
+  }));
+}
+
+savedTabs.addEventListener('click', (e) => {
+  const kind = e.target.closest('[data-kind]')?.dataset.kind;
+  if (kind) { savedKind = kind; renderSaved(); }
+});
+
+for (const [id, kind] of [['favouritesButton', 'favourite'], ['bookmarksButton', 'bookmark']]) {
+  document.getElementById(id).addEventListener('click', async () => {
+    savedKind = kind;
+    await renderSaved();
+    saved.showModal();
+  });
 }
 
 // ---------- Sheets ----------
@@ -416,7 +518,7 @@ async function renderTimeline() {
     del.addEventListener('click', async () => {
       if (!confirm('Delete this reflection?')) return;
       await journal.delete(c);
-      refreshBadge(c.verseKey);
+      updateActions();
       renderTimeline();
     });
     return el('li', {},
@@ -439,7 +541,7 @@ document.getElementById('composer').addEventListener('submit', async (e) => {
     if (!added) return;
     composerText.value = '';
     sizeComposer();
-    refreshBadge(timelineVerse.key);
+    updateActions();
     renderTimeline();
   } catch (error) {
     alert(`Couldn't save: ${error?.message ?? error}`);
@@ -477,15 +579,14 @@ document.getElementById('seedButton').addEventListener('click', async () => {
     createdAt: now - Math.floor(Math.random() * 90 * 86_400_000),
   }));
   await journal.addMany(entries);
-  for (const e of entries) refreshBadge(e.verseKey);
+  updateActions();
   study.close();
 });
 
 document.getElementById('wipeButton').addEventListener('click', async () => {
   if (!confirm('Delete every reflection?')) return;
-  const keys = [...journal.counts.keys()];
   await journal.deleteAll();
-  for (const k of keys) refreshBadge(k);
+  updateActions();
   study.close();
 });
 

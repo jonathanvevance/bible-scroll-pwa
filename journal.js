@@ -3,6 +3,8 @@
 
 const DB_NAME = 'bible-scroll';
 const STORE = 'comments';
+/** Favourites and bookmarks: one row per (kind, verseKey). */
+const MARKS = 'marks';
 
 const request = (r) => new Promise((resolve, reject) => {
   r.onsuccess = () => resolve(r.result);
@@ -15,11 +17,17 @@ const committed = (tx) => new Promise((resolve, reject) => {
 });
 
 function openDatabase() {
-  const r = indexedDB.open(DB_NAME, 1);
-  r.onupgradeneeded = () => {
-    const store = r.result.createObjectStore(STORE, { keyPath: 'id' });
-    store.createIndex('verseKey', 'verseKey');
-    store.createIndex('createdAt', 'createdAt');
+  const r = indexedDB.open(DB_NAME, 2);
+  r.onupgradeneeded = (event) => {
+    const db = r.result;
+    if (event.oldVersion < 1) {
+      const store = db.createObjectStore(STORE, { keyPath: 'id' });
+      store.createIndex('verseKey', 'verseKey');
+      store.createIndex('createdAt', 'createdAt');
+    }
+    if (event.oldVersion < 2) {
+      db.createObjectStore(MARKS, { keyPath: 'id' }).createIndex('kind', 'kind');
+    }
   };
   return request(r);
 }
@@ -31,12 +39,15 @@ export class Journal {
   static async open() {
     const journal = new Journal(await openDatabase());
     await journal.#reloadCounts();
+    await journal.#reloadMarks();
     return journal;
   }
 
   #db;
   /** verseKey -> number of reflections, so badges never query the database. */
   counts = new Map();
+  /** kind ('favourite' | 'bookmark') -> Set of verse keys. */
+  #marked = new Map([['favourite', new Set()], ['bookmark', new Set()]]);
 
   constructor(db) {
     this.#db = db;
@@ -88,6 +99,35 @@ export class Journal {
     tx.objectStore(STORE).clear();
     await committed(tx);
     this.counts.clear();
+  }
+
+  isMarked(kind, verseKey) {
+    return this.#marked.get(kind).has(verseKey);
+  }
+
+  /** Adds or removes the mark; returns whether the verse is now marked. */
+  async toggleMark(kind, verseKey) {
+    const id = `${kind}:${verseKey}`;
+    const marked = !this.isMarked(kind, verseKey);
+    const tx = this.#db.transaction(MARKS, 'readwrite');
+    if (marked) tx.objectStore(MARKS).put({ id, kind, verseKey, createdAt: Date.now() });
+    else tx.objectStore(MARKS).delete(id);
+    await committed(tx);
+    if (marked) this.#marked.get(kind).add(verseKey);
+    else this.#marked.get(kind).delete(verseKey);
+    return marked;
+  }
+
+  /** Newest first. */
+  async marks(kind) {
+    const tx = this.#db.transaction(MARKS);
+    const rows = await request(tx.objectStore(MARKS).index('kind').getAll(kind));
+    return rows.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  async #reloadMarks() {
+    const rows = await request(this.#db.transaction(MARKS).objectStore(MARKS).getAll());
+    for (const row of rows) this.#marked.get(row.kind)?.add(row.verseKey);
   }
 
   async #reloadCounts() {
