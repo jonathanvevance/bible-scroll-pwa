@@ -889,6 +889,29 @@ reflectionsFilter.addEventListener('click', (e) => {
   if (range) setFilter(range);
 });
 
+// The filter scrolls with the list. A native switch toggles when a drag ends on it, so once a
+// touch starting here moves, its switches are disabled: a scroll neither ticks nor switches.
+let filterTouch = null;
+const setFilterSwitches = (on) => {
+  for (const input of reflectionsFilter.querySelectorAll('.haptic')) input.disabled = !on;
+};
+reflectionsFilter.addEventListener('touchstart', (e) => {
+  filterTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY, moved: false };
+}, { passive: true });
+reflectionsFilter.addEventListener('touchmove', (e) => {
+  const t = e.touches[0];
+  if (filterTouch && !filterTouch.moved && Math.hypot(t.clientX - filterTouch.x, t.clientY - filterTouch.y) > DRAG_PX) {
+    filterTouch.moved = true;
+    setFilterSwitches(false);
+  }
+}, { passive: true });
+for (const type of ['touchend', 'touchcancel']) {
+  reflectionsFilter.addEventListener(type, () => {
+    if (filterTouch?.moved) setTimeout(() => setFilterSwitches(true), 400);
+    filterTouch = null;
+  }, { passive: true });
+}
+
 reflectionsList.addEventListener('click', (e) => {
   const key = Number(e.target.closest('.reflection-card')?.dataset.key);
   if (!key) return;

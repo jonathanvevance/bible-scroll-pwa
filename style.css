@@ -442,6 +442,7 @@ html:has(dialog[open]) .tab-bar {
 .reflections-empty { margin: 25vh 0 0; text-align: center; }
 
 .segmented.four { grid-template-columns: repeat(4, 1fr); margin-bottom: 22px; }
+.segmented.four button { position: relative; }
 /* On the dark grouped background the card colour barely shows; iOS uses a lighter grey. */
 @media (prefers-color-scheme: dark) {
   .segmented.four > .selected { background: #636366; }
