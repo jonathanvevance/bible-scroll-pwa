@@ -17,6 +17,8 @@
   --keyboard: 0px;
   --viewport-height: 100dvh;
   --viewport-top: 0px;
+  /* The curve iOS uses for sheets and navigation pushes. */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -73,6 +75,8 @@ button {
   height: 100%;
   scroll-snap-align: start;
   scroll-snap-stop: always;
+  /* Pages off screen skip layout and paint, keeping each scroll frame cheap. */
+  content-visibility: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,6 +176,7 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   border-radius: 2px;
   background: var(--fg-2);
   opacity: 0.35;
+  transition: width 0.2s var(--ease-ios), margin 0.2s var(--ease-ios), opacity 0.2s, background-color 0.2s;
 }
 .rail-track span.current { width: 6px; margin-left: -1px; background: var(--fg); opacity: 1; }
 
@@ -183,6 +188,7 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   font-variant-numeric: tabular-nums;
   color: var(--fg);
   transform: translateY(-50%);
+  transition: top 0.25s var(--ease-ios);
   pointer-events: none;
 }
 
@@ -197,7 +203,18 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   font-size: 15px;
   font-weight: 600;
   transform: translateY(-50%);
+  transition: opacity 0.15s;
   pointer-events: none;
+}
+.rail-label[hidden] { display: block; opacity: 0; }
+
+/* Press feedback, like native buttons. */
+.action svg, .round, .pill-icon, .chapter-pill, .glass-button {
+  transition: transform 0.2s var(--ease-ios), opacity 0.2s;
+}
+.action:active svg, .round:active, .pill-icon:active, .chapter-pill:active, .glass-button:active {
+  transform: scale(0.88);
+  opacity: 0.7;
 }
 
 /* ---------- Top bar ---------- */
@@ -295,8 +312,12 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   background: var(--card);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   font-size: 15px;
-  transform: translateX(-50%);
+  opacity: 0;
+  transform: translate(-50%, 10px) scale(0.96);
+  transition: opacity 0.2s ease-out, transform 0.35s var(--ease-ios);
+  pointer-events: none;
 }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- Saved (favourites and bookmarks) ---------- */
 
@@ -342,8 +363,14 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
 .sheet.half { height: calc(var(--viewport-height) * 0.5); }
 .sheet.tall { height: calc(var(--viewport-height) - 56px); }
 .sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
-.sheet[open] { animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); }
+.sheet[open] { animation: sheet-up 0.5s var(--ease-ios); }
+.sheet[open]::backdrop { animation: fade-in 0.4s ease-out; }
+.sheet.closing { animation: sheet-down 0.26s cubic-bezier(0.4, 0, 1, 1) forwards; }
+.sheet.closing::backdrop { animation: fade-out 0.26s ease-in forwards; }
 @keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes sheet-down { to { transform: translateY(100%); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
 
 .sheet-inner {
   display: flex;
@@ -570,3 +597,7 @@ body.on-boundary .verse-only { opacity: 0; pointer-events: none; }
   font-variant-numeric: tabular-nums;
 }
 .chapter-grid button.current { background: var(--accent); color: #fff; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::backdrop { animation: none !important; transition: none !important; }
+}

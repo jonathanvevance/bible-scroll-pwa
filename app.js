@@ -201,9 +201,9 @@ let toastTimer = 0;
 function toast(message) {
   const node = document.getElementById('toast');
   node.textContent = message;
-  node.hidden = false;
+  node.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { node.hidden = true; }, 1600);
+  toastTimer = setTimeout(() => node.classList.remove('show'), 1600);
 }
 
 // ---------- Verse rail ----------
@@ -382,7 +382,7 @@ function goToVerse(key) {
   localStorage.setItem(LAST_VERSE, id.slice(1));
 }
 
-const jumpTo = (chapter) => goToVerse(chapter.key + 1);
+const jumpTo = (chapter) => fadeToVerse(chapter.key + 1);
 
 // ---------- Verse actions ----------
 
@@ -392,6 +392,7 @@ for (const [button, kind] of [[favouriteToggle, 'favourite'], [bookmarkToggle, '
     if (!v) return;
     const marked = await journal.toggleMark(kind, v.key);
     updateActions();
+    if (marked) pop(button.querySelector('svg'));
     if (kind === 'bookmark') toast(marked ? 'Bookmarked' : 'Bookmark removed');
   });
 }
@@ -436,9 +437,9 @@ async function renderSaved() {
     const open = el('button', { className: 'saved-open' },
       el('span', { className: 'saved-ref', textContent: verseName(v) }),
       el('span', { className: 'saved-text', textContent: v.text }));
-    open.addEventListener('click', () => {
-      saved.close();
-      goToVerse(row.verseKey);
+    open.addEventListener('click', async () => {
+      await closeSheet(saved);
+      fadeToVerse(row.verseKey);
     });
     const remove = el('button', { className: 'delete', textContent: 'Remove' });
     remove.addEventListener('click', async () => {
@@ -465,9 +466,50 @@ for (const [id, kind] of [['favouritesButton', 'favourite'], ['bookmarksButton',
 
 // ---------- Sheets ----------
 
+const SHEET_CLOSE_MS = 260;
+
+/** Slides the sheet away before closing it; resolves once it is gone. */
+function closeSheet(dialog) {
+  if (!dialog.open || dialog.classList.contains('closing')) return Promise.resolve();
+  if (reduceMotion.matches) { dialog.close(); return Promise.resolve(); }
+  dialog.classList.add('closing');
+  return new Promise((resolve) => setTimeout(() => {
+    dialog.classList.remove('closing');
+    dialog.close();
+    resolve();
+  }, SHEET_CLOSE_MS));
+}
+
+/** Cross-fades the feed to another place instead of cutting to it. */
+function fadeToVerse(key) {
+  if (reduceMotion.matches || !document.startViewTransition) goToVerse(key);
+  else document.startViewTransition(() => goToVerse(key));
+}
+
+/** A small spring "pop" when a heart or bookmark turns on. */
+function pop(node) {
+  if (reduceMotion.matches) return;
+  node.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(1)' }],
+    { duration: 380, easing: 'cubic-bezier(0.3, 1.5, 0.5, 1)' },
+  );
+}
+
+/** Slides a view in from the side, like moving through a navigation stack. */
+function slideIn(node, from) {
+  if (reduceMotion.matches) return;
+  node.animate(
+    [{ opacity: 0, transform: `translateX(${from}px)` }, { opacity: 1, transform: 'none' }],
+    { duration: 300, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
+  );
+}
+
+// iOS only shows :active press states when the page listens for touches.
+document.addEventListener('touchstart', () => {}, { passive: true });
+
 for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', (e) => {
-    if (e.target === dialog || e.target.closest('[data-close]')) dialog.close();
+    if (e.target === dialog || e.target.closest('[data-close]')) closeSheet(dialog);
   });
   dialog.addEventListener('close', () => clearTimeout(state.advanceTimer));
 }
@@ -611,14 +653,14 @@ document.getElementById('seedButton').addEventListener('click', async () => {
   }));
   await journal.addMany(entries);
   updateActions();
-  study.close();
+  closeSheet(study);
 });
 
 document.getElementById('wipeButton').addEventListener('click', async () => {
   if (!confirm('Delete every reflection?')) return;
   await journal.deleteAll();
   updateActions();
-  study.close();
+  closeSheet(study);
 });
 
 // Jump to
@@ -643,7 +685,7 @@ function renderBooks() {
     : BOOKS.filter((b) => (b.order <= 39) === (testament === 'old'));
   document.getElementById('bookList').replaceChildren(...books.map((b) => {
     const button = el('button', { className: 'chevron', textContent: b.name });
-    button.addEventListener('click', () => showChapters(b.order));
+    button.addEventListener('click', () => { showChapters(b.order); slideIn(chapterView, 40); });
     return el('li', {}, button);
   }));
 }
@@ -655,6 +697,7 @@ function showBooks() {
   jumpTitle.textContent = 'Books';
   renderBooks();
 }
+jumpBack.addEventListener('click', () => slideIn(bookView, -40));
 
 function showChapters(order) {
   const book = bookInfo(order);
@@ -668,8 +711,8 @@ function showChapters(order) {
   grid.replaceChildren(...Array.from({ length: book.chapters }, (_, i) => {
     const button = el('button', { textContent: String(i + 1) });
     if (here.book === order && here.chapter === i + 1) button.classList.add('current');
-    button.addEventListener('click', () => {
-      jump.close();
+    button.addEventListener('click', async () => {
+      await closeSheet(jump);
       jumpTo(bible.chapter(order, i + 1));
     });
     return button;
