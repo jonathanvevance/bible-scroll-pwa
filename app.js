@@ -544,16 +544,16 @@ async function saveDraft() {
 // Done or a tap outside closes the sheet; neither loses the text.
 timeline.addEventListener('close', saveDraft);
 
-verseActions.reflect = (v) => {
+verseActions.reflect = async (v) => {
   timelineVerse = v;
   document.getElementById('timelineTitle').textContent = verseName(timelineVerse);
   document.getElementById('timelineVerse').textContent = timelineVerse.text;
-  document.getElementById('timelineCount').textContent = '';
-  document.getElementById('timelineList').replaceChildren();
   composerText.value = '';
   sizeComposer();
+  // Load and lay out the timeline first: doing it mid-slide drops frames.
+  await renderTimeline();
   timeline.showModal();
-  renderTimeline().then(scrollTimelineToEnd);
+  scrollTimelineToEnd();
 };
 
 // While writing, the sheet fills the visible screen above the keyboard. Keyed off focus because a
@@ -581,6 +581,17 @@ function setWriting(on) {
     }
   }
 }
+
+// Enter writing mode on the tap itself, then focus without scrolling. Left to itself, iOS
+// first pans the whole page to lift the low-sitting box above the keyboard: a visible stutter.
+composerText.addEventListener('touchend', (e) => {
+  if (document.activeElement === composerText) return;
+  e.preventDefault();
+  clearTimeout(leaveWriting);
+  trackKeyboard();
+  setWriting(true);
+  composerText.focus({ preventScroll: true });
+});
 
 let leaveWriting;
 composerText.addEventListener('focus', () => {

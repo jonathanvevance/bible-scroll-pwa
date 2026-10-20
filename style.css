@@ -351,8 +351,9 @@ button {
 .sheet[open]::backdrop { animation: fade-in 0.4s ease-out; }
 .sheet.closing { animation: sheet-down 0.26s cubic-bezier(0.4, 0, 1, 1) forwards; }
 .sheet.closing::backdrop { animation: fade-out 0.26s ease-in forwards; }
-@keyframes sheet-up { from { transform: translateY(calc(100% + var(--sheet-gap, 0px))); } }
-@keyframes sheet-down { to { transform: translateY(calc(100% + var(--sheet-gap, 0px))); } }
+/* Plain values in keyframes keep the slide on the compositor; 120% clears the floating gap too. */
+@keyframes sheet-up { from { transform: translateY(120%); } }
+@keyframes sheet-down { to { transform: translateY(120%); } }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes fade-out { to { opacity: 0; } }
 
