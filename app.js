@@ -1026,6 +1026,9 @@ function updateBackupStatus() {
   backupStatus.textContent = `${status}\nSave to Files, then iCloud Drive.`;
 }
 
+const help = document.getElementById('help');
+document.getElementById('helpButton').addEventListener('click', () => help.showModal());
+
 document.getElementById('backupButton').addEventListener('click', () => {
   updateBackupStatus();
   prepareBackup();

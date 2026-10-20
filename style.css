@@ -415,6 +415,8 @@ html:has(dialog[open]) .tab-bar {
 }
 .reflections-header h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: 0.01em; }
 
+.reflections-actions { display: flex; gap: 10px; }
+
 .round-glass {
   position: relative;
   flex: none;
@@ -698,6 +700,21 @@ html:has(dialog[open]) .tab-bar {
 .backup-list > li > button { position: relative; color: var(--accent); }
 .backup-list > li > button:active { background: var(--press); }
 .backup-list > li > button:disabled { color: var(--fg-2); background: none; }
+.help-list > li { display: flex; align-items: flex-start; gap: 14px; }
+.help-list svg {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.help-title { margin: 0; font-size: 16px; font-weight: 600; }
+.help-text { margin: 2px 0 0; font-size: 14px; line-height: 1.35; color: var(--fg-2); }
+
 .list-footer {
   margin: -13px 16px 0;
   font-size: 13px;
