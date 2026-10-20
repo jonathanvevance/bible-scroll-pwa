@@ -765,12 +765,7 @@ async function start() {
 }
 
 // Registered before start() so a broken version can still be replaced by the next one.
-if ('serviceWorker' in navigator) {
-  // A new version took over from an old one: reload once so the update shows now.
-  const hadController = Boolean(navigator.serviceWorker.controller);
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) location.reload(); });
-  navigator.serviceWorker.register('sw.js');
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
 start().catch((error) => {
   const message = document.getElementById('loadingError');
