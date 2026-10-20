@@ -1,0 +1,366 @@
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --bg-2: #f2f2f7;
+  --card: #ffffff;
+  --fg: #000000;
+  --fg-2: #8a8a8e;
+  --sep: rgba(60, 60, 67, 0.18);
+  --accent: #007aff;
+  --destructive: #ff3b30;
+  --serif: ui-serif, "New York", Georgia, serif;
+  --sans: system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  /* Set from visualViewport so sheets sit above the on-screen keyboard. */
+  --keyboard: 0px;
+  --viewport-height: 100dvh;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --bg-2: #1c1c1e;
+    --card: #2c2c2e;
+    --fg: #ffffff;
+    --fg-2: #98989f;
+    --sep: rgba(84, 84, 88, 0.6);
+    --accent: #0a84ff;
+    --destructive: #ff453a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* ---------- Feed: one full-screen page per verse ---------- */
+
+.feed {
+  position: fixed;
+  inset: 0;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.feed::-webkit-scrollbar { display: none; }
+
+.page {
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top) 28px calc(env(safe-area-inset-bottom) + 64px);
+}
+
+.verse-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 34rem;
+  text-align: center;
+}
+
+.reference {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--accent);
+}
+.badge[hidden] { display: none; }
+.badge svg { width: 15px; height: 15px; fill: currentColor; }
+
+.verse-text {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  line-height: 1.38;
+}
+
+.page.boundary { background: var(--bg-2); }
+
+.boundary-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.end-of { margin: 0; font-size: 13px; color: var(--fg-2); }
+.chapter-title { margin: 0; font-family: var(--serif); font-size: 44px; font-weight: 400; }
+
+/* The chapter title fades and shrinks as its page moves off-centre. */
+@supports (animation-timeline: view()) {
+  .boundary-body {
+    animation: centre-in linear both;
+    animation-timeline: view();
+  }
+  @keyframes centre-in {
+    0%, 100% { opacity: 0.3; transform: scale(0.88); }
+    50% { opacity: 1; transform: none; }
+  }
+}
+
+.loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--fg-2);
+}
+
+/* ---------- Bottom controls ---------- */
+
+.controls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 24px calc(env(safe-area-inset-bottom) + 8px);
+  pointer-events: none;
+}
+.controls button { pointer-events: auto; }
+.controls .spacer { flex: 1; }
+.controls.reading-boundary .verse-only { visibility: hidden; }
+
+.icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+.icon svg {
+  width: 27px;
+  height: 27px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon svg .dot { fill: var(--accent); stroke-width: 1.4; }
+
+/* ---------- Bottom sheets ---------- */
+
+.sheet {
+  position: fixed;
+  inset: auto 0 var(--keyboard) 0;
+  width: 100%;
+  max-width: 40rem;
+  max-height: calc(var(--viewport-height) - 56px);
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--bg-2);
+  color: var(--fg);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
+}
+.sheet.tall { height: calc(var(--viewport-height) - 56px); }
+.sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
+.sheet[open] { animation: sheet-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); }
+@keyframes sheet-up { from { transform: translateY(100%); } }
+
+.sheet-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: inherit;
+}
+
+.sheet-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 14px 16px 8px;
+}
+.sheet-header > :first-child { justify-self: start; }
+.sheet-header > :last-child { justify-self: end; }
+.sheet-header h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.text-button { font-size: 17px; padding: 6px 2px; }
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px calc(env(safe-area-inset-bottom) + 16px);
+  overscroll-behavior: contain;
+}
+
+.verse-card {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--card);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--fg-2);
+}
+
+.section-label {
+  margin: 0 0 6px 16px;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+
+.card-list {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+}
+.card-list:empty { display: none; }
+.card-list > li { padding: 12px 16px; border-top: 0.5px solid var(--sep); }
+.card-list > li:first-child { border-top: 0; }
+
+.links > li { padding: 0; }
+.links > li > a,
+.links > li > button {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 17px;
+  text-align: left;
+  color: var(--fg);
+  text-decoration: none;
+}
+.links > li > a::after,
+.links > li > button.chevron::after { content: "›"; color: var(--fg-2); }
+.links .destructive { color: var(--destructive); }
+
+.reflection-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+}
+.reflection-body { margin: 4px 0 0; font-size: 17px; line-height: 1.35; white-space: pre-wrap; }
+.delete { font-size: 13px; font-weight: 400; color: var(--destructive); padding: 4px 0 4px 12px; }
+.empty-note { color: var(--fg-2); font-size: 15px; }
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px);
+  border-top: 0.5px solid var(--sep);
+  background: var(--bg-2);
+}
+.composer textarea {
+  flex: 1;
+  resize: none;
+  max-height: calc(6 * 1.3em + 18px);
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--fg);
+  font: 16px/1.3 var(--sans);
+  outline: none;
+}
+.send {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+}
+.send:disabled { background: var(--fg-2); opacity: 0.5; }
+.send svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* When the keyboard is up, the sheet's own safe-area padding is not needed. */
+.keyboard-up .composer { padding-bottom: 10px; }
+
+/* ---------- Jump to ---------- */
+
+.search {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--fg);
+  font: 16px var(--sans);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 14px;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(118, 118, 128, 0.12);
+}
+.segmented[hidden] { display: none; }
+.segmented button {
+  padding: 6px 0;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+}
+.segmented button.selected { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+
+.attribution { margin: 0 16px; font-size: 12px; color: var(--fg-2); }
+
+.chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 10px;
+}
+.chapter-grid button {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--fg);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.chapter-grid button.current { background: var(--accent); color: #fff; font-weight: 600; }

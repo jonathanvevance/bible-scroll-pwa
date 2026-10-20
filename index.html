@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Bible Scroll">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+  <title>Bible Scroll</title>
+</head>
+<body>
+  <main id="feed" class="feed" aria-live="polite"></main>
+  <p id="loading" class="loading">Loading…</p>
+
+  <nav class="controls">
+    <button id="jumpButton" class="icon" aria-label="Jump to">
+      <svg viewBox="0 0 24 24"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5Zm0 0v13"/></svg>
+    </button>
+    <span class="spacer"></span>
+    <button id="reflectButton" class="icon verse-only" aria-label="Reflections">
+      <svg viewBox="0 0 24 24"><path d="M11 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V13"/><path d="M17.5 3.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+    </button>
+    <button id="studyButton" class="icon verse-only" aria-label="Study">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle class="dot" cx="8" cy="12" r=".6"/><circle class="dot" cx="12" cy="12" r=".6"/><circle class="dot" cx="16" cy="12" r=".6"/></svg>
+    </button>
+  </nav>
+
+  <dialog id="timeline" class="sheet">
+    <div class="sheet-inner">
+      <header class="sheet-header">
+        <button class="text-button" data-close>Close</button>
+        <h2 id="timelineTitle"></h2>
+        <span></span>
+      </header>
+      <div class="sheet-body">
+        <blockquote id="timelineVerse" class="verse-card"></blockquote>
+        <p id="timelineCount" class="section-label"></p>
+        <ul id="timelineList" class="card-list"></ul>
+      </div>
+      <form id="composer" class="composer">
+        <textarea id="composerText" rows="1" placeholder="What does this verse say to you today?"></textarea>
+        <button id="composerSend" class="send" type="submit" aria-label="Save" disabled>
+          <svg viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>
+        </button>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="study" class="sheet">
+    <div class="sheet-inner">
+      <header class="sheet-header">
+        <span></span>
+        <h2 id="studyTitle"></h2>
+        <button class="text-button" data-close>Done</button>
+      </header>
+      <div class="sheet-body">
+        <ul id="studyLinks" class="card-list links"></ul>
+        <div id="debugSection" hidden>
+          <p class="section-label">Debug</p>
+          <ul class="card-list links">
+            <li><button id="seedButton">Seed 500 reflections</button></li>
+            <li><button id="wipeButton" class="destructive">Delete all reflections</button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="jump" class="sheet tall">
+    <div class="sheet-inner">
+      <header class="sheet-header">
+        <button id="jumpBack" class="text-button" hidden>‹ Books</button>
+        <h2 id="jumpTitle">Books</h2>
+        <button class="text-button" data-close>Done</button>
+      </header>
+      <div id="bookView" class="sheet-body">
+        <input id="bookSearch" class="search" type="search" placeholder="Book name" autocomplete="off" autocorrect="off" spellcheck="false">
+        <div id="testaments" class="segmented">
+          <button data-testament="old">Old Testament</button>
+          <button data-testament="new">New Testament</button>
+        </div>
+        <ul id="bookList" class="card-list links"></ul>
+        <p class="attribution">The Holy Bible, Berean Standard Bible (BSB), dedicated to the public domain.</p>
+      </div>
+      <div id="chapterView" class="sheet-body" hidden>
+        <div id="chapterGrid" class="chapter-grid"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
