@@ -4,10 +4,10 @@
 // journal.js with a new app.js breaks the app).
 // Only runs over HTTPS (service workers need a secure origin).
 
-const CACHE = 'bible-scroll-v61';
+const CACHE = 'bible-scroll-v62';
 const ASSETS = [
   './', 'index.html', 'style.css', 'app.js', 'journal.js', 'books.js', 'bsb.json',
-  'manifest.webmanifest', 'icons/cross-180.png', 'icons/cross-192.png', 'icons/cross-512.png',
+  'manifest.webmanifest', 'icons/scroll-180.png', 'icons/scroll-192.png', 'icons/scroll-512.png',
 ];
 
 self.addEventListener('install', (event) => {
