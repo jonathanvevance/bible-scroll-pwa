@@ -644,23 +644,17 @@ html:has(dialog[open]) .tab-bar {
 .menu-list a span { flex: 1; }
 .menu-list a::after { content: "›"; font-size: 22px; line-height: 1; color: var(--fg-2); }
 .menu-list a:active { opacity: 0.6; }
-.menu-list button {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  width: 100%;
-  padding: 18px 4px;
-  font-size: 18px;
-  text-align: left;
-  color: var(--fg);
+/* Settings-style action row: blue text, no chevron, grey footer under the card. */
+.backup-list > li > button { position: relative; color: var(--accent); }
+.backup-list > li > button:active { background: var(--press); }
+.backup-list > li > button:disabled { color: var(--fg-2); background: none; }
+.list-footer {
+  margin: -13px 16px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--fg-2);
+  white-space: pre-line;
 }
-.menu-list button span { flex: 1; }
-.menu-list button:active { opacity: 0.6; }
-.menu-list button:disabled { opacity: 0.4; }
-
-.backup-status { margin: 8px 0 0; font-size: 15px; color: var(--fg-2); }
-.backup-hint { margin: 4px 4px 0; font-size: 13px; line-height: 1.4; color: var(--fg-2); }
 .menu-list svg {
   flex: none;
   width: 24px;

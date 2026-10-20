@@ -970,14 +970,20 @@ function setBackupEnabled(on) {
   backupNow.querySelector('.haptic').disabled = !on;
 }
 
+/** "Today at 3:51 PM", "Yesterday at …", or "20 Oct 2026 at …", like Settings. */
+function backupTime(ms) {
+  const date = new Date(ms);
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(ms).setHours(0, 0, 0, 0)) / 86_400_000);
+  const day = days === 0 ? 'Today' : days === 1 ? 'Yesterday'
+    : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date);
+  return `${day} at ${new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(date)}`;
+}
+
 function updateBackupStatus() {
   const last = Number(localStorage.getItem(LAST_BACKUP));
-  const total = reflectionTotal();
-  const count = `${total} reflection${total === 1 ? '' : 's'} on this phone`;
-  const when = last
-    ? `Last backup ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(last)}`
-    : 'Never backed up';
-  backupStatus.textContent = `${when} · ${count}`;
+  const status = last ? `Last backup: ${backupTime(last)}`
+    : reflectionTotal() ? 'Never backed up' : 'No reflections to back up yet';
+  backupStatus.textContent = `${status}\nSave to Files, then iCloud Drive.`;
 }
 
 document.getElementById('backupButton').addEventListener('click', () => {
