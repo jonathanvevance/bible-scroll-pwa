@@ -288,6 +288,14 @@ for (const type of ['pointerup', 'pointercancel']) {
 function tick() {
   navigator.vibrate?.(8);
 }
+/** Gives a button made in script the haptic switch the HTML ones carry. */
+function withHaptic(button) {
+  button.append(el('input', { type: 'checkbox', className: 'haptic', tabIndex: -1 }));
+  const input = button.lastChild;
+  input.setAttribute('switch', '');
+  input.setAttribute('aria-hidden', 'true');
+  return button;
+}
 // The rail ticks from scrubTo on every verse it passes, so its switch need not add another.
 document.addEventListener('click', (e) => {
   if (e.target.matches?.('input.haptic') && !e.target.closest('#rail')) tick();
@@ -631,7 +639,7 @@ function renderBooks() {
     ? BOOKS.filter((b) => [b.name, b.bsbName, b.usfm].some((n) => squash(n).includes(query)))
     : BOOKS.filter((b) => (b.order <= 39) === (testament === 'old'));
   document.getElementById('bookList').replaceChildren(...books.map((b) => {
-    const button = el('button', { className: 'chevron', textContent: b.name });
+    const button = withHaptic(el('button', { className: 'chevron', textContent: b.name }));
     button.addEventListener('click', () => { showChapters(b.order); slideIn(chapterView, 40); });
     return el('li', {}, button);
   }));
@@ -656,7 +664,7 @@ function showChapters(order) {
   jumpTitle.textContent = book.name;
   const grid = document.getElementById('chapterGrid');
   grid.replaceChildren(...Array.from({ length: book.chapters }, (_, i) => {
-    const button = el('button', { textContent: String(i + 1) });
+    const button = withHaptic(el('button', { textContent: String(i + 1) }));
     if (here.book === order && here.chapter === i + 1) button.classList.add('current');
     button.addEventListener('click', async () => {
       await closeSheet(jump);

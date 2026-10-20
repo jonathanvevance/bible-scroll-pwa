@@ -218,6 +218,7 @@ button {
   appearance: auto;
   opacity: 0;
 }
+.chapter-pill, .links > li > button.chevron, .chapter-grid button { position: relative; }
 
 /* Press feedback, like native buttons. */
 .action svg, .chapter-pill, .glass-button {
