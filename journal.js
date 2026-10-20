@@ -94,6 +94,21 @@ export class Journal {
     return rows.sort((a, b) => b.createdAt - a.createdAt);
   }
 
+  /** Newest first, created in [from, to); with no `to`, everything since `from`. */
+  async between(from, to) {
+    const range = to == null ? IDBKeyRange.lowerBound(from) : IDBKeyRange.bound(from, to, false, true);
+    const tx = this.#db.transaction(STORE);
+    const rows = await request(tx.objectStore(STORE).index('createdAt').getAll(range));
+    return rows.reverse();
+  }
+
+  /** When the first reflection was written, or null if there are none. */
+  async oldest() {
+    const tx = this.#db.transaction(STORE);
+    const cursor = await request(tx.objectStore(STORE).index('createdAt').openKeyCursor());
+    return cursor?.key ?? null;
+  }
+
   async deleteAll() {
     const tx = this.#db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).clear();

@@ -768,12 +768,150 @@ function showTab(name) {
   if (!reading) {
     clearTimeout(state.advanceTimer);
     endGlide();
+    renderReflections();
   }
 }
 
 tabBar.addEventListener('click', (e) => {
   const name = e.target.closest('[data-tab]')?.dataset.tab;
   if (name) showTab(name);
+});
+
+// ---------- Reflections tab ----------
+
+const FILTER = 'reflectionsFilter';
+const reflectionsFilter = document.getElementById('reflectionsFilter');
+const reflectionsList = document.getElementById('reflectionsList');
+const reflectionsEmpty = document.getElementById('reflectionsEmpty');
+const pastMonth = document.getElementById('pastMonth');
+const pastMonthLabel = document.getElementById('pastMonthLabel');
+
+/** 'week', 'month', or a past month as 'YYYY-MM' (the month input's value format). */
+let filter = localStorage.getItem(FILTER) ?? 'week';
+if (!/^(week|month|\d{4}-\d{2})$/.test(filter)) filter = 'week';
+const isPastMonth = (f) => f !== 'week' && f !== 'month';
+
+const monthValue = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+function monthStart(value) {
+  const [year, month] = value.split('-').map(Number);
+  return new Date(year, month - 1, 1);
+}
+const monthName = (date, month) => new Intl.DateTimeFormat(undefined, { month, year: 'numeric' }).format(date);
+
+/** [from, to) in ms for a filter, and what to say when it holds nothing. */
+function filterRange(f) {
+  const now = new Date();
+  if (f === 'week') {
+    return { from: +new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6), empty: 'No reflections in the last 7 days' };
+  }
+  if (f === 'month') {
+    return { from: +new Date(now.getFullYear(), now.getMonth(), 1), empty: 'No reflections this month' };
+  }
+  const start = monthStart(f);
+  return {
+    from: +start,
+    to: +new Date(start.getFullYear(), start.getMonth() + 1, 1),
+    empty: `No reflections in ${monthName(start, 'long')}`,
+  };
+}
+
+/** The wheel offers last month back to the month of the first reflection. */
+async function pastMonthBounds() {
+  const now = new Date();
+  const max = monthValue(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const oldest = await journal.oldest();
+  const first = oldest == null ? max : monthValue(new Date(oldest));
+  return { min: first < max ? first : max, max };
+}
+const clampMonth = (value, { min, max }) => (value < min ? min : value > max ? max : value);
+
+const dayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+const dayFormatWithYear = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+function dayName(ms) {
+  const date = new Date(ms);
+  return (date.getFullYear() === new Date().getFullYear() ? dayFormat : dayFormatWithYear).format(date);
+}
+
+function timeOf(comment) {
+  try {
+    return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZone: comment.timeZoneID })
+      .format(comment.createdAt);
+  } catch {
+    return new Date(comment.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+}
+
+function reflectionCard(comment) {
+  const v = unpackKey(comment.verseKey);
+  const card = el('button', { className: 'reflection-card' },
+    el('span', { className: 'reflection-top' },
+      el('span', { textContent: v ? verseName(v) : '' }),
+      el('span', { className: 'reflection-time', textContent: timeOf(comment) })),
+    el('span', { className: 'reflection-verse', textContent: v ? bible.books[v.book - 1]?.[v.chapter - 1]?.[v.verse - 1] ?? '' : '' }),
+    el('span', { className: 'reflection-text', textContent: comment.body }));
+  card.dataset.key = comment.verseKey;
+  return card;
+}
+
+let renderRun = 0;
+/** Newest first, under a heading for each day. */
+async function renderReflections() {
+  if (!journal) return;
+  const run = ++renderRun;
+  const bounds = await pastMonthBounds();
+  if (isPastMonth(filter)) filter = clampMonth(filter, bounds);
+  const { from, to, empty } = filterRange(filter);
+  const comments = await journal.between(from, to);
+  if (run !== renderRun) return;
+
+  pastMonth.min = bounds.min;
+  pastMonth.max = bounds.max;
+  pastMonth.value = isPastMonth(filter) ? filter : bounds.max;
+  pastMonthLabel.textContent = monthName(monthStart(pastMonth.value), 'short');
+  const selected = isPastMonth(filter) ? 'past' : filter;
+  for (const node of reflectionsFilter.children) node.classList.toggle('selected', node.dataset.range === selected);
+
+  const days = [];
+  let day = null;
+  let list = null;
+  for (const comment of comments) {
+    const name = dayName(comment.createdAt);
+    if (name !== day) {
+      day = name;
+      list = el('ul', { className: 'reflection-cards' });
+      days.push(el('section', { className: 'reflection-day' }, el('h2', { className: 'section-label', textContent: name }), list));
+    }
+    list.append(el('li', {}, reflectionCard(comment)));
+  }
+  reflectionsList.replaceChildren(...days);
+  reflectionsEmpty.textContent = empty;
+  reflectionsEmpty.hidden = comments.length > 0;
+}
+
+function setFilter(next) {
+  filter = next;
+  localStorage.setItem(FILTER, next);
+  renderReflections();
+}
+
+reflectionsFilter.addEventListener('click', (e) => {
+  const range = e.target.closest('button[data-range]')?.dataset.range;
+  if (range) setFilter(range);
+});
+// The wheel's Done blurs the input; change alone misses picking the month already shown.
+for (const type of ['change', 'blur']) {
+  pastMonth.addEventListener(type, () => {
+    if (/^\d{4}-\d{2}$/.test(pastMonth.value) && pastMonth.value !== filter) setFilter(pastMonth.value);
+    else if (!isPastMonth(filter)) setFilter(pastMonth.max);
+  });
+}
+
+reflectionsList.addEventListener('click', (e) => {
+  const key = Number(e.target.closest('.reflection-card')?.dataset.key);
+  if (!key) return;
+  const go = () => { showTab('bible'); goToVerse(key); };
+  if (reduceMotion.matches || !document.startViewTransition) go();
+  else document.startViewTransition(go);
 });
 
 // ---------- Start ----------
