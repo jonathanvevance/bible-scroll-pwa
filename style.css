@@ -95,7 +95,7 @@ button {
 /* The rail's segments end 16px in, so equal visible gaps need 16px more on the left. */
 .page.verse { padding-left: 48px; padding-right: 32px; }
 /* Long verses sit higher and smaller so they clear the action column. */
-.page.verse.long { padding-bottom: calc(var(--tab-bar-space) + 297px); }
+.page.verse.long { padding-bottom: calc(var(--tab-bar-space) + 282.5px); }
 
 .verse-body {
   display: flex;
@@ -291,7 +291,7 @@ button {
 .actions {
   position: absolute;
   right: 10px;
-  bottom: calc(var(--tab-bar-space) + 99px);
+  bottom: calc(var(--tab-bar-space) + 84.5px);
   display: flex;
   flex-direction: column;
   align-items: center;
