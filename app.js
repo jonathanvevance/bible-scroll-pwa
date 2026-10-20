@@ -756,9 +756,7 @@ async function start() {
   const begin = startFor(Number(localStorage.getItem(LAST_VERSE)));
   show(begin.window, begin.id);
   state.settledID = begin.id;
-  const loading = document.getElementById('loading');
-  loading.addEventListener('transitionend', () => loading.remove(), { once: true });
-  loading.classList.add('done');
+  document.getElementById('loading').remove();
 
   // Ask the browser not to evict our data under storage pressure.
   navigator.storage?.persist?.();
@@ -768,7 +766,5 @@ async function start() {
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
 start().catch((error) => {
-  const message = document.getElementById('loadingError');
-  message.textContent = `Couldn't load: ${error?.message ?? error}`;
-  message.hidden = false;
+  document.getElementById('loading').textContent = `Couldn't load: ${error?.message ?? error}`;
 });
