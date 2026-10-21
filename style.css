@@ -283,8 +283,59 @@ button {
   stroke-linejoin: round;
 }
 .chapter-pill svg { width: 16px; height: 16px; color: var(--fg-2); }
-.return-pill { padding: 0 14px 0 8px; }
+.return-pill {
+  padding: 0 14px 0 8px;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 .return-pill[hidden] { display: none; }
+
+/* Holding the return pill: a context menu of recent places, the rest of the screen blurred. */
+.topbar { z-index: 2; }
+.history-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.06);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: fade-in 0.2s;
+}
+.history-menu[hidden] { display: none; }
+.history-card {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 52px);
+  left: 12px;
+  width: min(290px, calc(100vw - 24px));
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--bar);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), inset 0 0 0 0.5px var(--glass-edge);
+  transform-origin: top left;
+  animation: menu-in 0.28s var(--ease-ios);
+}
+@keyframes menu-in { from { opacity: 0; transform: scale(0.6); } }
+.history-title { margin: 0; padding: 10px 16px 6px; font-size: 13px; color: var(--fg-2); }
+.history-list { margin: 0; padding: 0; list-style: none; }
+.history-list button, .history-clear {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 16px;
+  border-top: 0.5px solid var(--sep);
+  font-size: 17px;
+  text-align: left;
+  color: var(--fg);
+}
+.history-list .origin { font-weight: 600; }
+.history-list time { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--fg-2); }
+.history-clear { border-top: 8px solid var(--sep); color: var(--destructive); }
+.history-list button:active, .history-clear:active { background: var(--press); }
 
 /* ---------- Right-hand action column ---------- */
 

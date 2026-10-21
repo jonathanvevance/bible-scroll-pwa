@@ -26,6 +26,17 @@
   </div>
   <p id="railLabel" class="rail-label" hidden></p>
 
+  <div id="historyMenu" class="history-menu" hidden>
+    <div class="history-card" role="menu" aria-label="Go back to">
+      <p class="history-title">Go back to</p>
+      <ul id="historyList" class="history-list"></ul>
+      <button id="clearHistory" class="history-clear">
+        Clear History
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+    </div>
+  </div>
+
   <header class="topbar">
     <button id="returnButton" class="pill chapter-pill return-pill" hidden>
       <svg viewBox="0 0 24 24"><path d="m14 7-5 5 5 5"/></svg>
@@ -203,6 +214,10 @@
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.5 10.5l7 3 3 7Zm0 0-10 10"/></svg>
             <div><p class="help-title">Share or study a verse</p><p class="help-text">The arrow shares it; ••• opens translations and commentaries.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-8-8"/><path d="M12 8v4l3 2"/></svg>
+            <div><p class="help-title">Go back</p><p class="help-text">After a jump, tap the pill at the top left to return; hold it for recent places.</p></div>
           </li>
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 3v18M11.5 8h4.5M11.5 11.5h4.5M11.5 15h3"/></svg>

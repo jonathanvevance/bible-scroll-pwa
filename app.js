@@ -422,6 +422,7 @@ function updateReturn() {
 
 /** Call before jumping to `key`, while LAST_VERSE still holds the verse being read. */
 function rememberPlace(key) {
+  recordPlace(Number(localStorage.getItem(LAST_VERSE)));
   const origin = readReturn()?.key ?? Number(localStorage.getItem(LAST_VERSE));
   if (origin && chapterOf(origin) !== chapterOf(key)) {
     localStorage.setItem(RETURN, JSON.stringify({ key: origin, at: chapterOf(key) }));
@@ -439,13 +440,103 @@ function checkReturn(verse) {
   updateReturn();
 }
 
-returnButton.addEventListener('click', () => {
+returnButton.addEventListener('click', (e) => {
+  if (held || !historyMenu.hidden) {
+    e.preventDefault();
+    if (!held) closeHistory();
+    held = false;
+    return;
+  }
   const back = readReturn();
   localStorage.removeItem(RETURN);
   updateReturn();
-  if (back) fadeToVerse(back.key);
+  if (!back) return;
+  recordPlace(Number(localStorage.getItem(LAST_VERSE)));
+  fadeToVerse(back.key);
 });
 updateReturn();
+
+// ---------- History ----------
+// Every jump records the place being left: newest first, one entry per chapter, ten at most.
+// Holding the return pill lists them.
+
+const HISTORY = 'history';
+const HISTORY_SIZE = 10;
+const HOLD_MS = 450;
+const HOLD_SLOP_PX = 10;
+const historyMenu = document.getElementById('historyMenu');
+const historyList = document.getElementById('historyList');
+
+/** [{ key, time }], newest first. */
+function readHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY)) ?? []; } catch { return []; }
+}
+
+function recordPlace(key) {
+  if (!unpackKey(key)) return;
+  const rest = readHistory().filter((h) => chapterOf(h.key) !== chapterOf(key));
+  localStorage.setItem(HISTORY, JSON.stringify([{ key, time: Date.now() }, ...rest].slice(0, HISTORY_SIZE)));
+}
+
+/** "Now", "5 min", "2 h", "Yesterday", "Mon", or "3 Oct". */
+function ago(time) {
+  const minutes = Math.floor((Date.now() - time) / 60_000);
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(time).setHours(0, 0, 0, 0)) / 86_400_000);
+  if (minutes < 1) return 'Now';
+  if (minutes < 60) return `${minutes} min`;
+  if (days === 0) return `${Math.floor(minutes / 60)} h`;
+  if (days === 1) return 'Yesterday';
+  const style = days < 7 ? { weekday: 'short' } : { day: 'numeric', month: 'short' };
+  return new Intl.DateTimeFormat(undefined, style).format(time);
+}
+
+function openHistory() {
+  const here = chapterOf(Number(localStorage.getItem(LAST_VERSE)));
+  const origin = chapterOf(readReturn()?.key ?? 0);
+  const places = readHistory().filter((h) => unpackKey(h.key) && chapterOf(h.key) !== here);
+  if (!places.length) return false;
+  historyList.replaceChildren(...places.map((h) => {
+    const button = el('button', { className: chapterOf(h.key) === origin ? 'origin' : '' },
+      verseName(unpackKey(h.key)), el('time', {}, ago(h.time)));
+    button.setAttribute('role', 'menuitem');
+    button.addEventListener('click', () => { closeHistory(); jumpTo(h.key); });
+    return el('li', {}, withHaptic(button));
+  }));
+  historyMenu.hidden = false;
+  return true;
+}
+
+function closeHistory() { historyMenu.hidden = true; }
+
+historyMenu.addEventListener('click', (e) => { if (e.target === historyMenu) closeHistory(); });
+document.getElementById('clearHistory').addEventListener('click', () => {
+  localStorage.removeItem(HISTORY);
+  localStorage.removeItem(RETURN);
+  updateReturn();
+  closeHistory();
+});
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHistory(); });
+
+// A hold opens the menu; the click that follows the lift is swallowed.
+let held = false;
+let holdTimer = 0;
+let holdFrom = null;
+returnButton.addEventListener('touchstart', (e) => {
+  held = false;
+  holdFrom = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  holdTimer = setTimeout(() => { held = openHistory(); }, HOLD_MS);
+}, { passive: true });
+returnButton.addEventListener('touchmove', (e) => {
+  const t = e.touches[0];
+  if (Math.hypot(t.clientX - holdFrom.x, t.clientY - holdFrom.y) > HOLD_SLOP_PX) clearTimeout(holdTimer);
+}, { passive: true });
+for (const type of ['touchend', 'touchcancel']) {
+  returnButton.addEventListener(type, () => clearTimeout(holdTimer), { passive: true });
+}
+returnButton.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  if (historyMenu.hidden) openHistory();
+});
 
 // ---------- Verse actions ----------
 
