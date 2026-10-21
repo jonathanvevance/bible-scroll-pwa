@@ -253,6 +253,18 @@
       </header>
       <div id="bookView" class="sheet-body">
         <input id="bookSearch" class="search" type="search" placeholder="Book, or a verse like John 3:16" autocomplete="off" autocorrect="off" spellcheck="false">
+        <div id="reading" class="reading">
+          <p class="section-label">CURRENTLY READING</p>
+          <ul class="card-list links">
+            <li>
+              <button id="readingButton" class="chevron">
+                <span id="readingBook" class="book-name"></span>
+                <span id="readingChapter" class="chapter-count"></span>
+                <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+              </button>
+            </li>
+          </ul>
+        </div>
         <div id="testaments" class="segmented">
           <button data-testament="old">Old Testament</button>
           <button data-testament="new">New Testament</button>

@@ -845,6 +845,7 @@ async function goToReference(verse) {
 function renderBooks() {
   const query = squash(bookSearch.value);
   testaments.hidden = query !== '';
+  readingSection.hidden = query !== '';
   for (const b of testaments.children) b.classList.toggle('selected', b.dataset.testament === testament);
   const books = query
     ? BOOKS.filter((b) => [b.name, b.bsbName, b.usfm].some((n) => squash(n).includes(query)))
@@ -852,9 +853,8 @@ function renderBooks() {
   const verse = query ? parseReference(bookSearch.value) : null;
   const goTo = verse && withHaptic(el('button', { className: 'go-to', textContent: `Go to ${verseName(verse)}` }));
   goTo?.addEventListener('click', () => goToReference(verse));
-  const here = currentItem()?.verse ?? state.window[0];
   document.getElementById('bookList').replaceChildren(...(goTo ? [el('li', {}, goTo)] : []), ...books.map((b) => {
-    const button = withHaptic(el('button', { className: b.order === here.book ? 'chevron current' : 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
+    const button = withHaptic(el('button', { className: 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
       el('span', { className: 'book-name', textContent: b.name }),
       el('span', { className: 'chapter-count', textContent: String(b.chapters) })));
     button.addEventListener('click', () => { showChapters(b.order); slideIn(chapterView, 40); });
@@ -903,34 +903,29 @@ bookSearch.addEventListener('keydown', (e) => {
 });
 jumpBack.addEventListener('click', showBooks);
 
-// Opens on the books, since swiping already moves between nearby chapters; the current book is
-// highlighted and in view, one tap from its chapters.
+// Opens on the books, since swiping already moves between nearby chapters. The book being read
+// sits at the top, one tap from its chapters.
+const readingSection = document.getElementById('reading');
 document.getElementById('jumpButton').addEventListener('click', () => {
   bookSearch.value = '';
   const here = currentItem()?.verse ?? state.window[0];
   testament = here.book <= 39 ? 'old' : 'new';
+  document.getElementById('readingBook').textContent = bookInfo(here.book).name;
+  document.getElementById('readingChapter').textContent = `Chapter ${here.chapter}`;
   showBooks();
   jump.showModal();
-  scrollToCurrentBook();
+  bookView.scrollTop = 0;
 });
-
-/**
- * Puts the current book a third of the way down the list below the pinned search, the same
- * spot every time, with a few books above it for context. Books near the top stay put.
- */
-function scrollToCurrentBook() {
-  const row = document.querySelector('#bookList .current');
-  if (!row) return;
-  const offset = row.getBoundingClientRect().top - bookView.getBoundingClientRect().top + bookView.scrollTop;
-  const pinned = bookSearch.offsetHeight + 18;
-  bookView.scrollTop = Math.max(0, offset - pinned - (bookView.clientHeight - pinned) / 3);
-}
+document.getElementById('readingButton').addEventListener('click', () => {
+  showChapters((currentItem()?.verse ?? state.window[0]).book);
+  slideIn(chapterView, 40);
+});
 
 // In the Jump sheet only a real tap opens a book or chapter: the finger stays put, the list does
 // not scroll during the touch, and the touch did not begin by stopping a gliding list. Any other
 // click, like the one iOS can send when a scroll ends on a row, is swallowed. The haptic switches
 // are disabled for anything but a tap, since a native switch would otherwise toggle on release.
-const PRESSABLE = '#bookList button, #chapterGrid button';
+const PRESSABLE = '#readingButton, #bookList button, #chapterGrid button';
 const DRAG_PX = 10;
 let touch = null;
 let tapUntil = 0; // a real tap's click arrives just after its touchend, before this time
