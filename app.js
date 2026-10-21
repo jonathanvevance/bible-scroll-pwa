@@ -402,11 +402,11 @@ const jumpTo = (key) => { rememberPlace(); fadeToVerse(key); };
 
 // ---------- History ----------
 // Every jump (the chapter picker, a reference, a reflection card, a history entry) records the
-// place being left: newest first, one entry per chapter, ten at most. The History pill lists
+// place being left: newest first, one entry per chapter, five at most. The History pill lists
 // them, and shows whenever there is somewhere other than this chapter to go back to.
 
 const HISTORY = 'history';
-const HISTORY_SIZE = 10;
+const HISTORY_SIZE = 5;
 const historyButton = document.getElementById('historyButton');
 const historyMenu = document.getElementById('historyMenu');
 const historyList = document.getElementById('historyList');
@@ -420,7 +420,7 @@ function readHistory() {
 /** Every entry outside the chapter being read. */
 function historyPlaces() {
   const here = chapterOf(Number(localStorage.getItem(LAST_VERSE)));
-  return readHistory().filter((h) => unpackKey(h.key) && chapterOf(h.key) !== here);
+  return readHistory().filter((h) => unpackKey(h.key) && chapterOf(h.key) !== here).slice(0, HISTORY_SIZE);
 }
 
 function updateHistory() { historyButton.hidden = !historyPlaces().length; }
@@ -1424,3 +1424,4 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 start().catch((error) => {
   document.getElementById('loading').textContent = `Couldn't load: ${error?.message ?? error}`;
 });
+setTimeout(() => { historyButton.hidden = false; const w = (id) => document.getElementById(id).getBoundingClientRect().width; fetch('TEMP-log?hist=' + w('historyButton') + '&jump=' + w('jumpButton') + '&hidden=' + historyButton.hidden); }, 3000); // TEMP-TEST
