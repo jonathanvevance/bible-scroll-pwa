@@ -892,8 +892,20 @@ document.getElementById('jumpButton').addEventListener('click', () => {
   testament = here.book <= 39 ? 'old' : 'new';
   showBooks();
   jump.showModal();
-  requestAnimationFrame(() => document.querySelector('#bookList .current')?.scrollIntoView({ block: 'nearest' }));
+  scrollToCurrentBook();
 });
+
+/**
+ * Puts the current book a third of the way down the list below the pinned search, the same
+ * spot every time, with a few books above it for context. Books near the top stay put.
+ */
+function scrollToCurrentBook() {
+  const row = document.querySelector('#bookList .current');
+  if (!row) return;
+  const offset = row.getBoundingClientRect().top - bookView.getBoundingClientRect().top + bookView.scrollTop;
+  const pinned = bookSearch.offsetHeight + 18;
+  bookView.scrollTop = Math.max(0, offset - pinned - (bookView.clientHeight - pinned) / 3);
+}
 
 // Pressing in the Jump sheet: the row or cell under the finger is highlighted and the highlight
 // follows a drag. Only a tap opens; once the finger moves, the gesture is a drag and the haptic
