@@ -231,9 +231,6 @@ button {
 }
 .chapter-pill, .links > li > button.chevron, .links > li > button.go-to, .chapter-grid button { position: relative; }
 
-.links > li > button.pressed, .chapter-grid button.pressed { background: var(--press); }
-.chapter-grid button.current.pressed { background: var(--accent); filter: brightness(0.85); }
-
 /* Press feedback, like native buttons. */
 .action svg, .chapter-pill, .glass-button {
   transition: transform 0.2s var(--ease-ios), opacity 0.2s;

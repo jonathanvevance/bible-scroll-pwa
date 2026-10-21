@@ -837,8 +837,7 @@ function renderBooks() {
     const button = withHaptic(el('button', { className: b.order === here.book ? 'chevron current' : 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
       el('span', { className: 'book-name', textContent: b.name }),
       el('span', { className: 'chapter-count', textContent: String(b.chapters) })));
-    // A beat for the pressed highlight to show before the chapters slide in.
-    button.addEventListener('click', () => setTimeout(() => { showChapters(b.order); slideIn(chapterView, 40); }, 120));
+    button.addEventListener('click', () => { showChapters(b.order); slideIn(chapterView, 40); });
     return el('li', {}, button);
   }));
 }
@@ -907,69 +906,57 @@ function scrollToCurrentBook() {
   bookView.scrollTop = Math.max(0, offset - pinned - (bookView.clientHeight - pinned) / 3);
 }
 
-// Pressing in the Jump sheet works like an iOS list: a row highlights only once the finger has
-// rested on it briefly, a quick tap still flashes it, and as soon as the finger moves the gesture
-// is a scroll, so the highlight goes and never follows the finger. A touch that stops a gliding
-// list highlights nothing. Only a tap opens; for a drag the haptic switches are disabled, since a
-// native switch would otherwise toggle (and open) on release.
+// In the Jump sheet only a real tap opens a book or chapter: the finger stays put, the list does
+// not scroll during the touch, and the touch did not begin by stopping a gliding list. Any other
+// click, like the one iOS can send when a scroll ends on a row, is swallowed. The haptic switches
+// are disabled for anything but a tap, since a native switch would otherwise toggle on release.
 const PRESSABLE = '#bookList button, #chapterGrid button';
 const DRAG_PX = 10;
-const HIGHLIGHT_DELAY_MS = 100;
-let press = null;
-let pressed = null;
+let touch = null;
+let tapUntil = 0; // a real tap's click arrives just after its touchend, before this time
 let lastJumpScroll = 0;
+let switchesTimer = 0;
 for (const scroller of [bookView, chapterView]) {
   scroller.addEventListener('scroll', () => {
     lastJumpScroll = performance.now();
-    if (press && !press.moved) setPressed(null);
+    if (touch) touch.scrolled = true;
   }, { passive: true });
 }
 
-function setPressed(node) {
-  if (node === pressed) return;
-  pressed?.classList.remove('pressed');
-  pressed = node;
-  pressed?.classList.add('pressed');
-}
 function setSwitchesEnabled(on) {
   for (const input of jump.querySelectorAll('.haptic')) input.disabled = !on;
+}
+function disableSwitchesForAMoment() {
+  setSwitchesEnabled(false);
+  clearTimeout(switchesTimer);
+  switchesTimer = setTimeout(() => setSwitchesEnabled(true), 600);
 }
 
 jump.addEventListener('touchstart', (e) => {
   const t = e.touches[0];
-  const target = e.target.closest(PRESSABLE);
-  const stopsGlide = performance.now() - lastJumpScroll < 100;
-  clearTimeout(press?.timer);
-  press = { x: t.clientX, y: t.clientY, moved: false, target: stopsGlide ? null : target };
-  press.timer = setTimeout(() => { if (press && !press.moved) setPressed(press.target); }, HIGHLIGHT_DELAY_MS);
+  touch = { x: t.clientX, y: t.clientY, moved: false, scrolled: performance.now() - lastJumpScroll < 150 };
+  tapUntil = 0;
+  if (touch.scrolled) disableSwitchesForAMoment();
 }, { passive: true });
 jump.addEventListener('touchmove', (e) => {
-  if (!press || press.moved) return;
+  if (!touch || touch.moved) return;
   const t = e.touches[0];
-  if (Math.hypot(t.clientX - press.x, t.clientY - press.y) > DRAG_PX) {
-    press.moved = true;
-    clearTimeout(press.timer);
-    setPressed(null);
-    setSwitchesEnabled(false);
+  if (Math.hypot(t.clientX - touch.x, t.clientY - touch.y) > DRAG_PX) {
+    touch.moved = true;
+    disableSwitchesForAMoment();
   }
 }, { passive: true });
 for (const type of ['touchend', 'touchcancel']) {
   jump.addEventListener(type, () => {
-    clearTimeout(press?.timer);
-    const drag = press?.moved;
-    // A tap shows its highlight a moment, even if released before the delay.
-    if (!drag && type === 'touchend') setPressed(press?.target ?? null);
-    setTimeout(() => setPressed(null), drag ? 0 : 160);
-    if (drag) {
-      // Kept until the release's click (if any) has been swallowed below.
-      setTimeout(() => { setSwitchesEnabled(true); press = null; }, 400);
-    } else {
-      press = null;
-    }
+    const tap = type === 'touchend' && touch && !touch.moved && !touch.scrolled;
+    tapUntil = tap ? performance.now() + 600 : 0;
+    if (!tap) disableSwitchesForAMoment();
   }, { passive: true });
 }
 jump.addEventListener('click', (e) => {
-  if (press?.moved && e.target.closest(PRESSABLE)) {
+  if (!e.target.closest(PRESSABLE)) return;
+  // `touch` is null only for mouse or keyboard clicks, which always count.
+  if (touch && performance.now() > tapUntil) {
     e.preventDefault();
     e.stopPropagation();
   }
