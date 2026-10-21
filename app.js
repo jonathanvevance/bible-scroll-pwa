@@ -316,7 +316,7 @@ function settle() {
   state.settledID = item.id;
   if (item.type === 'verse') {
     localStorage.setItem(LAST_VERSE, String(item.verse.key));
-    checkReturn(item.verse);
+    updateHistory();
   }
 
   const next = windowAfterSettling(item);
@@ -395,84 +395,39 @@ function goToVerse(key) {
   show(window, id);
   state.settledID = id;
   localStorage.setItem(LAST_VERSE, id.slice(1));
+  updateHistory();
 }
 
-const jumpTo = (key) => { rememberPlace(key); fadeToVerse(key); };
-
-// ---------- Return ----------
-// Jumping elsewhere (the chapter picker, a reflection card) remembers the verse being read, and
-// a pill at the top leads back to it. Further jumps keep that first place. Reading on into
-// another chapter means the reader has moved on, so the pill goes.
-
-const RETURN = 'returnTo';
-const returnButton = document.getElementById('returnButton');
-const returnLabel = document.getElementById('returnLabel');
-const chapterOf = (key) => Math.floor(key / 1_000) * 1_000;
-
-/** { key: the verse to go back to, at: the chapter jumped to } or null. */
-function readReturn() {
-  try { return JSON.parse(localStorage.getItem(RETURN)); } catch { return null; }
-}
-
-function updateReturn() {
-  const ref = unpackKey(readReturn()?.key ?? 0);
-  returnButton.hidden = !ref;
-  if (ref) returnLabel.textContent = verseName(ref);
-}
-
-/** Call before jumping to `key`, while LAST_VERSE still holds the verse being read. */
-function rememberPlace(key) {
-  recordPlace(Number(localStorage.getItem(LAST_VERSE)));
-  const origin = readReturn()?.key ?? Number(localStorage.getItem(LAST_VERSE));
-  if (origin && chapterOf(origin) !== chapterOf(key)) {
-    localStorage.setItem(RETURN, JSON.stringify({ key: origin, at: chapterOf(key) }));
-  } else {
-    localStorage.removeItem(RETURN);
-  }
-  updateReturn();
-}
-
-/** On settling on a verse: back home, or moved on to another chapter, ends the trip. */
-function checkReturn(verse) {
-  const back = readReturn();
-  if (!back || chapterOf(verse.key) === back.at) return;
-  localStorage.removeItem(RETURN);
-  updateReturn();
-}
-
-returnButton.addEventListener('click', (e) => {
-  if (held || !historyMenu.hidden) {
-    e.preventDefault();
-    if (!held) closeHistory();
-    held = false;
-    return;
-  }
-  const back = readReturn();
-  localStorage.removeItem(RETURN);
-  updateReturn();
-  if (!back) return;
-  recordPlace(Number(localStorage.getItem(LAST_VERSE)));
-  fadeToVerse(back.key);
-});
-updateReturn();
+const jumpTo = (key) => { rememberPlace(); fadeToVerse(key); };
 
 // ---------- History ----------
-// Every jump records the place being left: newest first, one entry per chapter, ten at most.
-// Holding the return pill lists them.
+// Every jump (the chapter picker, a reference, a reflection card, a history entry) records the
+// place being left: newest first, one entry per chapter, ten at most. The History pill lists
+// them, and shows whenever there is somewhere other than this chapter to go back to.
 
 const HISTORY = 'history';
 const HISTORY_SIZE = 10;
-const HOLD_MS = 450;
-const HOLD_SLOP_PX = 10;
+const historyButton = document.getElementById('historyButton');
 const historyMenu = document.getElementById('historyMenu');
 const historyList = document.getElementById('historyList');
+const chapterOf = (key) => Math.floor(key / 1_000) * 1_000;
 
 /** [{ key, time }], newest first. */
 function readHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY)) ?? []; } catch { return []; }
 }
 
-function recordPlace(key) {
+/** Every entry outside the chapter being read. */
+function historyPlaces() {
+  const here = chapterOf(Number(localStorage.getItem(LAST_VERSE)));
+  return readHistory().filter((h) => unpackKey(h.key) && chapterOf(h.key) !== here);
+}
+
+function updateHistory() { historyButton.hidden = !historyPlaces().length; }
+
+/** Call before jumping, while LAST_VERSE still holds the verse being read. */
+function rememberPlace() {
+  const key = Number(localStorage.getItem(LAST_VERSE));
   if (!unpackKey(key)) return;
   const rest = readHistory().filter((h) => chapterOf(h.key) !== chapterOf(key));
   localStorage.setItem(HISTORY, JSON.stringify([{ key, time: Date.now() }, ...rest].slice(0, HISTORY_SIZE)));
@@ -491,52 +446,26 @@ function ago(time) {
 }
 
 function openHistory() {
-  const here = chapterOf(Number(localStorage.getItem(LAST_VERSE)));
-  const origin = chapterOf(readReturn()?.key ?? 0);
-  const places = readHistory().filter((h) => unpackKey(h.key) && chapterOf(h.key) !== here);
-  if (!places.length) return false;
-  historyList.replaceChildren(...places.map((h) => {
-    const button = el('button', { className: chapterOf(h.key) === origin ? 'origin' : '' },
-      verseName(unpackKey(h.key)), el('time', {}, ago(h.time)));
+  historyList.replaceChildren(...historyPlaces().map((h) => {
+    const button = el('button', {}, verseName(unpackKey(h.key)), el('time', {}, ago(h.time)));
     button.setAttribute('role', 'menuitem');
     button.addEventListener('click', () => { closeHistory(); jumpTo(h.key); });
     return el('li', {}, withHaptic(button));
   }));
   historyMenu.hidden = false;
-  return true;
 }
 
 function closeHistory() { historyMenu.hidden = true; }
 
+historyButton.addEventListener('click', () => { if (historyMenu.hidden) openHistory(); else closeHistory(); });
 historyMenu.addEventListener('click', (e) => { if (e.target === historyMenu) closeHistory(); });
 document.getElementById('clearHistory').addEventListener('click', () => {
   localStorage.removeItem(HISTORY);
-  localStorage.removeItem(RETURN);
-  updateReturn();
+  updateHistory();
   closeHistory();
 });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHistory(); });
-
-// A hold opens the menu; the click that follows the lift is swallowed.
-let held = false;
-let holdTimer = 0;
-let holdFrom = null;
-returnButton.addEventListener('touchstart', (e) => {
-  held = false;
-  holdFrom = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  holdTimer = setTimeout(() => { held = openHistory(); }, HOLD_MS);
-}, { passive: true });
-returnButton.addEventListener('touchmove', (e) => {
-  const t = e.touches[0];
-  if (Math.hypot(t.clientX - holdFrom.x, t.clientY - holdFrom.y) > HOLD_SLOP_PX) clearTimeout(holdTimer);
-}, { passive: true });
-for (const type of ['touchend', 'touchcancel']) {
-  returnButton.addEventListener(type, () => clearTimeout(holdTimer), { passive: true });
-}
-returnButton.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  if (historyMenu.hidden) openHistory();
-});
+updateHistory();
 
 // ---------- Verse actions ----------
 
@@ -1233,7 +1162,7 @@ for (const control of scrollingControls) {
 reflectionsList.addEventListener('click', (e) => {
   const key = Number(e.target.closest('.reflection-card')?.dataset.key);
   if (!key) return;
-  rememberPlace(key);
+  rememberPlace();
   const go = () => { showTab('bible'); goToVerse(key); };
   if (reduceMotion.matches || !document.startViewTransition) go();
   else document.startViewTransition(go);

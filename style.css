@@ -283,15 +283,10 @@ button {
   stroke-linejoin: round;
 }
 .chapter-pill svg { width: 16px; height: 16px; color: var(--fg-2); }
-.return-pill {
-  padding: 0 14px 0 8px;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
-.return-pill[hidden] { display: none; }
+.history-pill { gap: 6px; padding: 0 14px 0 11px; }
+.history-pill[hidden] { display: none; }
 
-/* Holding the return pill: a context menu of recent places, the rest of the screen blurred. */
+/* The History pill's menu of recent places, the rest of the screen blurred. */
 .topbar { z-index: 2; }
 .history-menu {
   position: fixed;
@@ -332,7 +327,6 @@ button {
   text-align: left;
   color: var(--fg);
 }
-.history-list .origin { font-weight: 600; }
 .history-list time { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--fg-2); }
 .history-clear { border-top: 8px solid var(--sep); color: var(--destructive); }
 .history-list button:active, .history-clear:active { background: var(--press); }
