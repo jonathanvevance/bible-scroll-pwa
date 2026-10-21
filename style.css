@@ -723,10 +723,11 @@ html:has(dialog[open]) .tab-bar {
 }
 .links .destructive { color: var(--destructive); }
 .links .go-to { color: var(--accent); font-weight: 600; }
-/* The book being read, above a divider, so the list below can start at the top. */
-.reading { margin-bottom: 16px; border-bottom: 0.5px solid var(--sep); }
-.reading .card-list { margin-bottom: 16px; }
+/* The book being read sits above the list, so the list can start at the top. */
+.reading .card-list { margin-bottom: 24px; }
 .reading .book-name { font-weight: 600; }
+/* In the Books sheet the search and every row are the same 44pt tall. */
+#bookView .links > li > button { align-items: center; height: 44px; padding-block: 0; }
 /* Menu rows: icon, label, chevron, sitting directly on the sheet. */
 .menu-list { list-style: none; margin: 0; padding: 0; }
 .menu-list li + li::before {
@@ -927,8 +928,11 @@ html:has(dialog[open]) .tab-bar {
   position: sticky;
   top: 0;
   z-index: 1;
+  height: 44px;
+  margin-bottom: 16px;
+  font-size: 17px;
   background: linear-gradient(rgba(118, 118, 128, 0.12), rgba(118, 118, 128, 0.12)), var(--bg-2);
-  box-shadow: 0 -8px 0 var(--bg-2), 0 10px 0 var(--bg-2);
+  box-shadow: 0 -8px 0 var(--bg-2), 0 16px 0 var(--bg-2);
 }
 
 .segmented {
@@ -949,6 +953,14 @@ html:has(dialog[open]) .tab-bar {
   color: var(--fg);
 }
 .segmented button.selected { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+/* Old / New as the book list's own header, so it plainly filters the list and nothing above:
+   a 32pt control sitting just over the list, as in Health or Screen Time. */
+.testament-switch { height: 32px; margin-bottom: 10px; }
+.testament-switch button { padding: 0; border-radius: 7px; font-size: 13px; }
+.testament-switch button.selected { font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  .testament-switch button.selected { background: #636366; }
+}
 
 .attribution { margin: 0 16px; font-size: 12px; color: var(--fg-2); }
 
