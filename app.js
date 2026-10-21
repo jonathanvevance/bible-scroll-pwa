@@ -1424,4 +1424,3 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 start().catch((error) => {
   document.getElementById('loading').textContent = `Couldn't load: ${error?.message ?? error}`;
 });
-setTimeout(() => { historyButton.hidden = false; const w = (id) => document.getElementById(id).getBoundingClientRect().width; fetch('TEMP-log?hist=' + w('historyButton') + '&jump=' + w('jumpButton') + '&hidden=' + historyButton.hidden); }, 3000); // TEMP-TEST
