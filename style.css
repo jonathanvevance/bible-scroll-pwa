@@ -956,9 +956,9 @@ html:has(dialog[open]) .tab-bar {
 }
 .segmented button.selected { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
 /* Old / New as the book list's own header, so it plainly filters the list and nothing above:
-   a 32pt control sitting just over the list, as in Health or Screen Time. */
-.testament-switch { height: 32px; margin-bottom: 10px; }
-.testament-switch button { padding: 0; border-radius: 7px; font-size: 13px; }
+   a control sitting just over the list, as in Health or Screen Time, as tall as the top pills. */
+.testament-switch { height: 38px; margin-bottom: 10px; border-radius: 10px; }
+.testament-switch button { padding: 0; border-radius: 8px; font-size: 15px; }
 .testament-switch button.selected { font-weight: 600; }
 @media (prefers-color-scheme: dark) {
   .testament-switch button.selected { background: #636366; }
