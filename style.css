@@ -726,6 +726,8 @@ html:has(dialog[open]) .tab-bar {
 /* The book being read sits above the list, so the list can start at the top. */
 .reading .card-list { margin-bottom: 24px; }
 .reading .book-name { font-weight: 600; }
+/* A blue dot marks the book being read, in place of a section label. */
+.reading-dot { flex: none; align-self: center; width: 8px; height: 8px; margin-right: 12px; border-radius: 50%; background: var(--accent); }
 /* In the Books sheet the search and every row are the same 44pt tall. */
 #bookView .links > li > button { align-items: center; height: 44px; padding-block: 0; }
 /* Menu rows: icon, label, chevron, sitting directly on the sheet. */

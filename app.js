@@ -911,7 +911,7 @@ document.getElementById('jumpButton').addEventListener('click', () => {
   const here = currentItem()?.verse ?? state.window[0];
   testament = here.book <= 39 ? 'old' : 'new';
   document.getElementById('readingBook').textContent = bookInfo(here.book).name;
-  document.getElementById('readingChapter').textContent = `Chapter ${here.chapter}`;
+  document.getElementById('readingChapter').textContent = `Reading · Ch ${here.chapter}`;
   showBooks();
   jump.showModal();
   bookView.scrollTop = 0;
