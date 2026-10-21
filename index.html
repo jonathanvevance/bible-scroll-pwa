@@ -27,6 +27,11 @@
   <p id="railLabel" class="rail-label" hidden></p>
 
   <header class="topbar">
+    <button id="returnButton" class="pill chapter-pill return-pill" hidden>
+      <svg viewBox="0 0 24 24"><path d="m14 7-5 5 5 5"/></svg>
+      <span id="returnLabel"></span>
+      <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+    </button>
     <span class="spacer"></span>
     <button id="jumpButton" class="pill chapter-pill" aria-label="Jump to a chapter">
       <span id="chapterLabel"></span>
@@ -232,7 +237,7 @@
         <button class="text-button" data-close>Done</button>
       </header>
       <div id="bookView" class="sheet-body">
-        <input id="bookSearch" class="search" type="search" placeholder="Book name" autocomplete="off" autocorrect="off" spellcheck="false">
+        <input id="bookSearch" class="search" type="search" placeholder="Book, or a verse like John 3:16" autocomplete="off" autocorrect="off" spellcheck="false">
         <div id="testaments" class="segmented">
           <button data-testament="old">Old Testament</button>
           <button data-testament="new">New Testament</button>

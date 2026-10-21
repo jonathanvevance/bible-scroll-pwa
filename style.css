@@ -229,7 +229,7 @@ button {
   appearance: auto;
   opacity: 0;
 }
-.chapter-pill, .links > li > button.chevron, .chapter-grid button { position: relative; }
+.chapter-pill, .links > li > button.chevron, .links > li > button.go-to, .chapter-grid button { position: relative; }
 
 .links > li > button.pressed, .chapter-grid button.pressed { background: var(--press); }
 .chapter-grid button.current.pressed { background: var(--accent); filter: brightness(0.85); }
@@ -286,6 +286,8 @@ button {
   stroke-linejoin: round;
 }
 .chapter-pill svg { width: 16px; height: 16px; color: var(--fg-2); }
+.return-pill { padding: 0 14px 0 8px; }
+.return-pill[hidden] { display: none; }
 
 /* ---------- Right-hand action column ---------- */
 
@@ -678,6 +680,7 @@ html:has(dialog[open]) .tab-bar {
   font-variant-numeric: tabular-nums;
 }
 .links .destructive { color: var(--destructive); }
+.links .go-to { color: var(--accent); font-weight: 600; }
 /* Menu rows: icon, label, chevron, sitting directly on the sheet. */
 .menu-list { list-style: none; margin: 0; padding: 0; }
 .menu-list li + li::before {

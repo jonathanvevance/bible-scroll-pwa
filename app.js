@@ -314,7 +314,10 @@ function settle() {
 
   const previousID = state.settledID;
   state.settledID = item.id;
-  if (item.type === 'verse') localStorage.setItem(LAST_VERSE, String(item.verse.key));
+  if (item.type === 'verse') {
+    localStorage.setItem(LAST_VERSE, String(item.verse.key));
+    checkReturn(item.verse);
+  }
 
   const next = windowAfterSettling(item);
   if (next) show(next, item.id);
@@ -394,7 +397,55 @@ function goToVerse(key) {
   localStorage.setItem(LAST_VERSE, id.slice(1));
 }
 
-const jumpTo = (chapter) => fadeToVerse(chapter.key + 1);
+const jumpTo = (key) => { rememberPlace(key); fadeToVerse(key); };
+
+// ---------- Return ----------
+// Jumping elsewhere (the chapter picker, a reflection card) remembers the verse being read, and
+// a pill at the top leads back to it. Further jumps keep that first place. Reading on into
+// another chapter means the reader has moved on, so the pill goes.
+
+const RETURN = 'returnTo';
+const returnButton = document.getElementById('returnButton');
+const returnLabel = document.getElementById('returnLabel');
+const chapterOf = (key) => Math.floor(key / 1_000) * 1_000;
+
+/** { key: the verse to go back to, at: the chapter jumped to } or null. */
+function readReturn() {
+  try { return JSON.parse(localStorage.getItem(RETURN)); } catch { return null; }
+}
+
+function updateReturn() {
+  const ref = unpackKey(readReturn()?.key ?? 0);
+  returnButton.hidden = !ref;
+  if (ref) returnLabel.textContent = verseName(ref);
+}
+
+/** Call before jumping to `key`, while LAST_VERSE still holds the verse being read. */
+function rememberPlace(key) {
+  const origin = readReturn()?.key ?? Number(localStorage.getItem(LAST_VERSE));
+  if (origin && chapterOf(origin) !== chapterOf(key)) {
+    localStorage.setItem(RETURN, JSON.stringify({ key: origin, at: chapterOf(key) }));
+  } else {
+    localStorage.removeItem(RETURN);
+  }
+  updateReturn();
+}
+
+/** On settling on a verse: back home, or moved on to another chapter, ends the trip. */
+function checkReturn(verse) {
+  const back = readReturn();
+  if (!back || chapterOf(verse.key) === back.at) return;
+  localStorage.removeItem(RETURN);
+  updateReturn();
+}
+
+returnButton.addEventListener('click', () => {
+  const back = readReturn();
+  localStorage.removeItem(RETURN);
+  updateReturn();
+  if (back) fadeToVerse(back.key);
+});
+updateReturn();
 
 // ---------- Verse actions ----------
 
@@ -753,6 +804,24 @@ let testament = 'old';
 
 const squash = (s) => s.toLowerCase().replaceAll(' ', '');
 
+/** "John 1:10", "1 cor 13 4", "ps23" -> that verse (or the chapter's first), or null. */
+function parseReference(text) {
+  const m = text.trim().toLowerCase().match(/^(\d?\s*[a-z][a-z .]*?)\s*(\d+)(?:\s*[:.\s]\s*(\d+))?$/);
+  if (!m) return null;
+  const name = squash(m[1]).replaceAll('.', '');
+  const names = (b) => [b.name, b.bsbName, b.usfm].map(squash);
+  const book = BOOKS.find((b) => names(b).includes(name)) ?? BOOKS.find((b) => names(b).some((n) => n.startsWith(name)));
+  const chapter = book && bible.chapter(book.order, Number(m[2]));
+  if (!chapter) return null;
+  const verses = bible.verses(chapter).filter((v) => v.text);
+  return m[3] ? verses.find((v) => v.verse === Number(m[3])) ?? null : verses[0];
+}
+
+async function goToReference(verse) {
+  await closeSheet(jump);
+  jumpTo(verse.key);
+}
+
 function renderBooks() {
   const query = squash(bookSearch.value);
   testaments.hidden = query !== '';
@@ -760,7 +829,10 @@ function renderBooks() {
   const books = query
     ? BOOKS.filter((b) => [b.name, b.bsbName, b.usfm].some((n) => squash(n).includes(query)))
     : BOOKS.filter((b) => (b.order <= 39) === (testament === 'old'));
-  document.getElementById('bookList').replaceChildren(...books.map((b) => {
+  const verse = query ? parseReference(bookSearch.value) : null;
+  const goTo = verse && withHaptic(el('button', { className: 'go-to', textContent: `Go to ${verseName(verse)}` }));
+  goTo?.addEventListener('click', () => goToReference(verse));
+  document.getElementById('bookList').replaceChildren(...(goTo ? [el('li', {}, goTo)] : []), ...books.map((b) => {
     const button = withHaptic(el('button', { className: 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
       el('span', { className: 'book-name', textContent: b.name }),
       el('span', { className: 'chapter-count', textContent: String(b.chapters) })));
@@ -793,7 +865,7 @@ function showChapters(order) {
     if (here.book === order && here.chapter === i + 1) button.classList.add('current');
     button.addEventListener('click', async () => {
       await closeSheet(jump);
-      jumpTo(bible.chapter(order, i + 1));
+      jumpTo(bible.chapter(order, i + 1).key + 1);
     });
     return button;
   }));
@@ -805,6 +877,10 @@ testaments.addEventListener('click', (e) => {
   if (t) { testament = t; renderBooks(); }
 });
 bookSearch.addEventListener('input', renderBooks);
+bookSearch.addEventListener('keydown', (e) => {
+  const verse = e.key === 'Enter' && parseReference(bookSearch.value);
+  if (verse) goToReference(verse);
+});
 jumpBack.addEventListener('click', showBooks);
 
 document.getElementById('jumpButton').addEventListener('click', () => {
@@ -1046,6 +1122,7 @@ for (const control of scrollingControls) {
 reflectionsList.addEventListener('click', (e) => {
   const key = Number(e.target.closest('.reflection-card')?.dataset.key);
   if (!key) return;
+  rememberPlace(key);
   const go = () => { showTab('bible'); goToVerse(key); };
   if (reduceMotion.matches || !document.startViewTransition) go();
   else document.startViewTransition(go);
