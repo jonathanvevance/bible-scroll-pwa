@@ -832,8 +832,9 @@ function renderBooks() {
   const verse = query ? parseReference(bookSearch.value) : null;
   const goTo = verse && withHaptic(el('button', { className: 'go-to', textContent: `Go to ${verseName(verse)}` }));
   goTo?.addEventListener('click', () => goToReference(verse));
+  const here = currentItem()?.verse ?? state.window[0];
   document.getElementById('bookList').replaceChildren(...(goTo ? [el('li', {}, goTo)] : []), ...books.map((b) => {
-    const button = withHaptic(el('button', { className: 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
+    const button = withHaptic(el('button', { className: b.order === here.book ? 'chevron current' : 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
       el('span', { className: 'book-name', textContent: b.name }),
       el('span', { className: 'chapter-count', textContent: String(b.chapters) })));
     // A beat for the pressed highlight to show before the chapters slide in.
@@ -883,11 +884,15 @@ bookSearch.addEventListener('keydown', (e) => {
 });
 jumpBack.addEventListener('click', showBooks);
 
+// Opens on the books, since swiping already moves between nearby chapters; the current book is
+// highlighted and in view, one tap from its chapters.
 document.getElementById('jumpButton').addEventListener('click', () => {
   bookSearch.value = '';
   const here = currentItem()?.verse ?? state.window[0];
-  showChapters(here.book);
+  testament = here.book <= 39 ? 'old' : 'new';
+  showBooks();
   jump.showModal();
+  requestAnimationFrame(() => document.querySelector('#bookList .current')?.scrollIntoView({ block: 'nearest' }));
 });
 
 // Pressing in the Jump sheet: the row or cell under the finger is highlighted and the highlight
