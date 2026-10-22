@@ -16,8 +16,8 @@ const committed = (tx) => new Promise((resolve, reject) => {
   tx.onerror = tx.onabort = () => reject(tx.error);
 });
 
-function openDatabase() {
-  const r = indexedDB.open(DB_NAME, 2);
+function openDatabase(name) {
+  const r = indexedDB.open(name, 2);
   r.onupgradeneeded = (event) => {
     const db = r.result;
     if (event.oldVersion < 1) {
@@ -36,8 +36,9 @@ function openDatabase() {
 const newID = () => crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
 export class Journal {
-  static async open() {
-    const journal = new Journal(await openDatabase());
+  /** `name` is only for tests, which must never touch the real database. */
+  static async open(name = DB_NAME) {
+    const journal = new Journal(await openDatabase(name));
     await journal.#reloadCounts();
     await journal.#reloadMarks();
     return journal;
