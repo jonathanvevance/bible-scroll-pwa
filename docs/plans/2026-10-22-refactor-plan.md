@@ -40,7 +40,8 @@ Review #1, #3, #4, #5. Small, targeted changes in the current `app.js`, before a
 - `tests.html` plus `tests/*.test.js`: a tiny test runner (about 40 lines, no dependencies), opened in headless Chrome by `tests/run.sh`, which prints pass/fail.
 - Characterisation tests for the pure logic as it is today: verse keys, `parseReference` (including `gen 1:`), the chapter window, `readBackup` validation, and the restore merge. Journal tests run against a throwaway database name.
 - `docs/device-checklist.md`: per surface (feed actions, History, Jump, Reflections controls, rail): tap, long press then slide off, flick, quick re-tap, two fingers; plus backup, restore and an update across versions.
-- Files: `tests.html`, `tests/`, `docs/device-checklist.md`. No app code changes, except exporting functions the tests need.
+- Files: `tests.html`, `tests/`, `docs/device-checklist.md`.
+- Done (v130). Loading `app.js` starts the app, so its pure logic was moved out unchanged (owner's choice), an early slice of phase 4: `src/core/references.js`, `bible.js`, `feed-model.js` (now takes `bible`, the current window and items as arguments instead of reading globals) and `backup-file.js`. `Journal.open(name)` takes a database name for tests. Run `tests/run.sh`.
 
 ## Phase 3: standards
 
@@ -55,10 +56,11 @@ No logic changes; functions move as they are. Proposed layout:
 index.html, style.css, manifest.webmanifest, sw.js
 src/
   main.js            start-up: load data, wire modules together
-  core/              no DOM
-    keys.js          packed verse keys, references, parseReference
+  core/              no DOM (done in phase 2)
+    references.js    packed verse keys, names, Bible Hub links, parseReference
     bible.js         Bible class over the text file
     feed-model.js    chapter window, boundary pages
+    backup-file.js   reading and checking a backup file
   data/
     journal.js       IndexedDB (moved)
     prefs.js         every localStorage key in one place

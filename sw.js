@@ -4,9 +4,10 @@
 // journal.js with a new app.js breaks the app).
 // Only runs over HTTPS (service workers need a secure origin).
 
-const CACHE = 'bible-scroll-v128';
+const CACHE = 'bible-scroll-v130';
 const ASSETS = [
   './', 'index.html', 'style.css', 'app.js', 'journal.js', 'books.js', 'bsb.json',
+  'src/core/references.js', 'src/core/bible.js', 'src/core/feed-model.js', 'src/core/backup-file.js',
   'manifest.webmanifest', 'icons/scroll-180.png', 'icons/scroll-192.png', 'icons/scroll-512.png',
 ];
 

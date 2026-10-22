@@ -1,122 +1,13 @@
 import { BOOKS } from './books.js';
 import { Journal } from './journal.js';
+import { packKey, bookInfo, chapterName, verseName, unpackKey, HUB_TOOLS, hubURL, squash, parseReference } from './src/core/references.js';
+import { Bible } from './src/core/bible.js';
+import { itemsFor, windowAfterSettling, startFor, advanceTarget } from './src/core/feed-model.js';
+import { BACKUP_FORMAT, readBackup } from './src/core/backup-file.js';
 
 const LAST_VERSE = 'lastVerseKey';
 const ADVANCE_DELAY_MS = 700;
 const SETTLE_DELAY_MS = 140;
-
-// ---------- References (same packed key as the iOS app: book*1e6 + chapter*1e3 + verse) ----------
-
-const packKey = (book, chapter, verse = 0) => book * 1_000_000 + chapter * 1_000 + verse;
-const bookInfo = (order) => BOOKS[order - 1];
-const chapterName = (ch) => `${bookInfo(ch.book).bsbName} ${ch.chapter}`;
-const verseName = (v) => `${bookInfo(v.book).bsbName} ${v.chapter}:${v.verse}`;
-
-function unpackKey(key) {
-  const book = Math.floor(key / 1_000_000);
-  const chapter = Math.floor((key % 1_000_000) / 1_000);
-  const verse = key % 1_000;
-  if (!bookInfo(book) || chapter < 1 || verse < 1) return null;
-  return { book, chapter, verse };
-}
-
-/** [title, Bible Hub path, SVG icon paths (24×24, stroked)] */
-const HUB_TOOLS = [
-  ['Compare translations', (s, c, v) => `parallel/${s}/${c}-${v}.htm`,
-    '<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>'],
-  ['Read chapter context', (s, c) => `${s}/${c}.htm`,
-    '<path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z"/><path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z"/>'],
-  ['Cross-references', (s, c, v) => `crossref/${s}/${c}-${v}.htm`,
-    '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'],
-  ['Commentaries', (s, c, v) => `commentaries/${s}/${c}-${v}.htm`,
-    '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/>'],
-];
-const hubURL = (tool, v) => `https://biblehub.com/${tool(bookInfo(v.book).slug, v.chapter, v.verse)}`;
-
-// ---------- Bible text ----------
-
-class Bible {
-  /** `titles`: psalm superscriptions by "book:chapter"; `notes`: closing notes by "book:chapter:verse". */
-  constructor({ books, titles = {}, notes = {} }) {
-    this.books = books;
-    this.titles = titles;
-    this.notes = notes;
-    this.chapters = [];
-    this.index = new Map();
-    books.forEach((chapters, b) => chapters.forEach((_, c) => {
-      const ch = { book: b + 1, chapter: c + 1, key: packKey(b + 1, c + 1) };
-      this.index.set(ch.key, this.chapters.length);
-      this.chapters.push(ch);
-    }));
-  }
-
-  chapter(book, chapter) {
-    return this.chapters[this.index.get(packKey(book, chapter))] ?? null;
-  }
-
-  verses(ch) {
-    return this.books[ch.book - 1][ch.chapter - 1].map((text, i) => ({
-      book: ch.book, chapter: ch.chapter, verse: i + 1, key: ch.key + i + 1, text,
-      title: i === 0 ? this.titles[`${ch.book}:${ch.chapter}`] : undefined,
-      note: this.notes[`${ch.book}:${ch.chapter}:${i + 1}`],
-    }));
-  }
-
-  after(ch) { return this.chapters[this.index.get(ch.key) + 1] ?? null; }
-  before(ch) { return this.chapters[this.index.get(ch.key) - 1] ?? null; }
-}
-
-// ---------- Feed model (mirrors BibleCore's ChapterFeed) ----------
-// The feed shows a window of chapters bracketed by boundary pages: the chapter being
-// read plus one either side, so a boundary is never a dead end and the reader can
-// swipe straight through it. Settling on a verse in another chapter recentres the
-// window. A boundary's id is the same in every window that contains it.
-
-const boundary = (before, after) => ({ type: 'boundary', id: `b${before?.key ?? 0}-${after?.key ?? 0}`, before, after });
-const verseItem = (verse) => ({ type: 'verse', id: `v${verse.key}`, verse });
-
-function itemsFor(window) {
-  const items = [boundary(bible.before(window[0]), window[0])];
-  for (const ch of window) {
-    for (const v of bible.verses(ch)) if (v.text) items.push(verseItem(v));
-    items.push(boundary(ch, bible.after(ch)));
-  }
-  return items;
-}
-
-const windowAround = (ch) => [bible.before(ch), ch, bible.after(ch)].filter(Boolean);
-
-function windowAfterSettling(item) {
-  if (item.type !== 'verse') return null;
-  const next = windowAround(bible.chapter(item.verse.book, item.verse.chapter));
-  const same = next.length === state.window.length && next.every((ch, i) => ch.key === state.window[i].key);
-  return same ? null : next;
-}
-
-/** Saved verse -> its chapter and page; unknown keys fall back to Genesis 1:1. */
-function startFor(key) {
-  const ref = unpackKey(key);
-  const chapter = (ref && bible.chapter(ref.book, ref.chapter)) ?? bible.chapters[0];
-  const verses = itemsFor([chapter]).filter((i) => i.type === 'verse');
-  const page = verses.find((i) => i.verse.key === key) ?? verses[0];
-  return { window: windowAround(chapter), id: page.id };
-}
-
-/**
- * Where to carry on after resting on a boundary: forward to the next chapter's first
- * verse, or back to the previous chapter's last verse, depending on which side the
- * reader came from. End caps never advance.
- */
-function advanceTarget(item, previousID) {
-  if (item.type !== 'boundary' || !item.before || !item.after) return null;
-  if (!previousID?.startsWith('v')) return null;
-  const forward = Number(previousID.slice(1)) < item.after.key;
-  const verses = state.items.filter((i) => i.type === 'verse');
-  const target = forward
-    ? verses.find((i) => i.verse.book === item.after.book && i.verse.chapter === item.after.chapter)
-    : verses.findLast((i) => i.verse.book === item.before.book && i.verse.chapter === item.before.chapter);
-  return target?.id ?? null;
-}
 
 // ---------- State ----------
 
@@ -184,7 +75,7 @@ function page(item) {
  *  change above the visible page is never painted. */
 function show(window, pinID) {
   state.window = window;
-  state.items = itemsFor(window);
+  state.items = itemsFor(bible, window);
   feed.replaceChildren(...state.items.map(page));
   const index = Math.max(0, state.items.findIndex((i) => i.id === pinID));
   feed.scrollTop = index * pageHeight();
@@ -332,7 +223,7 @@ function settle() {
     updateHistory();
   }
 
-  const next = windowAfterSettling(item);
+  const next = windowAfterSettling(bible, item, state.window);
   if (next) show(next, item.id);
   updateControls();
   scheduleAdvance(item, previousID);
@@ -340,7 +231,7 @@ function settle() {
 
 function scheduleAdvance(item, previousID) {
   clearTimeout(state.advanceTimer);
-  const target = advanceTarget(item, previousID);
+  const target = advanceTarget(item, previousID, state.items);
   if (!target) return;
   state.advanceTimer = setTimeout(() => {
     if (state.touching || anySheetOpen() || tab !== 'bible' || currentItem()?.id !== item.id) return;
@@ -403,7 +294,7 @@ addEventListener('resize', () => {
 });
 
 function goToVerse(key) {
-  const { window, id } = startFor(key);
+  const { window, id } = startFor(bible, key);
   clearTimeout(state.advanceTimer);
   show(window, id);
   state.settledID = id;
@@ -965,21 +856,6 @@ const bookSearch = document.getElementById('bookSearch');
 const testaments = document.getElementById('testaments');
 let testament = 'old';
 
-const squash = (s) => s.toLowerCase().replaceAll(' ', '');
-
-/** "John 1:10", "1 cor 13 4", "ps23", "gen 1:" -> that verse (or the chapter's first), or null. */
-function parseReference(text) {
-  const m = text.trim().toLowerCase().match(/^(\d?\s*[a-z][a-z .]*?)\s*(\d+)(?:\s*[:.\s]\s*(\d*))?$/);
-  if (!m) return null;
-  const name = squash(m[1]).replaceAll('.', '');
-  const names = (b) => [b.name, b.bsbName, b.usfm].map(squash);
-  const book = BOOKS.find((b) => names(b).includes(name)) ?? BOOKS.find((b) => names(b).some((n) => n.startsWith(name)));
-  const chapter = book && bible.chapter(book.order, Number(m[2]));
-  if (!chapter) return null;
-  const verses = bible.verses(chapter).filter((v) => v.text);
-  return m[3] ? verses.find((v) => v.verse === Number(m[3])) ?? null : verses[0];
-}
-
 async function goToReference(verse) {
   await closeSheet(jump);
   jumpTo(verse.key);
@@ -993,7 +869,7 @@ function renderBooks() {
   const books = query
     ? BOOKS.filter((b) => [b.name, b.bsbName, b.usfm].some((n) => squash(n).includes(query)))
     : BOOKS.filter((b) => (b.order <= 39) === (testament === 'old'));
-  const verse = query ? parseReference(bookSearch.value) : null;
+  const verse = query ? parseReference(bookSearch.value, bible) : null;
   const goTo = verse && withHaptic(el('button', { className: 'go-to', textContent: `Go to ${verseName(verse)}` }));
   goTo?.addEventListener('click', () => goToReference(verse));
   document.getElementById('bookList').replaceChildren(...(goTo ? [el('li', {}, goTo)] : []), ...books.map((b) => {
@@ -1041,7 +917,7 @@ testaments.addEventListener('click', (e) => {
 });
 bookSearch.addEventListener('input', renderBooks);
 bookSearch.addEventListener('keydown', (e) => {
-  const verse = e.key === 'Enter' && parseReference(bookSearch.value);
+  const verse = e.key === 'Enter' && parseReference(bookSearch.value, bible);
   if (verse) goToReference(verse);
 });
 jumpBack.addEventListener('click', showBooks);
@@ -1354,7 +1230,6 @@ for (const list of [reflectionsList, likedList]) {
 const LAST_BACKUP = 'lastBackupAt';
 const LAST_BACKUP_COUNT = 'lastBackupCount';
 const LAST_BACKUP_LIKES = 'lastBackupLikes';
-const BACKUP_FORMAT = 1;
 const backup = document.getElementById('backup');
 const backupStatus = document.getElementById('backupStatus');
 const backupNow = document.getElementById('backupNow');
@@ -1586,41 +1461,6 @@ document.getElementById('bannerLater').addEventListener('click', () => {
 const restoreFile = document.getElementById('restoreFile');
 const plural = (n) => `${n} reflection${n === 1 ? '' : 's'}`;
 
-/** The backup's reflections and likes, checked in full first so a bad file writes nothing. */
-function readBackup(text) {
-  let data;
-  try { data = JSON.parse(text); } catch { data = null; }
-  if (data?.app !== 'Bible Scroll' || !Array.isArray(data.reflections)) {
-    throw new Error("This file isn't a Bible Scroll backup.");
-  }
-  if (!Number.isInteger(data.format) || data.format < 1) throw new Error("This file isn't a Bible Scroll backup.");
-  if (data.format > BACKUP_FORMAT) throw new Error('This backup was made by a newer version of the app. Update the app, then try again.');
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  // Backups made before likes existed have none.
-  if (data.likes !== undefined && !Array.isArray(data.likes)) throw new Error('The likes in this backup are damaged, so nothing was restored.');
-  const likes = (data.likes ?? []).map((l, i) => {
-    const valid = Number.isInteger(l?.verseKey) && unpackKey(l.verseKey) !== null && Number.isFinite(l.createdAt);
-    if (!valid) throw new Error(`Liked verse ${i + 1} in this backup is damaged, so nothing was restored.`);
-    return { verseKey: l.verseKey, createdAt: l.createdAt };
-  });
-  const reflections = data.reflections.map((r, i) => {
-    const valid = typeof r?.id === 'string' && r.id !== ''
-      && Number.isInteger(r.verseKey) && unpackKey(r.verseKey) !== null
-      && typeof r.body === 'string' && r.body.trim() !== ''
-      && Number.isFinite(r.createdAt);
-    if (!valid) throw new Error(`Reflection ${i + 1} in this backup is damaged, so nothing was restored.`);
-    return {
-      id: r.id,
-      verseKey: r.verseKey,
-      body: r.body,
-      createdAt: r.createdAt,
-      timeZoneID: typeof r.timeZoneID === 'string' ? r.timeZoneID : zone,
-      updatedAt: Number.isFinite(r.updatedAt) ? r.updatedAt : null,
-    };
-  });
-  return { reflections, likes };
-}
-
 async function restoreFrom(file) {
   const { reflections, likes } = readBackup(await file.text());
   const { added, skipped } = await journal.importMany(reflections);
@@ -1656,7 +1496,7 @@ async function start() {
   ]);
   bible = new Bible(data);
   journal = opened;
-  const begin = startFor(Number(localStorage.getItem(LAST_VERSE)));
+  const begin = startFor(bible, Number(localStorage.getItem(LAST_VERSE)));
   show(begin.window, begin.id);
   state.settledID = begin.id;
   document.getElementById('loading').remove();
