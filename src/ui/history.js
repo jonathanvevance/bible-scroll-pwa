@@ -2,7 +2,7 @@ import { daysAgo } from '../core/dates.js';
 import { unpackKey, verseName } from '../core/references.js';
 import { prefs } from '../data/prefs.js';
 import { el } from './dom.js';
-import { jumpTo } from './feed.js';
+import { jumpTo, stopAdvance } from './feed.js';
 import { withHaptic } from './haptics.js';
 import { guardPresses } from './pressable.js';
 
@@ -45,7 +45,9 @@ function ago(time) {
   return new Intl.DateTimeFormat(undefined, style).format(time);
 }
 
+/** Not a sheet: it opens under the top bar, so the History pill can close it again. */
 function openHistory() {
+  stopAdvance();
   historyList.replaceChildren(...historyPlaces().map((h) => {
     const button = el('button', {}, verseName(unpackKey(h.key)), el('time', {}, ago(h.time)));
     button.setAttribute('role', 'menuitem');

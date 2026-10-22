@@ -34,7 +34,11 @@ function openDatabase(name) {
 // randomUUID only exists on HTTPS; the Wi-Fi preview runs over plain HTTP.
 const newID = () => crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
-/** Fires `change` after every write, so screens refresh themselves rather than at each write site. */
+/**
+ * Fires `change` after every write, so screens refresh themselves rather than at each write site.
+ * Fires `closed` when a newer version of the app, open in another tab, upgrades the database: this
+ * one lets go so the upgrade can finish, and can't be used again.
+ */
 export class Journal extends EventTarget {
   /** Each language's app has its own database; tests use throwaway names. */
   static async open(name) {
@@ -53,6 +57,10 @@ export class Journal extends EventTarget {
   constructor(db) {
     super();
     this.#db = db;
+    db.onversionchange = () => {
+      db.close();
+      this.dispatchEvent(new Event('closed'));
+    };
   }
 
   #changed() {
@@ -219,6 +227,17 @@ export class Journal extends EventTarget {
   }
 
   /** Newest first. */
+  /** Whether a reflection was written or edited, or a verse marked, after `time`. */
+  async changedSince(time) {
+    const tx = this.#db.transaction([STORE, MARKS]);
+    const [comments, marks] = await Promise.all([
+      request(tx.objectStore(STORE).getAll()),
+      request(tx.objectStore(MARKS).getAll()),
+    ]);
+    return comments.some((c) => Math.max(c.createdAt, c.updatedAt ?? 0) > time)
+      || marks.some((m) => m.createdAt > time);
+  }
+
   async marks(kind) {
     const tx = this.#db.transaction(MARKS);
     const rows = await request(tx.objectStore(MARKS).index('kind').getAll(kind));

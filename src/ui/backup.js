@@ -106,7 +106,13 @@ function prepareBackup() {
       backupReady = file;
       setBackupEnabled(true);
     })
-    .catch((error) => alert(`Couldn't prepare the backup: ${error?.message ?? error}`));
+    .catch((error) => {
+      if (build !== backupBuild) return;
+      // The buttons come back, and the next tap tries again.
+      backupBuilding = -1;
+      setBackupEnabled(true);
+      alert(`Couldn't prepare the backup: ${error?.message ?? error}`);
+    });
 }
 
 /** "Today at 3:51 PM", "Yesterday at …", or "20 Oct 2026 at …", like Settings. */
@@ -122,7 +128,12 @@ function updateBackupStatus() {
   const last = prefs.lastBackupAt.get();
   const status = last ? `Last backup: ${backupTime(last)}`
     : reflectionTotal() + likeTotal() ? 'Never backed up' : 'Nothing to back up yet';
-  backupStatus.textContent = `${status}\nIncludes reflections and liked verses. Save to Files, then iCloud Drive.`;
+  // iOS can clear what Safari keeps for a website that isn't visited for a while; an app opened
+  // from the Home Screen is kept.
+  const inSafariTab = !matchMedia('(display-mode: standalone)').matches && !navigator.standalone;
+  backupStatus.textContent = `${status}\nIncludes reflections and liked verses. Save to Files, then iCloud Drive.`
+    + (inSafariTab ? '\nIn a Safari tab, your reflections can be cleared if you stay away for a while. '
+      + 'Add Bible Scroll to your Home Screen to keep them.' : '');
 }
 
 function updateStats() {
@@ -186,9 +197,22 @@ function shrinkWarning(count, likes) {
   return `This backup has ${contents(count, likes)}; your last one had ${contents(lastCount, lastLikes)}. Back up anyway?`;
 }
 
+/** Set while the share sheet is up, so a second tap doesn't open another. */
+let sharing = false;
+
 async function shareBackup() {
   const file = backupReady;
-  if (!file) return;
+  if (!file) return prepareBackup();
+  if (sharing) return;
+  sharing = true;
+  try {
+    await shareFile(file);
+  } finally {
+    sharing = false;
+  }
+}
+
+async function shareFile(file) {
   const count = reflectionTotal();
   const likes = likeTotal();
   const warning = shrinkAccepted ? null : shrinkWarning(count, likes);
@@ -226,8 +250,7 @@ async function backupOverdue() {
   const last = prefs.lastBackupAt.get();
   if (!last) return true;
   if (Date.now() - last < 7 * DAY_MS) return false;
-  if ((await journal.page(last + 1, 0, 1)).length > 0) return true;
-  return (await journal.marks(LIKE)).some((m) => m.createdAt > last);
+  return journal.changedSince(last);
 }
 
 export async function updateBackupReminder() {

@@ -138,6 +138,36 @@ test('every write announces a change; writes that change nothing stay quiet', as
   await expect(() => j.deleteAll(), 1, 'deleteAll');
 });
 
+test('changedSince: new and edited reflections and new marks count, older ones do not', async () => {
+  const j = await fresh();
+  const row = await j.add('old', GEN_1_1, 100);
+  await j.toggleMark('favourite', GEN_1_2);
+  const marked = (await j.marks('favourite'))[0].createdAt;
+  const after = Math.max(marked, row.createdAt);
+  eq(await j.changedSince(after), false, 'nothing since');
+  eq(await j.changedSince(50), true, 'a reflection since');
+  eq(await j.changedSince(marked - 1), true, 'a mark since');
+  await new Promise((r) => setTimeout(r, 5));
+  const beforeEdit = Date.now() - 1;
+  await j.update(row, 'edited');
+  eq(await j.changedSince(beforeEdit), true, 'an edit since');
+});
+
+test('a newer version upgrading the database closes this journal instead of being blocked', async () => {
+  const name = dbName();
+  const j = await Journal.open(name);
+  let closed = false;
+  j.addEventListener('closed', () => { closed = true; });
+  const upgrade = indexedDB.open(name, 99);
+  const outcome = await new Promise((resolve) => {
+    upgrade.onsuccess = () => { upgrade.result.close(); resolve('upgraded'); };
+    upgrade.onblocked = () => resolve('blocked');
+    upgrade.onerror = () => resolve('error');
+  });
+  eq(outcome, 'upgraded', 'upgrade');
+  ok(closed, 'closed event');
+});
+
 test('reopening reloads counts and marks', async () => {
   const name = dbName();
   const j = await Journal.open(name);

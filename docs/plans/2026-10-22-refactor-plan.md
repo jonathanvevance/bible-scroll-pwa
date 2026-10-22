@@ -120,6 +120,8 @@ src/
 
 The rest of the review: #7 (glide timer), #11 (edited reflections and the reminder), the lower-confidence risks (backup status, storage persistence and the Safari-tab warning, IndexedDB `onblocked`, `shareBackup` in-flight guard, a failed `prepareBackup`, start-up without IndexedDB, History menu as a sheet).
 
+- Done (v151). Jumping cancels a glide in progress, and opening History stops auto-advance; the menu stays a `<div>` so the pill above it can close it. The reminder counts edits (`journal.changedSince()`). Backup: a failed build re-enables the buttons, a second tap while sharing does nothing, and in a Safari tab the sheet says to add the app to the Home Screen. A newer version opening the database in another tab closes this one with a message instead of being blocked. Start-up still waits for the database, because reflections written without it would be lost; failures now say what failed. Not fixable: the web can't tell where the share sheet sent the file, so `backedUp()` still runs whatever was chosen. Tests: `changedSince()`, an upgrade closes the journal, and the app shows the "another tab" message. Checked in the simulator: a jump mid-glide stays put, History open on a chapter end doesn't advance, and the Safari-tab note.
+
 ## Deferred
 
 - Splitting `style.css` per module.

@@ -106,3 +106,16 @@ test('every file each app caches for offline use exists', async () => {
     }
   }
 });
+
+// Last, since it leaves the English test database at a version the app can't open.
+test('the app stops with a message when another tab upgrades its database', async () => {
+  const { frame, doc } = await boot();
+  ok(doc, 'app started');
+  const upgrade = indexedDB.open('bible-scroll', 99);
+  await new Promise((resolve) => { upgrade.onsuccess = resolve; upgrade.onblocked = resolve; upgrade.onerror = resolve; });
+  upgrade.result?.close();
+  const note = await until(() => doc.querySelector('#loading.stopped'));
+  ok(note?.textContent.includes('another tab'), 'message');
+  frame.remove();
+  await new Promise((resolve) => { const r = indexedDB.deleteDatabase('bible-scroll'); r.onsuccess = resolve; r.onerror = resolve; });
+});

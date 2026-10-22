@@ -215,6 +215,7 @@ addEventListener('resize', () => {
 export function openAt(key) {
   const { window, id } = startFor(bible, key);
   stopAdvance();
+  endGlide(); // its timer would pull the feed back to where the glide was going
   show(window, id);
   state.settledID = id;
   return id;

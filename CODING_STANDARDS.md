@@ -55,7 +55,7 @@ docs/                      review findings, plans, the device checklist
 ## Sheets
 
 - Every sheet is a `<dialog class="sheet">` in `index.html`, opened with `showModal()` and closed with `closeSheet()`, so it gets the shared close animation, tap-outside and scroll behaviour.
-- Anything that floats over the feed and should pause auto-advance is a `<dialog>` (the History menu is the current exception; see below).
+- Anything that floats over the feed and should pause auto-advance is a `<dialog>`. The History menu is a `<div>` because it opens under the top bar, so the History pill can close it; opening it calls `stopAdvance()`.
 
 ## Style
 
@@ -90,4 +90,4 @@ docs/                      review findings, plans, the device checklist
 
 The refactor plan (`docs/plans/2026-10-22-refactor-plan.md`) removes these; until then, don't add more of them.
 
-- The History menu is a `<div>`, not a `<dialog>` (phase 9).
+- None.
