@@ -728,6 +728,8 @@ async function renderTimeline() {
     del.addEventListener('click', async () => {
       if (!confirm('Delete this reflection?')) return closeOpenRow();
       await journal.delete(c);
+      // Otherwise Done would save the deleted reflection's text back.
+      if (editing?.id === c.id) setEditing(null);
       updateActions();
       renderTimeline();
     });
@@ -817,11 +819,13 @@ function setEditing(comment) {
 
 function startEditing(comment) {
   closeOpenRow();
-  // A new reflection still in the box is saved rather than replaced. Not awaited, so the
-  // keyboard can still open from this tap.
-  if (!editing && composerText.value.trim()) {
-    journal.add(composerText.value, timelineVerse.key).then(() => { updateActions(); renderTimeline(); });
-  }
+  // What's in the box, a new reflection or changes to another, is saved rather than replaced.
+  // Not awaited, so the keyboard can still open from this tap.
+  const body = composerText.value.trim();
+  const saving = !editing ? (body ? journal.add(body, timelineVerse.key) : null)
+    : body && body !== editing.body ? journal.update(editing, body) : null;
+  saving?.then(() => { updateActions(); renderTimeline(); })
+    .catch((error) => alert(`Couldn't save: ${error?.message ?? error}`));
   setEditing(comment);
   composerText.focus();
 }
@@ -859,6 +863,29 @@ async function saveDraft() {
 
 // Done or a tap outside closes the sheet; neither loses the text.
 timeline.addEventListener('close', saveDraft);
+
+/**
+ * iOS may close the app while it's in the background, so leaving it saves the text without
+ * closing the box: a new reflection becomes the one being edited.
+ */
+async function keepDraft() {
+  const body = composerText.value.trim();
+  if (!timeline.open || !timelineVerse || !body || body === editing?.body) return;
+  try {
+    const saved = editing ? await journal.update(editing, body) : await journal.add(body, timelineVerse.key);
+    const text = composerText.value; // anything typed since stays
+    setEditing(saved);
+    composerText.value = text;
+    sizeComposer();
+    updateActions();
+    renderTimeline();
+  } catch (error) {
+    alert(`Couldn't save: ${error?.message ?? error}`);
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') keepDraft();
+});
 
 verseActions.reflect = (v) => {
   timelineVerse = v;
@@ -1326,6 +1353,7 @@ for (const list of [reflectionsList, likedList]) {
 
 const LAST_BACKUP = 'lastBackupAt';
 const LAST_BACKUP_COUNT = 'lastBackupCount';
+const LAST_BACKUP_LIKES = 'lastBackupLikes';
 const BACKUP_FORMAT = 1;
 const backup = document.getElementById('backup');
 const backupStatus = document.getElementById('backupStatus');
@@ -1455,38 +1483,56 @@ for (const button of document.querySelectorAll('.you-button')) {
   });
 }
 
-function backedUp(count) {
+function backedUp(count, likes) {
   localStorage.setItem(LAST_BACKUP, String(Date.now()));
   localStorage.setItem(LAST_BACKUP_COUNT, String(count));
+  localStorage.setItem(LAST_BACKUP_LIKES, String(likes));
   shrinkAccepted = false;
   updateBackupStatus();
   updateBackupReminder();
   closeSheet(backup);
-  toast(`Backed up ${contents(count, likeTotal())}`);
+  toast(`Backed up ${contents(count, likes)}`);
 }
 
 backupNow.addEventListener('click', shareBackup);
 bannerBackup.addEventListener('click', shareBackup);
 
 /**
- * Set once the person agrees to a backup with fewer reflections than the last one. The backup
- * replaces the previous file, so a smaller one could quietly drop reflections for good.
+ * Set once the person agrees to a backup that may hold less than the file it replaces: fewer
+ * reflections or likes than the last one, or a first backup on this phone, where the last one's
+ * size is unknown (a reinstall or a new phone loses that record along with the data).
  */
 let shrinkAccepted = false;
+/** A backup was restored since launch, so a first backup already holds what the file had. */
+let restored = false;
+
+/** Why this backup could drop something the saved file has, or null. */
+function shrinkWarning(count, likes) {
+  if (!localStorage.getItem(LAST_BACKUP)) {
+    if (restored) return null;
+    return "This phone hasn't made a backup before. If you have an earlier one, Restore it first: "
+      + 'saving this backup in the same place replaces it. Back up anyway?';
+  }
+  const lastCount = Number(localStorage.getItem(LAST_BACKUP_COUNT));
+  const lastLikes = Number(localStorage.getItem(LAST_BACKUP_LIKES));
+  if (count >= lastCount && likes >= lastLikes) return null;
+  return `This backup has ${contents(count, likes)}; your last one had ${contents(lastCount, lastLikes)}. Back up anyway?`;
+}
 
 async function shareBackup() {
   const file = backupReady;
   if (!file) return;
   const count = reflectionTotal();
-  const lastCount = Number(localStorage.getItem(LAST_BACKUP_COUNT));
-  if (count < lastCount && !shrinkAccepted) {
-    if (!confirm(`This backup has ${plural(count)}; your last one had ${lastCount}. Back up anyway?`)) return;
+  const likes = likeTotal();
+  const warning = shrinkAccepted ? null : shrinkWarning(count, likes);
+  if (warning) {
+    if (!confirm(warning)) return;
     shrinkAccepted = true;
   }
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file] });
-      backedUp(count);
+      backedUp(count, likes);
     } catch (error) {
       // Cancelling the share sheet is not a failure. Answering the warning can use up the tap
       // iOS requires for sharing; the next tap goes straight to the share sheet.
@@ -1498,7 +1544,7 @@ async function shareBackup() {
   const url = URL.createObjectURL(file);
   el('a', { href: url, download: file.name }).click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  backedUp(count);
+  backedUp(count, likes);
 }
 
 // Reminder: a backup is due when there are reflections or likes newer than the last backup and that
@@ -1590,6 +1636,7 @@ restoreFile.addEventListener('change', async () => {
   if (!file) return;
   try {
     const { added, skipped, likesAdded } = await restoreFrom(file);
+    restored = true;
     updateActions();
     renderReflections();
     await closeSheet(backup);
