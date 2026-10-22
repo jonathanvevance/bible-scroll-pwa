@@ -4,7 +4,7 @@
 // journal.js with a new app.js breaks the app).
 // Only runs over HTTPS (service workers need a secure origin).
 
-const CACHE = 'bible-scroll-v115';
+const CACHE = 'bible-scroll-v122';
 const ASSETS = [
   './', 'index.html', 'style.css', 'app.js', 'journal.js', 'books.js', 'bsb.json',
   'manifest.webmanifest', 'icons/scroll-180.png', 'icons/scroll-192.png', 'icons/scroll-512.png',
@@ -16,19 +16,34 @@ self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(fresh)));
 });
 
+const version = (name) => Number(/^bible-scroll-v(\d+)$/.exec(name)?.[1] ?? NaN);
+
+/**
+ * Deletes the caches of earlier versions, and only those: a newer version may be downloading
+ * into its own cache while this one still runs.
+ */
+async function deleteOldCaches() {
+  const keys = await caches.keys();
+  await Promise.all(keys.filter((k) => version(k) < version(CACHE)).map((k) => caches.delete(k)));
+}
+
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => /^bible-scroll-v115\d+$/.test(k) && k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
-  );
+  event.waitUntil(deleteOldCaches().then(() => self.clients.claim()));
 });
+
+// iOS can activate a new version without finishing the clean-up above, which left every old
+// version's files on the phone. So the worker also tidies up on the first request it serves.
+let tidied = false;
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   event.respondWith(cacheFirst(request));
+  if (!tidied) {
+    tidied = true;
+    event.waitUntil(deleteOldCaches());
+  }
 });
 
 async function cacheFirst(request) {
