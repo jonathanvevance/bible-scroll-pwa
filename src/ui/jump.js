@@ -1,5 +1,6 @@
 import { BOOKS } from '../../books.js';
 import { bookInfo, parseReference, squash, verseName } from '../core/references.js';
+import { lang } from '../lang/current.js';
 import { bible } from './app-state.js';
 import { el } from './dom.js';
 import { jumpTo, readingPlace } from './feed.js';
@@ -17,6 +18,7 @@ const jumpTitle = document.getElementById('jumpTitle');
 const bookSearch = document.getElementById('bookSearch');
 const testaments = document.getElementById('testaments');
 let testament = 'old';
+document.getElementById('attribution').innerHTML = lang.attribution;
 
 async function goToReference(verse) {
   await closeSheet(jump);

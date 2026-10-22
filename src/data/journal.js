@@ -1,7 +1,6 @@
 // Reflections, stored in IndexedDB (the browser's on-device database). Same shape as
 // the iOS VerseComment: keyed by the packed verse key, never the verse text.
 
-const DB_NAME = 'bible-scroll';
 const STORE = 'comments';
 /** Favourites and bookmarks: one row per (kind, verseKey). */
 const MARKS = 'marks';
@@ -37,8 +36,8 @@ const newID = () => crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.
 
 /** Fires `change` after every write, so screens refresh themselves rather than at each write site. */
 export class Journal extends EventTarget {
-  /** `name` is only for tests, which must never touch the real database. */
-  static async open(name = DB_NAME) {
+  /** Each language's app has its own database; tests use throwaway names. */
+  static async open(name) {
     const journal = new Journal(await openDatabase(name));
     await journal.#reloadCounts();
     await journal.#reloadMarks();

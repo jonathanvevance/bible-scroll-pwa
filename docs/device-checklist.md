@@ -66,3 +66,9 @@ Every button with a haptic should pass the **press test**:
 ## Updates
 
 - [ ] After a version bump, close and reopen twice: the new version is running (no mix of old and new files).
+
+## Both languages
+
+- [ ] English (site root) and Malayalam (`/ml/`) each open with their own text, and each keeps its own reflections, likes, History and Reflections filter.
+- [ ] A like or reflection in one app does not appear in the other.
+- [ ] A backup from the old separate Malayalam app restores into the Malayalam app.

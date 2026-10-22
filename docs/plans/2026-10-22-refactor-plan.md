@@ -108,6 +108,7 @@ src/
 - `build.py` builds both text files and both icon sets.
 - Verify: both apps installed side by side in the simulator, each with its own reflections and likes; a Malayalam backup from the old fork restores into the new app.
 - Then retire the fork: the old Malayalam site shows a "moved" notice.
+- Done (v143), except retiring the fork, which waits until this is published. The fork differed by about 20 lines: storage names (`ml.` prefix, `bible-scroll-ml` database and caches), the share and backup names, the attribution and the text file; book names, styles and icons were the same. Those are `src/lang/en.js` and `ml.js`, picked by `data-bible` on the page's `<html>`. `pages.py` writes `ml/index.html`, `ml/manifest.webmanifest` and `ml/sw.js` from the English files (paths to `../`, three values in `sw.js`); `tests/run.sh` fails if they are out of date. `sw.js` now has `APP`, `BIBLE`, `SHARED` and `VERSION` at the top. The Malayalam storage names are the fork's own, so a Safari tab on the old site and the new one see the same data; home-screen apps are kept apart by iOS anyway. Same name and icon as English (owner's choice). `build.py` builds `ml/mal1910.json` too, byte for byte the fork's file. Tests: the Malayalam app boots with its own text and keeps its likes and settings apart, every file each worker caches exists, and a backup in the fork's format reads. Checked in the simulator: both apps in Safari, each with its own text, database, worker and cache.
 
 ## Phase 8: release mechanics
 

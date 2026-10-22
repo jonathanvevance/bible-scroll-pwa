@@ -2,6 +2,7 @@ import { BACKUP_FORMAT, readBackup } from '../core/backup-file.js';
 import { daysAgo } from '../core/dates.js';
 import { unpackKey, verseName } from '../core/references.js';
 import { prefs } from '../data/prefs.js';
+import { lang } from '../lang/current.js';
 import { LIKE } from './actions.js';
 import { bible, journal, onJournalChange } from './app-state.js';
 import { el, toast } from './dom.js';
@@ -66,13 +67,13 @@ async function backupFile() {
     app: 'Bible Scroll',
     format: BACKUP_FORMAT,
     exportedAt: now.toISOString(),
-    translation: 'BSB',
+    translation: lang.translation,
     count: reflections.length,
     reflections,
     likes,
   };
   // One fixed name, so saving to the same folder offers to replace the last backup.
-  return new File([JSON.stringify(data, null, 2)], 'Bible Scroll backup.json', { type: 'application/json' });
+  return new File([JSON.stringify(data, null, 2)], lang.backupFileName, { type: 'application/json' });
 }
 
 function setBackupEnabled(on) {

@@ -3,10 +3,16 @@
 // and waits; it takes over on the next launch, so files from two versions never mix (an old
 // module importing a new one breaks the app).
 // Only runs over HTTPS (service workers need a secure origin).
+// ml/sw.js is this file with the three values below changed, written by pages.py.
 
-const CACHE = 'bible-scroll-v141';
-const ASSETS = [
-  './', 'index.html', 'style.css', 'books.js', 'bsb.json',
+const APP = 'bible-scroll';
+const BIBLE = 'bsb.json';
+/** Where the files every language shares are, relative to this worker. */
+const SHARED = '';
+const VERSION = 143;
+const CACHE = `${APP}-v${VERSION}`;
+const ASSETS = ['./', 'index.html', 'manifest.webmanifest', BIBLE, ...[
+  'style.css', 'books.js',
   'src/core/backup-file.js',
   'src/core/bible.js',
   'src/core/dates.js',
@@ -14,6 +20,9 @@ const ASSETS = [
   'src/core/references.js',
   'src/data/journal.js',
   'src/data/prefs.js',
+  'src/lang/current.js',
+  'src/lang/en.js',
+  'src/lang/ml.js',
   'src/main.js',
   'src/ui/actions.js',
   'src/ui/app-state.js',
@@ -32,8 +41,8 @@ const ASSETS = [
   'src/ui/sheets.js',
   'src/ui/study.js',
   'src/ui/tabs.js',
-  'manifest.webmanifest', 'icons/scroll-180.png', 'icons/scroll-192.png', 'icons/scroll-512.png',
-];
+  'icons/scroll-180.png', 'icons/scroll-192.png', 'icons/scroll-512.png',
+].map((file) => SHARED + file)];
 
 self.addEventListener('install', (event) => {
   // 'reload' skips the browser's HTTP cache, which can still hold files from the last version.
@@ -41,7 +50,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(fresh)));
 });
 
-const version = (name) => Number(/^bible-scroll-v(\d+)$/.exec(name)?.[1] ?? NaN);
+/** The version in one of this app's cache names; NaN for anything else, such as the other language's. */
+const version = (name) => (name.startsWith(`${APP}-v`) ? Number(name.slice(APP.length + 2)) : NaN);
 
 /**
  * Deletes the caches of earlier versions, and only those: a newer version may be downloading

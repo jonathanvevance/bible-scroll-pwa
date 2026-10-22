@@ -1,4 +1,5 @@
 import { verseName } from '../core/references.js';
+import { lang } from '../lang/current.js';
 import { feed, journal } from './app-state.js';
 import { toast } from './dom.js';
 import { itemFor } from './feed.js';
@@ -43,7 +44,7 @@ onVerseAction('like', async (v, button) => {
   }
 });
 
-export const verseQuote = (v) => `“${v.text}” (${verseName(v)}, BSB)`;
+export const verseQuote = (v) => `“${v.text}” (${verseName(v)}, ${lang.quoteName})`;
 
 /** Opens the share sheet, or copies where there is none. `notify` must show above any open sheet. */
 export async function shareText(text, copied, notify = toast) {

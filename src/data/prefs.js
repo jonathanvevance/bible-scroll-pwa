@@ -1,3 +1,5 @@
+import { lang } from '../lang/current.js';
+
 // Everything kept in localStorage. Each language's app stores under its own prefix, so two apps
 // on one site keep separate settings; English has none, so settings saved before still read.
 
@@ -38,4 +40,4 @@ export function preferences(prefix, storage = localStorage) {
   };
 }
 
-export const prefs = preferences('');
+export const prefs = preferences(lang.storagePrefix);

@@ -6,14 +6,16 @@ How code in Bible Scroll is written. Follow these for every change; when a rule 
 
 A home-screen web app for reading the Bible on iPhone, one verse per page. It is a lifelong family app: losing someone's reflections or likes is the worst possible bug, and a confusing screen is the second worst.
 
-- Plain ES modules, no framework, no build step for the app. `build.py` only generates data (`books.js`, `bsb.json`, icons).
+- Plain ES modules, no framework, no build step for the app. `build.py` only generates data (`books.js`, `bsb.json`, `ml/mal1910.json`, icons); `pages.py` writes each language's copy of the page.
 - iOS Safari in standalone mode is the target. Anything else is a bonus.
-- One codebase serves every language (English at the site root, Malayalam at `/ml/`, from refactor phase 7).
+- One codebase serves every language: English at the site root, Malayalam at `/ml/`. iOS keeps each home-screen app's storage apart by URL, so English never moves from the root.
 
 ## Layout
 
 ```text
 index.html, style.css, manifest.webmanifest, sw.js   the page, its styles, offline cache
+ml/                        the Malayalam app: its text, and copies of the three files above (from pages.py)
+src/lang/                  what each language has of its own: text file, names, storage names
 src/main.js                start-up: loads the data, opens the feed
 src/core/                  pure logic, no DOM, no storage: references, Bible text, feed model, dates, backup reading
 src/data/                  storage: the journal (IndexedDB) and preferences (localStorage, `prefs.js`)
@@ -74,12 +76,14 @@ docs/                      review findings, plans, the device checklist
 - `tests/run.sh` must pass before every commit. It runs `tests.html` in headless Chrome (about 2 seconds) and exits non-zero on failure.
 - New or changed logic in `src/core/` or the journal comes with a test in `tests/`. Tests use their own database name and never touch the app's data.
 - Changes to touch handling, sheets, the feed or saved data are checked against the relevant sections of `docs/device-checklist.md` in the simulator.
-- Temporary test code in the app is marked with `// TEMP-TEST` on every line and removed before committing (`rg TEMP src sw.js` prints nothing).
+- Temporary test code in the app is marked with `// TEMP-TEST` on every line and removed before committing (`rg TEMP src sw.js ml` prints nothing).
 
 ## Releasing
 
-- Any change to a file the app loads bumps the version in `sw.js` (one script does this from refactor phase 8). A new version takes over on the second launch after it is published.
+- Any change to a file the app loads bumps `VERSION` in `sw.js`, then `python3 pages.py`, so both apps update (one script does both from refactor phase 8). A new version takes over on the second launch after it is published.
 - Every file the app loads is listed in `sw.js` `ASSETS`; a missing file breaks offline use, a wrong path breaks the update.
+- Never edit `ml/index.html`, `ml/sw.js` or `ml/manifest.webmanifest`: edit the English file and run `python3 pages.py` (`tests/run.sh` fails while they are out of date). Anything that differs by language goes in `src/lang/`, not in an `if`.
+- Storage names in `src/lang/` (`database`, `storagePrefix`, `cacheName`) never change: people's reflections are stored under them.
 - Work happens on a branch; `main` is what GitHub Pages publishes. Commit messages describe the change from the reader's side ("Search: \"gen 1:\" goes to the chapter's first verse"), one change per commit.
 
 ## Current exceptions

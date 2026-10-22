@@ -21,14 +21,15 @@ import './ui/backup.js';
 import { Bible } from './core/bible.js';
 import { Journal } from './data/journal.js';
 import { prefs } from './data/prefs.js';
+import { lang } from './lang/current.js';
 import { setData } from './ui/app-state.js';
 import { updateBackupReminder } from './ui/backup.js';
 import { openAt } from './ui/feed.js';
 
 async function start() {
   const [data, opened] = await Promise.all([
-    fetch('bsb.json').then((r) => r.json()),
-    Journal.open(),
+    fetch(lang.bibleFile).then((r) => r.json()),
+    Journal.open(lang.database),
   ]);
   setData(new Bible(data), opened);
   openAt(prefs.lastVerse.get());

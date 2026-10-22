@@ -45,3 +45,18 @@ test('readBackup rejects the whole file if any record is damaged', async () => {
     await throws(() => readBackup(file({ reflections: [reflection, { ...reflection, ...bad }] })), /Reflection 2/, JSON.stringify(bad));
   }
 });
+
+test('readBackup: a backup from the separate Malayalam app, as it wrote them', () => {
+  const data = {
+    app: 'Bible Scroll', format: 1, exportedAt: '2026-10-21T10:00:00.000Z', translation: 'Sathyavedapusthakam 1910', count: 1,
+    reflections: [{
+      id: 'm1', verseKey: 19_023_001, reference: 'Psalm 23:1', verseText: 'യഹോവ എന്റെ ഇടയനാകുന്നു; എനിക്കു മുട്ടുണ്ടാകയില്ല.',
+      body: 'എന്റെ ഇടയൻ', createdAt: 300, createdAtISO: '1970-01-01T00:00:00.300Z', timeZoneID: 'Asia/Kolkata', updatedAt: null,
+    }],
+    likes: [{ verseKey: 43_003_016, reference: 'John 3:16', verseText: 'തന്റെ ഏകജാതനായ പുത്രനിൽ…', createdAt: 400, createdAtISO: '1970-01-01T00:00:00.400Z' }],
+  };
+  eq(readBackup(JSON.stringify(data, null, 2)), {
+    reflections: [{ id: 'm1', verseKey: 19_023_001, body: 'എന്റെ ഇടയൻ', createdAt: 300, timeZoneID: 'Asia/Kolkata', updatedAt: null }],
+    likes: [{ verseKey: 43_003_016, createdAt: 400 }],
+  }, 'result');
+});
