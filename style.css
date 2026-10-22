@@ -379,6 +379,8 @@ button {
 }
 .action-count { font-size: 12px; font-weight: 600; line-height: 1; margin-top: 2px; }
 .action-count:empty { display: none; }
+.actions.dragged .action:active svg { transform: none; opacity: 1; }
+.actions { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .like[aria-pressed="true"] svg { fill: var(--destructive); stroke: var(--destructive); }
 .like.pop svg { animation: like-pop 0.4s var(--ease-ios); }
 @keyframes like-pop { 40% { transform: scale(1.25); } }
