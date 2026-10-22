@@ -1,13 +1,33 @@
 // Offline support and fast launches. Every file is served from the cache, so the app opens
 // without waiting for the network. A new version (a new CACHE name) downloads in the background
 // and waits; it takes over on the next launch, so files from two versions never mix (an old
-// journal.js with a new app.js breaks the app).
+// module importing a new one breaks the app).
 // Only runs over HTTPS (service workers need a secure origin).
 
-const CACHE = 'bible-scroll-v130';
+const CACHE = 'bible-scroll-v133';
 const ASSETS = [
-  './', 'index.html', 'style.css', 'app.js', 'journal.js', 'books.js', 'bsb.json',
-  'src/core/references.js', 'src/core/bible.js', 'src/core/feed-model.js', 'src/core/backup-file.js',
+  './', 'index.html', 'style.css', 'books.js', 'bsb.json',
+  'src/core/backup-file.js',
+  'src/core/bible.js',
+  'src/core/feed-model.js',
+  'src/core/references.js',
+  'src/data/journal.js',
+  'src/main.js',
+  'src/ui/actions.js',
+  'src/ui/app-state.js',
+  'src/ui/backup.js',
+  'src/ui/dom.js',
+  'src/ui/feed.js',
+  'src/ui/haptics.js',
+  'src/ui/history.js',
+  'src/ui/jump.js',
+  'src/ui/liked.js',
+  'src/ui/rail.js',
+  'src/ui/reflect-sheet.js',
+  'src/ui/reflections.js',
+  'src/ui/sheets.js',
+  'src/ui/study.js',
+  'src/ui/tabs.js',
   'manifest.webmanifest', 'icons/scroll-180.png', 'icons/scroll-192.png', 'icons/scroll-512.png',
 ];
 

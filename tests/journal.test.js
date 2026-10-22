@@ -1,4 +1,4 @@
-import { Journal } from '../journal.js';
+import { Journal } from '../src/data/journal.js';
 import { test, eq, ok } from './runner.js';
 
 // Each test gets its own database, so tests never share state or touch the app's own.

@@ -14,16 +14,16 @@ A home-screen web app for reading the Bible on iPhone, one verse per page. It is
 
 ```text
 index.html, style.css, manifest.webmanifest, sw.js   the page, its styles, offline cache
-app.js                     start-up; shrinks to src/main.js in refactor phase 4
-journal.js                 IndexedDB: reflections and marks (moves to src/data/)
+src/main.js                start-up: loads the data, opens the feed
 src/core/                  pure logic, no DOM, no storage: references, Bible text, feed model, backup reading
-src/data/                  storage: the journal, preferences (localStorage)
+src/data/                  storage: the journal (IndexedDB); preferences (localStorage) from phase 6
 src/ui/                    one module per screen or shared behaviour
 tests/, tests.html         automated tests (tests/run.sh)
 docs/                      review findings, plans, the device checklist
 ```
 
 - `src/core/` never touches `document`, `window`, `localStorage` or IndexedDB, so it can be tested on its own. Its functions take what they need as arguments (the Bible, the current window) instead of reading app state.
+- Modules import each other in cycles (feed and history, for example), so code that runs while a module loads must not read another module's `const` or `let`: it may not be set yet, and the app fails to start (the start-up test catches this). Calling another module's `function` is fine, as is anything inside event handlers.
 - A module that only makes sense for one screen lives with that screen. Something used by two screens moves to a shared module; three copies of anything is a bug.
 
 ## State
@@ -85,7 +85,7 @@ docs/                      review findings, plans, the device checklist
 
 The refactor plan (`docs/plans/2026-10-22-refactor-plan.md`) removes these; until then, don't add more of them.
 
-- `app.js` is still one large file with sections; module-level state is shared across them (phase 4).
+- `src/ui/app-state.js` still holds state that several modules write (`state`, the feed timers); each moves to its owner in phase 6.
 - The slide-off guard is written four times (History, verse actions, Jump sheet, Reflections controls); screens refresh by hand after journal writes (phase 5).
 - Several sections set `.haptic.disabled`; localStorage keys are declared in the sections that use them (phase 6).
 - The History menu is a `<div>`, not a `<dialog>` (phase 9).

@@ -83,6 +83,7 @@ src/
 - Each module imports what it uses; module-scope constants move to the module that owns them (review #13).
 - `sw.js` `ASSETS` list updated.
 - Verify: all tests and the full device checklist; the diff should read as moves.
+- Done (v133). Split by a script that works out each module's imports and exports, so no code was retyped. Not a pure move in four places: `bible` and `journal` are set through `setData()` (an import can't be assigned); `LAST_VERSE` moved to `app-state.js` and the card-tap handler became `openCard()` in `liked.js`, both because a module read them while loading before they were set; `DRAG_PX` moved to `haptics.js`. `prefs.js` waits for phase 6. Also added `study.js` and `app-state.js` (shared state, emptied in phase 6), and a start-up test that boots the app in a frame. Section banner comments were left as they were.
 
 ## Phase 5: shared building blocks
 
