@@ -1,5 +1,5 @@
-import { feed, onJournalChange, state } from './app-state.js';
-import { endGlide } from './feed.js';
+import { feed, onJournalChange } from './app-state.js';
+import { endGlide, stopAdvance } from './feed.js';
 import { rail } from './rail.js';
 
 // ---------- Tabs ----------
@@ -9,7 +9,10 @@ export const reflectionsView = document.getElementById('reflectionsView');
 export const likedView = document.getElementById('likedView');
 const tabViews = { reflections: reflectionsView, liked: likedView };
 const bibleView = [feed, rail, document.querySelector('.topbar')];
-export let tab = 'bible';
+let tab = 'bible';
+export function currentTab() {
+  return tab;
+}
 const renders = {};
 
 /** `render` fills tab `name` each time it is shown, and again when the journal changes under it. */
@@ -33,7 +36,7 @@ export function showTab(name) {
   for (const node of bibleView) node.inert = !reading;
   for (const [key, view] of Object.entries(tabViews)) view.hidden = key !== name;
   if (!reading) {
-    clearTimeout(state.advanceTimer);
+    stopAdvance();
     endGlide();
   }
   renders[name]?.();

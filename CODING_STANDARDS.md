@@ -16,7 +16,7 @@ A home-screen web app for reading the Bible on iPhone, one verse per page. It is
 index.html, style.css, manifest.webmanifest, sw.js   the page, its styles, offline cache
 src/main.js                start-up: loads the data, opens the feed
 src/core/                  pure logic, no DOM, no storage: references, Bible text, feed model, dates, backup reading
-src/data/                  storage: the journal (IndexedDB); preferences (localStorage) from phase 6
+src/data/                  storage: the journal (IndexedDB) and preferences (localStorage, `prefs.js`)
 src/ui/                    one module per screen or shared behaviour
 tests/, tests.html         automated tests (tests/run.sh)
 docs/                      review findings, plans, the device checklist
@@ -28,9 +28,10 @@ docs/                      review findings, plans, the device checklist
 
 ## State
 
-- Each piece of state has exactly one owner module, which is the only code that writes it. Others read it through a function the owner exports, or react to the owner's events.
+- Each piece of state has exactly one owner module, which is the only code that writes it. Others read it through a function the owner exports (`currentTab()`, `currentVerse()`, `isScrubbing()`), ask the owner to act (`stopAdvance()`), register with it (`onVerseAction()`, `registerTab()`), or react to its events (`onJournalChange()`).
+- `src/ui/app-state.js` holds only what start-up sets once and every screen shares: the Bible, the journal, the feed element. Nothing there changes afterwards.
 - No module reads another module's variables directly, and no module-level `let` is written from outside its module.
-- Stored keys (localStorage) are declared once, in the preferences module, with the language prefix. Never write `localStorage.getItem('…')` with a literal elsewhere.
+- Stored settings are declared once, in `src/data/prefs.js`, and read and written through `prefs` (`prefs.lastVerse.get()`). Nothing else touches `localStorage`. A new setting needs a new entry there; renaming a stored key loses what people have saved under it.
 - The DOM shows state; it is not where state lives. Exception: a CSS class used purely for styling (`.dragged`, `.closing`).
 - A value derived from several reasons (for example, whether a haptic switch is enabled: the button is disabled, or a drag is in progress) is computed by one function from all the reasons, never set separately by each.
 
@@ -85,6 +86,4 @@ docs/                      review findings, plans, the device checklist
 
 The refactor plan (`docs/plans/2026-10-22-refactor-plan.md`) removes these; until then, don't add more of them.
 
-- `src/ui/app-state.js` still holds state that several modules write (`state`, the feed timers); each moves to its owner in phase 6.
-- localStorage keys are declared in the sections that use them (phase 6).
 - The History menu is a `<div>`, not a `<dialog>` (phase 9).

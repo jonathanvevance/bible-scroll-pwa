@@ -24,6 +24,21 @@ test('the app starts and shows the feed', async () => {
   frame.remove();
 });
 
+test('the Jump sheet opens on the book being read', async () => {
+  const frame = Object.assign(document.createElement('iframe'), { src: 'index.html', width: 390, height: 844 });
+  document.body.append(frame);
+  const doc = await until(() => frame.contentDocument?.querySelector('.page.verse') && frame.contentDocument);
+  ok(doc, 'app started');
+  const errors = [];
+  frame.contentWindow.addEventListener('error', (e) => errors.push(e.message));
+  doc.getElementById('jumpButton').click();
+  ok(doc.getElementById('jump').open, 'sheet open');
+  ok(doc.getElementById('readingBook').textContent, 'book being read');
+  ok(doc.getElementById('readingChapter').textContent.startsWith('Reading · Ch '), 'chapter being read');
+  eq(errors, [], 'errors');
+  frame.remove();
+});
+
 // The app's own modules, from inside the frame, so a test can write to the journal the app shows.
 test('an open Liked or Reflections tab updates when the journal changes', async () => {
   const frame = Object.assign(document.createElement('iframe'), { src: 'index.html', width: 390, height: 844 });

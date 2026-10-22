@@ -1,8 +1,8 @@
 import { BOOKS } from '../../books.js';
 import { bookInfo, parseReference, squash, verseName } from '../core/references.js';
-import { bible, currentItem, state } from './app-state.js';
+import { bible } from './app-state.js';
 import { el } from './dom.js';
-import { jumpTo } from './feed.js';
+import { jumpTo, readingPlace } from './feed.js';
 import { withHaptic } from './haptics.js';
 import { guardPresses } from './pressable.js';
 import { closeSheet, slideIn } from './sheets.js';
@@ -54,7 +54,7 @@ jumpBack.addEventListener('click', () => slideIn(bookView, -40));
 
 function showChapters(order) {
   const book = bookInfo(order);
-  const here = currentItem()?.verse ?? state.window[0];
+  const here = readingPlace();
   testament = order <= 39 ? 'old' : 'new';
   bookView.hidden = true;
   chapterView.hidden = false;
@@ -89,7 +89,7 @@ jumpBack.addEventListener('click', showBooks);
 const readingSection = document.getElementById('reading');
 document.getElementById('jumpButton').addEventListener('click', () => {
   bookSearch.value = '';
-  const here = currentItem()?.verse ?? state.window[0];
+  const here = readingPlace();
   testament = here.book <= 39 ? 'old' : 'new';
   document.getElementById('readingBook').textContent = bookInfo(here.book).name;
   document.getElementById('readingChapter').textContent = `Reading · Ch ${here.chapter}`;
@@ -98,7 +98,7 @@ document.getElementById('jumpButton').addEventListener('click', () => {
   bookView.scrollTop = 0;
 });
 document.getElementById('readingButton').addEventListener('click', () => {
-  showChapters((currentItem()?.verse ?? state.window[0]).book);
+  showChapters((readingPlace()).book);
   slideIn(chapterView, 40);
 });
 

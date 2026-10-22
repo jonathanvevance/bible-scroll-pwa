@@ -1,5 +1,5 @@
 import { verseName } from '../core/references.js';
-import { shareText, verseActions, verseQuote } from './actions.js';
+import { onVerseAction, shareText, verseQuote } from './actions.js';
 import { journal } from './app-state.js';
 import { el } from './dom.js';
 import { settle } from './feed.js';
@@ -205,7 +205,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') keepDraft();
 });
 
-verseActions.reflect = (v) => {
+onVerseAction('reflect', (v) => {
   timelineVerse = v;
   document.getElementById('timelineTitle').textContent = verseName(timelineVerse);
   document.getElementById('timelineVerse').textContent = timelineVerse.text;
@@ -214,7 +214,7 @@ verseActions.reflect = (v) => {
   setEditing(null);
   timeline.showModal();
   renderTimeline().then(scrollTimelineToEnd);
-};
+});
 
 // While writing, the sheet fills the visible screen above the keyboard. Keyed off focus because a
 // Home Screen app may shrink innerHeight along with the visual viewport, hiding the keyboard height.

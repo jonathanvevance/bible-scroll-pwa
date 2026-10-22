@@ -1,5 +1,5 @@
 import { HUB_TOOLS, hubURL, verseName } from '../core/references.js';
-import { verseActions } from './actions.js';
+import { onVerseAction } from './actions.js';
 import { bible, journal } from './app-state.js';
 import { el } from './dom.js';
 import { closeSheet } from './sheets.js';
@@ -8,7 +8,7 @@ const study = document.getElementById('study');
 const debug = location.hash.includes('debug');
 document.getElementById('debugSection').hidden = !debug;
 
-verseActions.study = (v) => {
+onVerseAction('study', (v) => {
   document.getElementById('studyTitle').textContent = verseName(v);
   document.getElementById('studyVerse').textContent = v.text;
   document.getElementById('studyLinks').replaceChildren(...HUB_TOOLS.map(([title, tool, icon]) => {
@@ -18,7 +18,7 @@ verseActions.study = (v) => {
     return el('li', {}, link);
   }));
   study.showModal();
-};
+});
 
 document.getElementById('seedButton').addEventListener('click', async () => {
   const verses = bible.chapters.flatMap((ch) => bible.verses(ch)).filter((v) => v.text);

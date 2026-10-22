@@ -1,13 +1,14 @@
 import { BACKUP_FORMAT, readBackup } from '../core/backup-file.js';
 import { daysAgo } from '../core/dates.js';
 import { unpackKey, verseName } from '../core/references.js';
+import { prefs } from '../data/prefs.js';
 import { LIKE } from './actions.js';
 import { bible, journal, onJournalChange } from './app-state.js';
 import { el, toast } from './dom.js';
 import { syncSwitches } from './pressable.js';
 import { backupBanner } from './reflections.js';
 import { closeSheet } from './sheets.js';
-import { tab } from './tabs.js';
+import { currentTab } from './tabs.js';
 
 // ---------- Backup ----------
 // A backup is one readable JSON file the person saves to iCloud Drive through the share sheet.
@@ -16,9 +17,6 @@ import { tab } from './tabs.js';
 // file still makes sense without the app. Likes were added without a new format number: older
 // versions of the app ignore them rather than refusing the file.
 
-const LAST_BACKUP = 'lastBackupAt';
-const LAST_BACKUP_COUNT = 'lastBackupCount';
-const LAST_BACKUP_LIKES = 'lastBackupLikes';
 const backup = document.getElementById('backup');
 const backupStatus = document.getElementById('backupStatus');
 const backupNow = document.getElementById('backupNow');
@@ -120,7 +118,7 @@ function backupTime(ms) {
 }
 
 function updateBackupStatus() {
-  const last = Number(localStorage.getItem(LAST_BACKUP));
+  const last = prefs.lastBackupAt.get();
   const status = last ? `Last backup: ${backupTime(last)}`
     : reflectionTotal() + likeTotal() ? 'Never backed up' : 'Nothing to back up yet';
   backupStatus.textContent = `${status}\nIncludes reflections and liked verses. Save to Files, then iCloud Drive.`;
@@ -152,9 +150,9 @@ for (const button of document.querySelectorAll('.you-button')) {
 }
 
 function backedUp(count, likes) {
-  localStorage.setItem(LAST_BACKUP, String(Date.now()));
-  localStorage.setItem(LAST_BACKUP_COUNT, String(count));
-  localStorage.setItem(LAST_BACKUP_LIKES, String(likes));
+  prefs.lastBackupAt.set(Date.now());
+  prefs.lastBackupCount.set(count);
+  prefs.lastBackupLikes.set(likes);
   shrinkAccepted = false;
   updateBackupStatus();
   updateBackupReminder();
@@ -176,13 +174,13 @@ let restored = false;
 
 /** Why this backup could drop something the saved file has, or null. */
 function shrinkWarning(count, likes) {
-  if (!localStorage.getItem(LAST_BACKUP)) {
+  if (!prefs.lastBackupAt.get()) {
     if (restored) return null;
     return "This phone hasn't made a backup before. If you have an earlier one, Restore it first: "
       + 'saving this backup in the same place replaces it. Back up anyway?';
   }
-  const lastCount = Number(localStorage.getItem(LAST_BACKUP_COUNT));
-  const lastLikes = Number(localStorage.getItem(LAST_BACKUP_LIKES));
+  const lastCount = prefs.lastBackupCount.get();
+  const lastLikes = prefs.lastBackupLikes.get();
   if (count >= lastCount && likes >= lastLikes) return null;
   return `This backup has ${contents(count, likes)}; your last one had ${contents(lastCount, lastLikes)}. Back up anyway?`;
 }
@@ -219,13 +217,12 @@ async function shareBackup() {
 // backup is over a week old (or there has never been one). A red dot marks the Reflections tab
 // and the person buttons until then; the banner can be put off for a few days.
 
-const SNOOZED = 'backupSnoozedUntil';
 const DAY_MS = 86_400_000;
 const backupBannerDetail = document.getElementById('backupBannerDetail');
 
 async function backupOverdue() {
   if (!(reflectionTotal() + likeTotal())) return false;
-  const last = Number(localStorage.getItem(LAST_BACKUP));
+  const last = prefs.lastBackupAt.get();
   if (!last) return true;
   if (Date.now() - last < 7 * DAY_MS) return false;
   if ((await journal.page(last + 1, 0, 1)).length > 0) return true;
@@ -235,16 +232,16 @@ async function backupOverdue() {
 export async function updateBackupReminder() {
   const due = await backupOverdue();
   document.documentElement.classList.toggle('backup-due', due);
-  backupBanner.hidden = !due || Date.now() < Number(localStorage.getItem(SNOOZED));
+  backupBanner.hidden = !due || Date.now() < prefs.backupSnoozedUntil.get();
   if (backupBanner.hidden) return;
-  const last = Number(localStorage.getItem(LAST_BACKUP));
+  const last = prefs.lastBackupAt.get();
   const days = Math.floor((Date.now() - last) / DAY_MS);
   backupBannerDetail.textContent = last ? `Your last backup was ${days} days ago.` : "You haven't backed up yet.";
-  if (tab === 'reflections') prepareBackup();
+  if (currentTab() === 'reflections') prepareBackup();
 }
 
 document.getElementById('bannerLater').addEventListener('click', () => {
-  localStorage.setItem(SNOOZED, String(Date.now() + 3 * DAY_MS));
+  prefs.backupSnoozedUntil.set(Date.now() + 3 * DAY_MS);
   backupBanner.hidden = true;
 });
 

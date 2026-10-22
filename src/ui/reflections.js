@@ -1,3 +1,4 @@
+import { prefs } from '../data/prefs.js';
 import { journal } from './app-state.js';
 import { updateBackupReminder } from './backup.js';
 import { appendByDay } from './cards.js';
@@ -7,14 +8,13 @@ import { reflectionsView, registerTab } from './tabs.js';
 
 // ---------- Reflections tab ----------
 
-const FILTER = 'reflectionsFilter';
 const reflectionsFilter = document.getElementById('reflectionsFilter');
 export const reflectionsList = document.getElementById('reflectionsList');
 reflectionsList.addEventListener('click', openCard);
 const reflectionsEmpty = document.getElementById('reflectionsEmpty');
 const PAGE_SIZE = 50;
 
-let filter = localStorage.getItem(FILTER) ?? 'week';
+let filter = prefs.reflectionsFilter.get() ?? 'week';
 if (!['today', 'week', 'month', 'all'].includes(filter)) filter = 'week';
 
 /** The week starts on the day the phone's region uses (Sunday in the US, Monday in much of Europe). */
@@ -74,7 +74,7 @@ reflectionsView.addEventListener('scroll', loadIfNearEnd, { passive: true });
 
 function setFilter(next) {
   filter = next;
-  localStorage.setItem(FILTER, next);
+  prefs.reflectionsFilter.set(next);
   renderReflections();
 }
 

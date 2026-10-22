@@ -1,17 +1,22 @@
 import { verseName } from '../core/references.js';
-import { feed, journal, state } from './app-state.js';
+import { feed, journal } from './app-state.js';
 import { toast } from './dom.js';
+import { itemFor } from './feed.js';
 import { guardPresses } from './pressable.js';
 
 // ---------- Verse actions ----------
 
 /** Handlers for the buttons on each verse page, keyed by their data-action. */
-export const verseActions = {};
+const handlers = {};
+/** `run(verse, button)` handles taps on the verse pages' `data-action="name"` buttons. */
+export function onVerseAction(name, run) {
+  handlers[name] = run;
+}
 feed.addEventListener('click', (e) => {
   const action = e.target.closest('[data-action]')?.dataset.action;
   if (!action) return;
   const id = e.target.closest('.page').dataset.id;
-  verseActions[action](state.items.find((i) => i.id === id).verse, e.target.closest('[data-action]'));
+  handlers[action](itemFor(id).verse, e.target.closest('[data-action]'));
 });
 
 // As with any iOS button, a press that slides off (or begins by stopping the feed) does nothing.
@@ -23,7 +28,7 @@ export function showLiked(button, liked) {
   button.setAttribute('aria-pressed', String(liked));
   button.setAttribute('aria-label', liked ? 'Unlike' : 'Like');
 }
-verseActions.like = async (v, button) => {
+onVerseAction('like', async (v, button) => {
   if (button.dataset.busy) return;
   button.dataset.busy = '1';
   try {
@@ -36,7 +41,7 @@ verseActions.like = async (v, button) => {
   } finally {
     delete button.dataset.busy;
   }
-};
+});
 
 export const verseQuote = (v) => `“${v.text}” (${verseName(v)}, BSB)`;
 
@@ -54,4 +59,4 @@ export async function shareText(text, copied, notify = toast) {
   }
 }
 
-verseActions.share = (v) => shareText(verseQuote(v), 'Verse copied');
+onVerseAction('share', (v) => shareText(verseQuote(v), 'Verse copied'));

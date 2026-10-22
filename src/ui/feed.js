@@ -1,15 +1,63 @@
 import { advanceTarget, itemsFor, startFor, windowAfterSettling } from '../core/feed-model.js';
 import { chapterName, verseName } from '../core/references.js';
+import { prefs } from '../data/prefs.js';
 import { LIKE, showLiked } from './actions.js';
-import { LAST_VERSE, anySheetOpen, onJournalChange, bible, currentIndex, currentItem, currentVerse, feed, journal, pageHeight, reduceMotion, state } from './app-state.js';
+import { anySheetOpen, bible, feed, journal, onJournalChange, reduceMotion } from './app-state.js';
 import { el } from './dom.js';
 import { rememberPlace, updateHistory } from './history.js';
-import { railState, updateRail } from './rail.js';
+import { isScrubbing, updateRail } from './rail.js';
 import { fadeToVerse } from './sheets.js';
-import { tab } from './tabs.js';
+import { currentTab } from './tabs.js';
 
 const ADVANCE_DELAY_MS = 700;
 const SETTLE_DELAY_MS = 140;
+
+/** The chapters loaded, their pages, and what the feed is doing. Only this module changes them. */
+const state = {
+  window: [],
+  items: [],
+  settledID: null,
+  touching: false,
+  settleTimer: 0,
+  advanceTimer: 0,
+  glideTop: null,
+  glideTimer: 0,
+};
+
+// Pages can be a fractional height; clientHeight rounds, which drifts over long chapters.
+function pageHeight() {
+  return feed.firstElementChild?.getBoundingClientRect().height || feed.clientHeight;
+}
+function currentIndex() {
+  return Math.round(feed.scrollTop / pageHeight());
+}
+function currentItem() {
+  return state.items[currentIndex()];
+}
+export function currentVerse() {
+  const item = currentItem();
+  return item?.type === 'verse' ? item.verse : null;
+}
+/** The verse being read, or between chapters the first chapter loaded. */
+export function readingPlace() {
+  return currentVerse() ?? state.window[0];
+}
+export function itemFor(id) {
+  return state.items.find((i) => i.id === id);
+}
+/** The ids of the loaded pages of `v`'s chapter, in order. */
+export function chapterPageIDs(v) {
+  return state.items
+    .filter((i) => i.type === 'verse' && i.verse.book === v.book && i.verse.chapter === v.chapter)
+    .map((i) => i.id);
+}
+export function scrollToPage(id) {
+  feed.scrollTop = state.items.findIndex((i) => i.id === id) * pageHeight();
+}
+/** Cancels a pending move to the next chapter. */
+export function stopAdvance() {
+  clearTimeout(state.advanceTimer);
+}
 
 // ---------- Rendering ----------
 
@@ -44,7 +92,7 @@ function page(item) {
 
 /** Swap the feed's content and re-pin the same page in one synchronous step, so the
  *  change above the visible page is never painted. */
-export function show(window, pinID) {
+function show(window, pinID) {
   state.window = window;
   state.items = itemsFor(bible, window);
   feed.replaceChildren(...state.items.map(page));
@@ -80,7 +128,7 @@ onJournalChange(updateActions);
 // ---------- Settling and auto-advance ----------
 
 export function settle() {
-  if (state.touching || railState.scrubbing) return;
+  if (state.touching || isScrubbing()) return;
   const index = currentIndex();
   if (Math.abs(feed.scrollTop - index * pageHeight()) > 2) return; // still between pages
   const item = state.items[index];
@@ -89,7 +137,7 @@ export function settle() {
   const previousID = state.settledID;
   state.settledID = item.id;
   if (item.type === 'verse') {
-    localStorage.setItem(LAST_VERSE, String(item.verse.key));
+    prefs.lastVerse.set(item.verse.key);
     updateHistory();
   }
 
@@ -100,11 +148,11 @@ export function settle() {
 }
 
 function scheduleAdvance(item, previousID) {
-  clearTimeout(state.advanceTimer);
+  stopAdvance();
   const target = advanceTarget(item, previousID, state.items);
   if (!target) return;
   state.advanceTimer = setTimeout(() => {
-    if (state.touching || anySheetOpen() || tab !== 'bible' || currentItem()?.id !== item.id) return;
+    if (state.touching || anySheetOpen() || currentTab() !== 'bible' || currentItem()?.id !== item.id) return;
     glideTo(state.items.findIndex((i) => i.id === target));
   }, ADVANCE_DELAY_MS);
 }
@@ -151,7 +199,7 @@ feed.addEventListener('scroll', () => {
 feed.addEventListener('scrollend', () => { clearTimeout(state.settleTimer); settle(); });
 feed.addEventListener('touchstart', () => {
   state.touching = true;
-  clearTimeout(state.advanceTimer);
+  stopAdvance();
   endGlide();
 }, { passive: true });
 for (const type of ['touchend', 'touchcancel']) {
@@ -163,12 +211,17 @@ addEventListener('resize', () => {
   if (index >= 0) feed.scrollTop = index * pageHeight();
 });
 
-export function goToVerse(key) {
+/** Shows verse `key`, or the nearest place there is, without remembering it as the place read. */
+export function openAt(key) {
   const { window, id } = startFor(bible, key);
-  clearTimeout(state.advanceTimer);
+  stopAdvance();
   show(window, id);
   state.settledID = id;
-  localStorage.setItem(LAST_VERSE, id.slice(1));
+  return id;
+}
+
+export function goToVerse(key) {
+  prefs.lastVerse.set(Number(openAt(key).slice(1)));
   updateHistory();
 }
 

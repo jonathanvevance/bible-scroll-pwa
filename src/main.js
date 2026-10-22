@@ -19,12 +19,11 @@ import './ui/reflections.js';
 import './ui/liked.js';
 import './ui/backup.js';
 import { Bible } from './core/bible.js';
-import { startFor } from './core/feed-model.js';
 import { Journal } from './data/journal.js';
-import { LAST_VERSE, bible, setData, state } from './ui/app-state.js';
+import { prefs } from './data/prefs.js';
+import { setData } from './ui/app-state.js';
 import { updateBackupReminder } from './ui/backup.js';
-import { show } from './ui/feed.js';
-
+import { openAt } from './ui/feed.js';
 
 async function start() {
   const [data, opened] = await Promise.all([
@@ -32,9 +31,7 @@ async function start() {
     Journal.open(),
   ]);
   setData(new Bible(data), opened);
-  const begin = startFor(bible, Number(localStorage.getItem(LAST_VERSE)));
-  show(begin.window, begin.id);
-  state.settledID = begin.id;
+  openAt(prefs.lastVerse.get());
   document.getElementById('loading').remove();
   updateBackupReminder();
 

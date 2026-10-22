@@ -3,7 +3,7 @@ import { journal, reduceMotion } from './app-state.js';
 import { appendByDay } from './cards.js';
 import { goToVerse } from './feed.js';
 import { rememberPlace } from './history.js';
-import { likedView, registerTab, showTab, tab } from './tabs.js';
+import { currentTab, likedView, registerTab, showTab } from './tabs.js';
 
 // ---------- Liked tab ----------
 
@@ -14,7 +14,7 @@ const likedEmpty = document.getElementById('likedEmpty');
 export async function renderLiked() {
   if (!journal) return;
   const marks = await journal.marks(LIKE);
-  if (tab !== 'liked') return;
+  if (currentTab() !== 'liked') return;
   likedList.replaceChildren();
   appendByDay(likedList, marks);
   likedEmpty.hidden = marks.length > 0;

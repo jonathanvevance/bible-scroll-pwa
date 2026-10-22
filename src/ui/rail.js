@@ -1,6 +1,5 @@
 import { packKey, verseName } from '../core/references.js';
-import { currentVerse, feed, pageHeight, state } from './app-state.js';
-import { endGlide, settleSoon } from './feed.js';
+import { chapterPageIDs, currentVerse, endGlide, itemFor, scrollToPage, settleSoon, stopAdvance } from './feed.js';
 import { tick } from './haptics.js';
 
 // ---------- Verse rail ----------
@@ -9,7 +8,12 @@ export const rail = document.getElementById('rail');
 const railTrack = document.getElementById('railTrack');
 const railLabel = document.getElementById('railLabel');
 const railNumber = document.getElementById('railNumber');
-export const railState = { chapterKey: 0, ids: [], current: -1, scrubbing: false, scrubIndex: -1 };
+const railState = { chapterKey: 0, ids: [], current: -1, scrubbing: false, scrubIndex: -1 };
+
+/** True while a finger is dragging along the rail. */
+export function isScrubbing() {
+  return railState.scrubbing;
+}
 
 export function updateRail() {
   const v = currentVerse();
@@ -18,9 +22,7 @@ export function updateRail() {
   const chapterKey = packKey(v.book, v.chapter);
   if (chapterKey !== railState.chapterKey) {
     railState.chapterKey = chapterKey;
-    railState.ids = state.items
-      .filter((i) => i.type === 'verse' && i.verse.book === v.book && i.verse.chapter === v.chapter)
-      .map((i) => i.id);
+    railState.ids = chapterPageIDs(v);
     railTrack.style.gap = railState.ids.length > 80 ? '1px' : '2px';
     railTrack.replaceChildren(...railState.ids.map(() => document.createElement('span')));
     railState.current = -1;
@@ -41,8 +43,8 @@ function scrubTo(clientY) {
   if (index === railState.scrubIndex) return;
   railState.scrubIndex = index;
   const id = railState.ids[index];
-  feed.scrollTop = state.items.findIndex((i) => i.id === id) * pageHeight();
-  const v = state.items.find((i) => i.id === id).verse;
+  scrollToPage(id);
+  const v = itemFor(id).verse;
   railLabel.textContent = verseName(v);
   railLabel.style.top = `${box.top + ((index + 0.5) / n) * box.height}px`;
   railLabel.hidden = false;
@@ -58,7 +60,7 @@ rail.addEventListener('pointerdown', (e) => {
   }
   railState.scrubbing = true;
   railState.scrubIndex = -1;
-  clearTimeout(state.advanceTimer);
+  stopAdvance();
   endGlide();
   scrubTo(e.clientY);
 });

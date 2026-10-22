@@ -1,5 +1,5 @@
-import { reduceMotion, state } from './app-state.js';
-import { goToVerse } from './feed.js';
+import { reduceMotion } from './app-state.js';
+import { goToVerse, stopAdvance } from './feed.js';
 
 // ---------- Sheets ----------
 
@@ -39,7 +39,7 @@ for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog || e.target.closest('[data-close]')) closeSheet(dialog);
   });
-  dialog.addEventListener('close', () => clearTimeout(state.advanceTimer));
+  dialog.addEventListener('close', stopAdvance);
   // One scroller at a time: a swipe only moves the area under the finger if that area can
   // scroll; otherwise it is swallowed, so the page behind never pans or scrolls.
   dialog.addEventListener('touchmove', (e) => {

@@ -98,6 +98,7 @@ src/
 - Each switch's `disabled` state comes from one rule: `button.disabled || inside .dragged` (review #8).
 - `prefs.js` gives every stored key a prefix, so a second language can share the origin without collisions. The English prefix is empty, so existing data is read as before.
 - `tab`, filters and timers live in their module's state, not in globals read across modules.
+- Done (v141). The switch rule was done in phase 5. `src/data/prefs.js` holds every stored setting (`preferences(prefix, storage)`; English uses `''`, phase 7 picks the Malayalam prefix). The feed owns its window, pages and timers, and exports what others need (`currentVerse()`, `readingPlace()`, `itemFor()`, `chapterPageIDs()`, `scrollToPage()`, `stopAdvance()`, `openAt()`). The same rule was applied where it turned up: the rail's state (`isScrubbing()`), the verse-action table (`onVerseAction()`) and `tab` (`currentTab()`). `app-state.js` now holds only what start-up sets once. Tests: preferences (old keys still read, prefixes stay apart) and an app test that opens the Jump sheet. Checked in the simulator: reopening at the saved verse, Jump, Like, Reflect, Study, scrolling saves the place, auto-advance past a chapter end, the Reflections filter.
 
 ## Phase 7: language as configuration
 
