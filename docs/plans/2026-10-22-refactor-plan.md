@@ -1,0 +1,119 @@
+# Refactor plan: from one big file to a maintainable, two-language app
+
+Branch: `refactor/structure`. `main` is what GitHub Pages serves, so it stays untouched until a phase is verified; each verified phase is merged to `main` and pushed only when the owner says so.
+
+Findings referenced as "review #N" are in `docs/review-2026-10-22.md`.
+
+## Goals
+
+- Behaviour stays the same unless a phase says otherwise. Every phase leaves the app working.
+- One way to do each thing: one haptic guard, one way to refresh after a data change, one card builder.
+- Each module owns its state; nothing reaches into another module's variables.
+- English and Malayalam come from this one repo, so fixes land once.
+- Still no framework and no build step for the app itself; plain ES modules.
+
+## Constraint that shapes the layout
+
+iOS gives each home-screen app its own storage, tied to its URL. Moving the English app away from the current root URL would make the existing home-screen icon a new, empty app. So:
+
+- English stays at the site root (`/bible-scroll-pwa/`), unchanged URL, unchanged database name.
+- Malayalam is added at `/bible-scroll-pwa/ml/` with its own manifest, service worker scope, cache name, database name and localStorage prefix.
+- Malayalam readers move once: Back Up in the old Malayalam app, add the new icon, Restore. The old Malayalam site then shows a notice pointing to the new one.
+
+## Process for every phase
+
+1. Implement only that phase's files.
+2. Run the test page (from phase 2 on) and the device checklist in the simulator.
+3. Bump the cache version.
+4. One commit, with a message in the repo's style. Stop for the owner's review.
+5. Merge to `main` and push only on the owner's go-ahead.
+
+## Phase 1: data-safety fixes
+
+Review #1, #3, #4, #5. Small, targeted changes in the current `app.js`, before anything moves, so they can ship on their own.
+
+- Files: `app.js`, `sw.js` (version).
+- Verify in the simulator: fresh install with existing backup (warning and Restore offer appear); delete-while-editing; switch edits; background the app mid-draft and relaunch.
+
+## Phase 2: safety net
+
+- `tests.html` plus `tests/*.test.js`: a tiny test runner (about 40 lines, no dependencies), opened in headless Chrome by `tests/run.sh`, which prints pass/fail.
+- Characterisation tests for the pure logic as it is today: verse keys, `parseReference` (including `gen 1:`), the chapter window, `readBackup` validation, and the restore merge. Journal tests run against a throwaway database name.
+- `docs/device-checklist.md`: per surface (feed actions, History, Jump, Reflections controls, rail): tap, long press then slide off, flick, quick re-tap, two fingers; plus backup, restore and an update across versions.
+- Files: `tests.html`, `tests/`, `docs/device-checklist.md`. No app code changes, except exporting functions the tests need.
+
+## Phase 3: standards
+
+- `CODING_STANDARDS.md`: module layout and what goes where, state ownership, events, the haptic and pressable rule, naming, comment style, how to add a sheet or a tab, release steps. Future agent work follows it.
+- `AGENTS.md`: one paragraph pointing to the standards, the checklist and the test command.
+
+## Phase 4: split `app.js` into modules (pure moves)
+
+No logic changes; functions move as they are. Proposed layout:
+
+```text
+index.html, style.css, manifest.webmanifest, sw.js
+src/
+  main.js            start-up: load data, wire modules together
+  core/              no DOM
+    keys.js          packed verse keys, references, parseReference
+    bible.js         Bible class over the text file
+    feed-model.js    chapter window, boundary pages
+  data/
+    journal.js       IndexedDB (moved)
+    prefs.js         every localStorage key in one place
+  ui/
+    dom.js           el(), templates
+    haptics.js       tick(), withHaptic()
+    sheets.js        shared dialog behaviour
+    feed.js          verse pages, settling, auto-advance
+    rail.js          verse rail scrubber
+    history.js       history menu
+    actions.js       like, reflect, share, study
+    reflect-sheet.js reflection composer and timeline
+    jump.js          Jump sheet and search
+    tabs.js          tab switching
+    reflections.js   Reflections tab
+    liked.js         Liked tab
+    backup.js        backup, restore, reminder
+```
+
+- Each module imports what it uses; module-scope constants move to the module that owns them (review #13).
+- `sw.js` `ASSETS` list updated.
+- Verify: all tests and the full device checklist; the diff should read as moves.
+
+## Phase 5: shared building blocks
+
+- `ui/pressable.js`: one slide-off guard for everything with a hidden haptic switch. It tracks one touch by identifier, disables that container's switches on a drag, scroll or `touchcancel`, swallows the following click, and re-enables when that touch is over. It replaces the four copies, with the Jump sheet's "touch stopped a scroll" rule as an option (review #2, #6, #12, the two-finger risk).
+- Journal emits a `change` event after every write; one subscriber refreshes counts, hearts, the backup state and the visible tab. This replaces the seven manual refreshes (review #9).
+- `Bible#text(key)`, one `verseCard()`, one `groupByDay()`, shared date helpers (review #13).
+- Verify: tests, plus the checklist's touch section on every surface.
+
+## Phase 6: state ownership
+
+- Each switch's `disabled` state comes from one rule: `button.disabled || inside .dragged` (review #8).
+- `prefs.js` gives every stored key a prefix, so a second language can share the origin without collisions. The English prefix is empty, so existing data is read as before.
+- `tab`, filters and timers live in their module's state, not in globals read across modules.
+
+## Phase 7: language as configuration
+
+- `src/lang/en.js` and `src/lang/ml.js`: Bible file, book names and abbreviations, UI strings, Bible Hub link format, database name, storage prefix, cache name, manifest name and icon.
+- Catalogue the Malayalam fork's differences (about 60 lines of `app.js`, plus `build.py`) and move each into the language config.
+- `ml/index.html`, `ml/manifest.webmanifest` and `ml/sw.js` load the shared `src/` with the Malayalam config.
+- `build.py` builds both text files and both icon sets.
+- Verify: both apps installed side by side in the simulator, each with its own reflections and likes; a Malayalam backup from the old fork restores into the new app.
+- Then retire the fork: the old Malayalam site shows a "moved" notice.
+
+## Phase 8: release mechanics
+
+- `release.py` (or a `build.py` step) bumps one version for both apps and regenerates the `ASSETS` lists, so feature commits no longer edit `sw.js` (review #10).
+- Fix `sw.js` storing a newer file into an older cache on a miss.
+
+## Phase 9: remaining backlog
+
+The rest of the review: #7 (glide timer), #11 (edited reflections and the reminder), the lower-confidence risks (backup status, storage persistence and the Safari-tab warning, IndexedDB `onblocked`, `shareBackup` in-flight guard, a failed `prepareBackup`, start-up without IndexedDB, History menu as a sheet).
+
+## Deferred
+
+- Splitting `style.css` per module.
+- A language switch inside one app (not needed with two installs).
