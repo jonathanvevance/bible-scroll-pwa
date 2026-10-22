@@ -3,11 +3,17 @@
 - books.js   from BibleCore's BookCatalog.swift (66 rows, same names and slugs)
 - bsb.json   the iOS app bundle's text, with psalm titles and Habakkuk's closing note split
              out of their verses (the bundle's source, bsb.txt, runs them into the verse)
+- ml/mal1910.json   Malayalam Sathyavedapusthakam 1910 (contemporary orthography), converted
+             from eBible.org's USFM. CC BY-SA 4.0, The Free Bible Foundation. Psalm titles
+             and Habakkuk's closing note are kept apart from the verse text.
 - icons/*.png drawn here, so no image tooling is needed
+
+Each language's page, manifest and service worker come from release.py, not from here.
 
 Usage: python3 build.py [path/to/bible-scroll]   (default: ../bible-scroll)
 """
 
+import io
 import json
 import re
 import struct
@@ -28,6 +34,10 @@ USFM_URL = "https://bereanbible.com/bsb_usfm.zip"
 USFM_ZIP = PWA / ".cache" / "bsb_usfm.zip"
 PSALMS, HABAKKUK = 19, 35
 PSALM_TITLES = 116
+ML_USFM = "https://ebible.org/Scriptures/mal2015_usfm.zip"
+ML_PSALM_TITLES = 117
+# This edition has no \mr marker; the note is the last poetry line of Habakkuk 3:19.
+ML_HABAKKUK_NOTE = "സംഗീതപ്രമാണിക്കു തന്ത്രിനാദത്തോടെ."
 
 ROW = re.compile(
     r'row\((\d+), "(\w+)", "(\w+)", "([^"]+)",(?: bsb: "([^"]+)",)? slug: "(\w+)", chapters: (\d+)\)'
@@ -102,6 +112,67 @@ def write_bible() -> None:
     (PWA / "bsb.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
 
 
+# Malayalam: notes (\f, \x) and figures are dropped whole; other character markers keep their text.
+ML_NOTE = re.compile(r"\\(f|x|fig) .*?\\\1\*", re.S)
+ML_CHAR = re.compile(r"\\\+?[a-z]+\d*(\*| ?)")
+# Lines that are not verse text: titles, headings, acrostic letters.
+ML_SKIP = re.compile(r"\\(id|h|toc\d|mt\d|ms\d|s\d|r|qa)\b")
+
+
+def ml_plain(marked: str) -> str:
+    return re.sub(r"\s+", " ", ML_CHAR.sub("", marked)).strip()
+
+
+def write_malayalam() -> None:
+    usfm = {}
+    # eBible.org refuses urllib's default User-Agent.
+    request = urllib.request.Request(ML_USFM, headers={"User-Agent": "curl/8"})
+    with zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(request).read())) as z:
+        for name in z.namelist():
+            if name.endswith(".usfm"):
+                text = z.read(name).decode("utf-8-sig")
+                usfm[re.match(r"\\id (\w+)", text).group(1)] = text
+
+    order = [b["usfm"] for b in json.loads((PWA / "books.js").read_text().split("= ", 1)[1].rstrip(";\n"))]
+    books, titles = [], {}
+    for code in order:
+        chapters, verse = [], None
+        for line in ML_NOTE.sub("", usfm[code]).splitlines():
+            line = line.strip()
+            if not line or ML_SKIP.match(line):
+                continue
+            if m := re.match(r"\\d (.*)", line):
+                assert code == "PSA" and verse is None, f"unexpected title in {code} {len(chapters)}"
+                titles[f"{PSALMS}:{len(chapters)}"] = ml_plain(m.group(1))
+                continue
+            if m := re.match(r"\\c (\d+)", line):
+                chapters.append([])
+                assert len(chapters) == int(m.group(1)), f"{code} chapter order"
+                verse = None
+                continue
+            if m := re.match(r"\\v (\d+)\s*(.*)", line):
+                verse = int(m.group(1))
+                line = m.group(2)
+                verses = chapters[-1]
+                verses.extend([""] * (verse - len(verses)))
+            if verse is None:
+                continue
+            text = ml_plain(line)
+            if text:
+                chapters[-1][verse - 1] = f"{chapters[-1][verse - 1]} {text}".strip()
+        books.append(chapters)
+    assert len(titles) == ML_PSALM_TITLES, f"found {len(titles)} psalm titles"
+
+    verses = books[HABAKKUK - 1][2]
+    assert verses[18].endswith(f" {ML_HABAKKUK_NOTE}"), "Habakkuk 3:19 note not found"
+    verses[18] = verses[18][: -len(ML_HABAKKUK_NOTE)].rstrip()
+    notes = {f"{HABAKKUK}:3:19": ML_HABAKKUK_NOTE}
+
+    data = {"translation": "Sathyavedapusthakam 1910", "books": books, "titles": titles, "notes": notes}
+    (PWA / "ml").mkdir(exist_ok=True)
+    (PWA / "ml" / "mal1910.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
+
+
 def png(size: int) -> bytes:
     """A hanging scroll on white: black rollers top and bottom, a light grey page, a black cross.
 
@@ -160,9 +231,10 @@ def write_icons() -> None:
 def main() -> None:
     build_books()
     write_bible()
+    write_malayalam()
     (PWA / "icons").mkdir(exist_ok=True)
     write_icons()
-    print("books.js, bsb.json, icons written to", PWA)
+    print("books.js, bsb.json, ml/mal1910.json, icons written to", PWA)
 
 
 if __name__ == "__main__":

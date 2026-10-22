@@ -1,0 +1,3 @@
+# Notes for agents
+
+Read `CODING_STANDARDS.md` before changing code; it says how code here is written and what must never happen to the person's data. Run `tests/run.sh` before every commit, and check changes to touch handling, sheets, the feed or saved data against `docs/device-checklist.md` in the simulator. Run `python3 release.py` after changing any file the app loads (it bumps the version for both apps); never edit the generated files in `ml/`. Open findings are in `docs/review-2026-10-22.md`; the refactor plan is in `docs/plans/`. Work on a branch, never commit straight to `main` (GitHub Pages publishes it), and push only when the owner asks.

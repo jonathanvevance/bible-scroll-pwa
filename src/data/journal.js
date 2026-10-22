@@ -1,7 +1,6 @@
 // Reflections, stored in IndexedDB (the browser's on-device database). Same shape as
 // the iOS VerseComment: keyed by the packed verse key, never the verse text.
 
-const DB_NAME = 'bible-scroll';
 const STORE = 'comments';
 /** Favourites and bookmarks: one row per (kind, verseKey). */
 const MARKS = 'marks';
@@ -16,8 +15,8 @@ const committed = (tx) => new Promise((resolve, reject) => {
   tx.onerror = tx.onabort = () => reject(tx.error);
 });
 
-function openDatabase() {
-  const r = indexedDB.open(DB_NAME, 2);
+function openDatabase(name) {
+  const r = indexedDB.open(name, 2);
   r.onupgradeneeded = (event) => {
     const db = r.result;
     if (event.oldVersion < 1) {
@@ -35,9 +34,15 @@ function openDatabase() {
 // randomUUID only exists on HTTPS; the Wi-Fi preview runs over plain HTTP.
 const newID = () => crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
-export class Journal {
-  static async open() {
-    const journal = new Journal(await openDatabase());
+/**
+ * Fires `change` after every write, so screens refresh themselves rather than at each write site.
+ * Fires `closed` when a newer version of the app, open in another tab, upgrades the database: this
+ * one lets go so the upgrade can finish, and can't be used again.
+ */
+export class Journal extends EventTarget {
+  /** Each language's app has its own database; tests use throwaway names. */
+  static async open(name) {
+    const journal = new Journal(await openDatabase(name));
     await journal.#reloadCounts();
     await journal.#reloadMarks();
     return journal;
@@ -50,7 +55,16 @@ export class Journal {
   #marked = new Map([['favourite', new Set()], ['bookmark', new Set()]]);
 
   constructor(db) {
+    super();
     this.#db = db;
+    db.onversionchange = () => {
+      db.close();
+      this.dispatchEvent(new Event('closed'));
+    };
+  }
+
+  #changed() {
+    this.dispatchEvent(new Event('change'));
   }
 
   count(verseKey) {
@@ -75,6 +89,7 @@ export class Journal {
     for (const row of rows) tx.objectStore(STORE).add(row);
     await committed(tx);
     for (const row of rows) this.counts.set(row.verseKey, this.count(row.verseKey) + 1);
+    this.#changed();
     return rows;
   }
 
@@ -84,6 +99,7 @@ export class Journal {
     const tx = this.#db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).put(row);
     await committed(tx);
+    this.#changed();
     return row;
   }
 
@@ -94,6 +110,7 @@ export class Journal {
     const n = this.count(comment.verseKey) - 1;
     if (n > 0) this.counts.set(comment.verseKey, n);
     else this.counts.delete(comment.verseKey);
+    this.#changed();
   }
 
   /** Newest first. */
@@ -124,6 +141,7 @@ export class Journal {
     };
     await committed(tx);
     for (const row of fresh) this.counts.set(row.verseKey, this.count(row.verseKey) + 1);
+    if (fresh.length) this.#changed();
     return { added: fresh.length, skipped: rows.length - fresh.length };
   }
 
@@ -165,6 +183,7 @@ export class Journal {
     tx.objectStore(STORE).clear();
     await committed(tx);
     this.counts.clear();
+    this.#changed();
   }
 
   isMarked(kind, verseKey) {
@@ -181,6 +200,7 @@ export class Journal {
     await committed(tx);
     if (marked) this.#marked.get(kind).add(verseKey);
     else this.#marked.get(kind).delete(verseKey);
+    this.#changed();
     return marked;
   }
 
@@ -202,10 +222,22 @@ export class Journal {
     }
     await committed(tx);
     for (const verseKey of fresh.keys()) marked.add(verseKey);
+    this.#changed();
     return fresh.size;
   }
 
   /** Newest first. */
+  /** Whether a reflection was written or edited, or a verse marked, after `time`. */
+  async changedSince(time) {
+    const tx = this.#db.transaction([STORE, MARKS]);
+    const [comments, marks] = await Promise.all([
+      request(tx.objectStore(STORE).getAll()),
+      request(tx.objectStore(MARKS).getAll()),
+    ]);
+    return comments.some((c) => Math.max(c.createdAt, c.updatedAt ?? 0) > time)
+      || marks.some((m) => m.createdAt > time);
+  }
+
   async marks(kind) {
     const tx = this.#db.transaction(MARKS);
     const rows = await request(tx.objectStore(MARKS).index('kind').getAll(kind));

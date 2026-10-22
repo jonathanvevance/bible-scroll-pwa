@@ -1,0 +1,138 @@
+import { guardPresses, syncSwitches } from '../src/ui/pressable.js';
+import { test, eq, ok } from './runner.js';
+
+// Synthetic touches on a button with a haptic switch, as the app's controls have.
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function fixture(options) {
+  const root = document.createElement('div');
+  root.innerHTML = '<button><input type="checkbox" switch class="haptic">Tap</button>';
+  document.body.append(root);
+  const button = root.querySelector('button');
+  const input = root.querySelector('input');
+  let clicks = 0;
+  button.addEventListener('click', () => clicks++);
+  guardPresses(root, options?.(root));
+  return { root, button, input, clicks: () => clicks, remove: () => root.remove() };
+}
+
+let nextId = 1;
+function finger(target, x = 10, y = 10) {
+  const id = nextId++;
+  const fire = (type, cx, cy, rest = []) => {
+    const t = new Touch({ identifier: id, target, clientX: cx, clientY: cy });
+    const touches = type === 'touchend' || type === 'touchcancel' ? rest : [t, ...rest];
+    target.dispatchEvent(new TouchEvent(type, { bubbles: true, touches, changedTouches: [t] }));
+  };
+  return {
+    down: (others = []) => fire('touchstart', x, y, others),
+    move: (dx, dy) => fire('touchmove', x + dx, y + dy),
+    up: () => fire('touchend', x, y),
+    cancel: () => fire('touchcancel', x, y),
+    touch: () => new Touch({ identifier: id, target, clientX: x, clientY: y }),
+  };
+}
+
+test('pressable: a tap clicks', async () => {
+  const f = fixture();
+  const p = finger(f.button);
+  p.down(); p.move(3, 2); p.up(); f.button.click();
+  eq(f.clicks(), 1, 'clicks');
+  ok(!f.input.disabled, 'switch stays on');
+  f.remove();
+});
+
+test('pressable: sliding off cancels the press and silences the switch', async () => {
+  const f = fixture();
+  const p = finger(f.button);
+  p.down(); p.move(0, 30);
+  ok(f.input.disabled, 'switch off during the slide');
+  ok(f.root.classList.contains('dragged'), 'dragged class');
+  p.up(); f.button.click();
+  eq(f.clicks(), 0, 'click swallowed');
+  await wait(450);
+  ok(!f.input.disabled && !f.root.classList.contains('dragged'), 'back to normal after the reset');
+  f.button.click();
+  eq(f.clicks(), 1, 'a later click counts');
+  f.remove();
+});
+
+test('pressable: a quick re-tap after a slide-off works', async () => {
+  const f = fixture();
+  const slide = finger(f.button);
+  slide.down(); slide.move(40, 0); slide.up();
+  const tap = finger(f.button);
+  tap.down();
+  ok(!f.input.disabled, 'switch back on at the new touch');
+  tap.up(); f.button.click();
+  eq(f.clicks(), 1, 'the re-tap clicks');
+  await wait(450);
+  ok(!f.input.disabled, 'the old reset timer does not interfere');
+  f.remove();
+});
+
+test('pressable: after iOS cancels a touch, switches stay off until the next touch', async () => {
+  const f = fixture();
+  const p = finger(f.button);
+  p.down(); p.cancel();
+  await wait(700);
+  ok(f.input.disabled, 'still off long after the cancel');
+  f.button.click();
+  eq(f.clicks(), 0, 'click swallowed');
+  finger(f.button).down();
+  ok(!f.input.disabled, 'on again at the next touch');
+  f.remove();
+});
+
+test('pressable: a second finger cancels the press', async () => {
+  const f = fixture();
+  const first = finger(f.button);
+  first.down();
+  const second = finger(f.button, 50, 50);
+  second.down([first.touch()]);
+  ok(f.input.disabled, 'switch off');
+  first.up(); f.button.click();
+  eq(f.clicks(), 0, 'click swallowed');
+  f.remove();
+});
+
+test('pressable: a touch that stops a scroll, or turns into one, presses nothing', async () => {
+  const scroller = document.createElement('div');
+  const f = fixture(() => ({ scrollers: [scroller] }));
+  scroller.dispatchEvent(new Event('scroll'));
+  const stop = finger(f.button);
+  stop.down(); stop.up(); f.button.click();
+  eq(f.clicks(), 0, 'touch right after a scroll');
+  await wait(450);
+  const p = finger(f.button);
+  p.down(); scroller.dispatchEvent(new Event('scroll')); p.up(); f.button.click();
+  eq(f.clicks(), 0, 'scroll during the touch');
+  f.remove();
+});
+
+test('pressable: only the touched group is affected', async () => {
+  const f = fixture((root) => ({ group: (target) => target.closest('button') }));
+  const p = finger(f.button);
+  p.down(); p.move(0, 30);
+  ok(f.button.classList.contains('dragged') && !f.root.classList.contains('dragged'), 'dragged is on the group');
+  p.up();
+  f.remove();
+});
+
+test('pressable: clicks without a touch (mouse, keyboard) always count', async () => {
+  const f = fixture();
+  f.button.click();
+  eq(f.clicks(), 1, 'clicks');
+  f.remove();
+});
+
+test('syncSwitches: a disabled button has its switch off', () => {
+  const f = fixture();
+  f.button.disabled = true;
+  syncSwitches(f.button);
+  ok(f.input.disabled, 'off while disabled');
+  f.button.disabled = false;
+  syncSwitches(f.button);
+  ok(!f.input.disabled, 'on again');
+  f.remove();
+});

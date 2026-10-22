@@ -1,0 +1,327 @@
+<!doctype html>
+<!-- Generated from ../index.html by release.py. Edit that file and run python3 release.py. -->
+<html lang="en" data-bible="ml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Bible Scroll">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../icons/scroll-180.png">
+  <link rel="icon" type="image/png" href="../icons/scroll-192.png">
+  <link rel="stylesheet" href="../style.css">
+  <title>Bible Scroll</title>
+</head>
+<body>
+  <main id="feed" class="feed" aria-live="polite"></main>
+  <p id="loading" class="loading">Loading…</p>
+
+  <div id="rail" class="rail" aria-label="Verses in this chapter" hidden>
+    <div id="railTrack" class="rail-track"></div>
+    <span id="railNumber" class="rail-number"></span>
+    <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+  </div>
+  <p id="railLabel" class="rail-label" hidden></p>
+
+  <div id="historyMenu" class="history-menu" hidden>
+    <div class="history-card" role="menu" aria-label="Go back to">
+      <p class="history-title">Go back to</p>
+      <ul id="historyList" class="history-list"></ul>
+      <button id="clearHistory" class="history-clear">
+        Clear History
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <button id="historyButton" class="pill chapter-pill history-pill" hidden>
+      <svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.5V9H9"/><path d="M12 8v4l2.5 2"/></svg>
+      History
+      <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+    </button>
+    <span class="spacer"></span>
+    <button id="jumpButton" class="pill chapter-pill" aria-label="Jump to a chapter">
+      <span id="chapterLabel"></span>
+      <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+      <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+    </button>
+  </header>
+
+  <section id="reflectionsView" class="reflections-view" aria-label="Reflections" hidden>
+    <header class="reflections-header">
+      <h1>Reflections</h1>
+      <button class="round-glass you-button" aria-label="Backup and help">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.8 18.2a6 6 0 0 1 10.4 0"/></svg>
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+    </header>
+    <div id="reflectionsFilter" class="segmented four">
+      <button data-range="today">Today<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+      <button data-range="week">Week<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+      <button data-range="month">Month<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+      <button data-range="all">All<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+    </div>
+    <div id="backupBanner" class="backup-banner" hidden>
+      <div class="backup-banner-top">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5"/><path d="M12 20v-8m-3 3 3-3 3 3"/></svg>
+        <div>
+          <p class="backup-banner-title">Back up your reflections and likes</p>
+          <p id="backupBannerDetail" class="backup-banner-detail"></p>
+        </div>
+      </div>
+      <div class="backup-banner-actions">
+        <button id="bannerLater" class="banner-button">Not Now<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+        <button id="bannerBackup" class="banner-button primary">Back Up<input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true"></button>
+      </div>
+    </div>
+    <div id="reflectionsList"></div>
+    <p id="reflectionsEmpty" class="empty-note reflections-empty" hidden></p>
+  </section>
+
+  <section id="likedView" class="reflections-view" aria-label="Liked" hidden>
+    <header class="reflections-header">
+      <h1>Liked</h1>
+      <button class="round-glass you-button" aria-label="Backup and help">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.8 18.2a6 6 0 0 1 10.4 0"/></svg>
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+    </header>
+    <div id="likedList"></div>
+    <p id="likedEmpty" class="empty-note reflections-empty" hidden>No liked verses yet.<br>Tap the heart on a verse you love.</p>
+  </section>
+
+  <nav id="tabBar" class="tab-bar" aria-label="Tabs">
+    <button class="tab selected" data-tab="bible" aria-current="page">
+      <svg viewBox="0 0 24 24"><path d="M5 19.5v-15A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5 1.5 1.5 0 0 0 6.5 21H19"/><path d="M12 6.5v7.5M9.25 9.25h5.5"/></svg>
+      <span>Bible</span>
+      <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+    </button>
+    <button class="tab" data-tab="reflections">
+      <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 3v18M11.5 8h4.5M11.5 11.5h4.5M11.5 15h3"/></svg>
+      <span>Reflections</span>
+      <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+    </button>
+    <button class="tab" data-tab="liked">
+      <svg viewBox="0 0 24 24"><path d="M12 20.3S3.5 15.2 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 6-8.5 11.1-8.5 11.1Z"/></svg>
+      <span>Liked</span>
+      <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+    </button>
+  </nav>
+
+  <!-- Cloned into every verse page so the buttons scroll with their verse. -->
+  <template id="actionsTemplate">
+    <nav class="actions" aria-label="Verse actions">
+      <button class="action like" data-action="like" aria-label="Like" aria-pressed="false">
+        <svg viewBox="0 0 24 24"><path d="M12 20.3S3.5 15.2 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 6-8.5 11.1-8.5 11.1Z"/></svg>
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+      <button class="action" data-action="reflect" aria-label="Reflections">
+        <svg viewBox="0 0 24 24"><path d="M12 4c4.7 0 8.5 3.3 8.5 7.4s-3.8 7.4-8.5 7.4c-1.1 0-2.2-.2-3.2-.5L4.5 20l1.2-3.7A7 7 0 0 1 3.5 11.4C3.5 7.3 7.3 4 12 4Z"/></svg>
+        <span class="action-count"></span>
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+      <button class="action" data-action="share" aria-label="Share">
+        <svg viewBox="0 0 24 24"><path d="M20.5 3.5 3.5 10.5l7 3 3 7Zm0 0-10 10"/></svg>
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+      <button class="action" data-action="study" aria-label="Study">
+        <svg viewBox="0 0 24 24"><path d="M4 6h12M4 10h6M4 14h4"/><circle cx="14.5" cy="14" r="3.6"/><path d="m17.2 16.7 3 3"/></svg>
+        <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+      </button>
+    </nav>
+  </template>
+
+  <p id="toast" class="toast" role="status"></p>
+
+  <dialog id="timeline" class="sheet note-sheet">
+    <div class="sheet-inner">
+      <div class="grabber" aria-hidden="true"></div>
+      <header class="note-header">
+        <button class="glass-button" data-close>Done</button>
+        <h2 id="timelineTitle"></h2>
+        <p id="timelineVerse" class="note-verse"></p>
+      </header>
+      <div id="timelineBody" class="sheet-body">
+        <p id="timelineCount" class="section-label"></p>
+        <ul id="timelineList" class="card-list"></ul>
+        <div class="note-label">
+          <span id="composerLabel">New reflection</span>
+          <span id="composerHint" class="note-hint">Saved when you tap Done</span>
+          <button id="cancelEdit" class="note-cancel" hidden>Cancel</button>
+        </div>
+        <div class="note-card">
+          <textarea id="composerText" placeholder="What does this verse say to you today?"></textarea>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="study" class="sheet fit floating">
+    <div class="sheet-inner">
+      <div class="grabber" aria-hidden="true"></div>
+      <header class="note-header">
+        <button class="glass-button leading" data-close>Cancel</button>
+        <h2 id="studyTitle"></h2>
+        <p id="studyVerse" class="note-verse"></p>
+      </header>
+      <div class="sheet-body">
+        <ul id="studyLinks" class="menu-list"></ul>
+        <div id="debugSection" hidden>
+          <p class="section-label">Debug</p>
+          <ul class="card-list links">
+            <li><button id="seedButton">Seed 500 reflections</button></li>
+            <li><button id="wipeButton" class="destructive">Delete all reflections</button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="backup" class="sheet fit floating">
+    <div class="sheet-inner">
+      <header class="sheet-header">
+        <span></span>
+        <h2>Your Bible Scroll</h2>
+        <button class="text-button" data-close>Done</button>
+      </header>
+      <div class="sheet-body">
+        <div class="you-stats">
+          <div class="you-stat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 3v18M11.5 8h4.5M11.5 11.5h4.5M11.5 15h3"/></svg>
+            <b id="reflectionStat"></b><span id="reflectionStatLabel">Reflections</span>
+          </div>
+          <div class="you-stat">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="heart"><path d="M12 20.3S3.5 15.2 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 6-8.5 11.1-8.5 11.1Z"/></svg>
+            <b id="likeStat"></b><span id="likeStatLabel">Liked verses</span>
+          </div>
+        </div>
+        <p class="section-label">Backup</p>
+        <ul class="card-list links backup-list">
+          <li>
+            <button id="backupNow">
+              Back Up Now
+              <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+            </button>
+          </li>
+          <li>
+            <button id="restoreNow">
+              Restore from Backup
+              <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+            </button>
+          </li>
+        </ul>
+        <input id="restoreFile" type="file" accept="application/json,.json" hidden>
+        <p id="backupStatus" class="list-footer"></p>
+        <p class="section-label help-label">Help</p>
+        <ul class="card-list links">
+          <li>
+            <button id="helpButton" class="chevron">
+              How to Use
+              <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="help" class="sheet fit floating">
+    <div class="sheet-inner">
+      <header class="sheet-header">
+        <span></span>
+        <h2>How to Use</h2>
+        <button class="text-button" data-close>Done</button>
+      </header>
+      <div class="sheet-body">
+        <ul class="card-list help-list">
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>
+            <div><p class="help-title">Add to Home Screen</p><p class="help-text">In Safari, tap Share, then Add to Home Screen.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c4.7 0 8.5 3.3 8.5 7.4s-3.8 7.4-8.5 7.4c-1.1 0-2.2-.2-3.2-.5L4.5 20l1.2-3.7A7 7 0 0 1 3.5 11.4C3.5 7.3 7.3 4 12 4Z"/></svg>
+            <div><p class="help-title">Write a reflection</p><p class="help-text">Tap the speech bubble on a verse; swipe one left to edit, share or delete it.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3S3.5 15.2 3.5 9.2A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.5 2.8c0 6-8.5 11.1-8.5 11.1Z"/></svg>
+            <div><p class="help-title">Like a verse</p><p class="help-text">Tap the heart; Liked keeps every verse you loved.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.5 10.5l7 3 3 7Zm0 0-10 10"/></svg>
+            <div><p class="help-title">Share a verse</p><p class="help-text">Tap the arrow to send it in a message or save it.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 10h6M4 14h4"/><circle cx="14.5" cy="14" r="3.6"/><path d="m17.2 16.7 3 3"/></svg>
+            <div><p class="help-title">Study a verse</p><p class="help-text">Tap the magnifier for other translations and commentaries.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-8-8"/><path d="M12 8v4l3 2"/></svg>
+            <div><p class="help-title">Go back</p><p class="help-text">Tap History at the top left for the last places you jumped from.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 3v18M11.5 8h4.5M11.5 11.5h4.5M11.5 15h3"/></svg>
+            <div><p class="help-title">Look back</p><p class="help-text">Pick Today, Week, Month or All; tap a reflection to open its verse.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5Z"/></svg>
+            <div><p class="help-title">Back up and restore</p><p class="help-text">Tap the person at the top of Reflections or Liked, then Back Up Now; save to iCloud Drive and replace the old file.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            <div><p class="help-title">Private</p><p class="help-text">Reflections and likes stay on this phone; nothing is uploaded.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/></svg>
+            <div><p class="help-title">For each family member</p><p class="help-text">Everyone backs up to their own iCloud; phones don't share reflections.</p></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>
+            <div><p class="help-title">Get updates</p><p class="help-text">Close the app and reopen it twice.</p></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="jump" class="sheet tall">
+    <div class="sheet-inner">
+      <header class="sheet-header">
+        <button id="jumpBack" class="text-button" hidden>‹ Books</button>
+        <h2 id="jumpTitle">Books</h2>
+        <button class="text-button" data-close>Done</button>
+      </header>
+      <div id="bookView" class="sheet-body">
+        <input id="bookSearch" class="search" type="search" placeholder="Book, or a verse like John 3:16" autocomplete="off" autocorrect="off" spellcheck="false">
+        <div id="reading" class="reading">
+          <ul class="card-list links">
+            <li>
+              <button id="readingButton" class="chevron">
+                <span class="reading-dot" aria-hidden="true"></span>
+                <span id="readingBook" class="book-name"></span>
+                <span id="readingChapter" class="chapter-count"></span>
+                <input type="checkbox" switch class="haptic" tabindex="-1" aria-hidden="true">
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div id="testaments" class="segmented testament-switch">
+          <button data-testament="old">Old Testament</button>
+          <button data-testament="new">New Testament</button>
+        </div>
+        <ul id="bookList" class="card-list links"></ul>
+        <p id="attribution" class="attribution"></p>
+      </div>
+      <div id="chapterView" class="sheet-body" hidden>
+        <div id="chapterGrid" class="chapter-grid"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="../src/main.js"></script>
+</body>
+</html>
