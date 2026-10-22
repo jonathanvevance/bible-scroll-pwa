@@ -8,7 +8,7 @@
              and Habakkuk's closing note are kept apart from the verse text.
 - icons/*.png drawn here, so no image tooling is needed
 
-Each language's page, manifest and service worker come from pages.py, not from here.
+Each language's page, manifest and service worker come from release.py, not from here.
 
 Usage: python3 build.py [path/to/bible-scroll]   (default: ../bible-scroll)
 """

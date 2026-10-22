@@ -114,6 +114,7 @@ src/
 
 - `release.py` (or a `build.py` step) bumps one version for both apps and regenerates the `ASSETS` lists, so feature commits no longer edit `sw.js` (review #10).
 - Fix `sw.js` storing a newer file into an older cache on a miss.
+- Done (v148). `pages.py` became `release.py`: it rebuilds the shared file list in `sw.js` from `src/`, `icons/`, `style.css` and `books.js`, bumps `VERSION`, and writes the `ml/` copies; `--check` (run by `tests/run.sh`) fails when a file is missing from the list or a copy is stale. A cache miss now goes to the network without being stored. Checked in the simulator: two releases in a row; each app picks up the new code within a few launches and deletes only its own older caches.
 
 ## Phase 9: remaining backlog
 

@@ -6,7 +6,7 @@ How code in Bible Scroll is written. Follow these for every change; when a rule 
 
 A home-screen web app for reading the Bible on iPhone, one verse per page. It is a lifelong family app: losing someone's reflections or likes is the worst possible bug, and a confusing screen is the second worst.
 
-- Plain ES modules, no framework, no build step for the app. `build.py` only generates data (`books.js`, `bsb.json`, `ml/mal1910.json`, icons); `pages.py` writes each language's copy of the page.
+- Plain ES modules, no framework, no build step for the app. `build.py` only generates data (`books.js`, `bsb.json`, `ml/mal1910.json`, icons); `release.py` prepares each new version.
 - iOS Safari in standalone mode is the target. Anything else is a bonus.
 - One codebase serves every language: English at the site root, Malayalam at `/ml/`. iOS keeps each home-screen app's storage apart by URL, so English never moves from the root.
 
@@ -14,7 +14,7 @@ A home-screen web app for reading the Bible on iPhone, one verse per page. It is
 
 ```text
 index.html, style.css, manifest.webmanifest, sw.js   the page, its styles, offline cache
-ml/                        the Malayalam app: its text, and copies of the three files above (from pages.py)
+ml/                        the Malayalam app: its text, and copies of the three files above (from release.py)
 src/lang/                  what each language has of its own: text file, names, storage names
 src/main.js                start-up: loads the data, opens the feed
 src/core/                  pure logic, no DOM, no storage: references, Bible text, feed model, dates, backup reading
@@ -80,9 +80,9 @@ docs/                      review findings, plans, the device checklist
 
 ## Releasing
 
-- Any change to a file the app loads bumps `VERSION` in `sw.js`, then `python3 pages.py`, so both apps update (one script does both from refactor phase 8). A new version takes over on the second launch after it is published.
-- Every file the app loads is listed in `sw.js` `ASSETS`; a missing file breaks offline use, a wrong path breaks the update.
-- Never edit `ml/index.html`, `ml/sw.js` or `ml/manifest.webmanifest`: edit the English file and run `python3 pages.py` (`tests/run.sh` fails while they are out of date). Anything that differs by language goes in `src/lang/`, not in an `if`.
+- After changing any file the app loads, run `python3 release.py`: it lists every shared file in `sw.js`, bumps `VERSION` (one number for both apps) and rewrites the `ml/` copies. A new version takes over on the second launch after it is published. Never edit the file list or `VERSION` by hand.
+- The service worker caches only what `ASSETS` lists, at install; anything else always comes from the network. A file the app loads must live in `src/` or `icons/` (listed automatically) or in the per-app list at the top of `ASSETS`, or offline use breaks.
+- Never edit `ml/index.html`, `ml/sw.js` or `ml/manifest.webmanifest`: edit the English file and run `python3 release.py` (`tests/run.sh` fails while they are out of date). Anything that differs by language goes in `src/lang/`, not in an `if`.
 - Storage names in `src/lang/` (`database`, `storagePrefix`, `cacheName`) never change: people's reflections are stored under them.
 - Work happens on a branch; `main` is what GitHub Pages publishes. Commit messages describe the change from the reader's side ("Search: \"gen 1:\" goes to the chapter's first verse"), one change per commit.
 

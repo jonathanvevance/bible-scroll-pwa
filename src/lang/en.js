@@ -1,6 +1,6 @@
 // What the English app has of its own. Its storage names are the ones the app has always used,
 // so the existing home-screen app keeps its reflections, likes and settings.
-// pages.py reads `cacheName` and `bibleFile` too, so keep each on one line as `key: '…',`.
+// release.py reads `cacheName` and `bibleFile` too, so keep each on one line as `key: '…',`.
 
 export default {
   /** The text, relative to the page. */

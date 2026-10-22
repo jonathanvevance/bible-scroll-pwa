@@ -1,6 +1,6 @@
 // What the Malayalam app (served from ml/) has of its own. Its storage names are the ones the
 // separate Malayalam app used, so the two apps never share or overwrite each other's data.
-// pages.py reads `cacheName` and `bibleFile` too, so keep each on one line as `key: '…',`.
+// release.py reads `cacheName` and `bibleFile` too, so keep each on one line as `key: '…',`.
 
 export default {
   bibleFile: 'mal1910.json',

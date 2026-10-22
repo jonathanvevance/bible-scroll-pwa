@@ -4,8 +4,8 @@
 set -u
 cd "$(dirname "$0")/.."
 
-# Each language's page, manifest and service worker must match the English ones they come from.
-python3 pages.py --check || exit 1
+# sw.js lists every file, and each language's copies match the English files they come from.
+python3 release.py --check || exit 1
 
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PORT=$((20000 + $(od -An -N2 -tu2 /dev/urandom | tr -d ' ') % 10000))
