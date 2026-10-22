@@ -1,8 +1,7 @@
 import { advanceTarget, itemsFor, startFor, windowAfterSettling } from '../core/feed-model.js';
 import { chapterName, verseName } from '../core/references.js';
 import { LIKE, showLiked } from './actions.js';
-import { LAST_VERSE, anySheetOpen, bible, currentIndex, currentItem, currentVerse, feed, journal, pageHeight, reduceMotion, state } from './app-state.js';
-import { invalidateBackup, updateBackupReminder } from './backup.js';
+import { LAST_VERSE, anySheetOpen, onJournalChange, bible, currentIndex, currentItem, currentVerse, feed, journal, pageHeight, reduceMotion, state } from './app-state.js';
 import { el } from './dom.js';
 import { rememberPlace, updateHistory } from './history.js';
 import { railState, updateRail } from './rail.js';
@@ -67,7 +66,7 @@ function updateControls() {
 }
 
 /** Refreshes the counts and hearts on the rendered pages after reflections or likes change. */
-export function updateActions() {
+function updateActions() {
   for (const node of feed.querySelectorAll('.page.verse')) {
     const key = Number(node.dataset.id.slice(1));
     const text = String(journal.count(key) || '');
@@ -75,9 +74,8 @@ export function updateActions() {
     if (count.textContent !== text) count.textContent = text;
     showLiked(node.querySelector('.like'), journal.isMarked(LIKE, key));
   }
-  invalidateBackup();
-  updateBackupReminder();
 }
+onJournalChange(updateActions);
 
 // ---------- Settling and auto-advance ----------
 

@@ -1,6 +1,6 @@
 // The Bible text: chapters in reading order and their verses. No DOM, so tests can import it.
 
-import { packKey } from './references.js';
+import { packKey, unpackKey } from './references.js';
 
 export class Bible {
   /** `titles`: psalm superscriptions by "book:chapter"; `notes`: closing notes by "book:chapter:verse". */
@@ -27,6 +27,12 @@ export class Bible {
       title: i === 0 ? this.titles[`${ch.book}:${ch.chapter}`] : undefined,
       note: this.notes[`${ch.book}:${ch.chapter}:${i + 1}`],
     }));
+  }
+
+  /** The text of the verse with packed `key`, or null when there is no such verse. */
+  text(key) {
+    const v = unpackKey(key);
+    return v ? this.books[v.book - 1]?.[v.chapter - 1]?.[v.verse - 1] ?? null : null;
   }
 
   after(ch) { return this.chapters[this.index.get(ch.key) + 1] ?? null; }

@@ -4,11 +4,12 @@
 // module importing a new one breaks the app).
 // Only runs over HTTPS (service workers need a secure origin).
 
-const CACHE = 'bible-scroll-v133';
+const CACHE = 'bible-scroll-v136';
 const ASSETS = [
   './', 'index.html', 'style.css', 'books.js', 'bsb.json',
   'src/core/backup-file.js',
   'src/core/bible.js',
+  'src/core/dates.js',
   'src/core/feed-model.js',
   'src/core/references.js',
   'src/data/journal.js',
@@ -16,12 +17,14 @@ const ASSETS = [
   'src/ui/actions.js',
   'src/ui/app-state.js',
   'src/ui/backup.js',
+  'src/ui/cards.js',
   'src/ui/dom.js',
   'src/ui/feed.js',
   'src/ui/haptics.js',
   'src/ui/history.js',
   'src/ui/jump.js',
   'src/ui/liked.js',
+  'src/ui/pressable.js',
   'src/ui/rail.js',
   'src/ui/reflect-sheet.js',
   'src/ui/reflections.js',

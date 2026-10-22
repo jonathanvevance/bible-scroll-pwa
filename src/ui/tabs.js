@@ -1,8 +1,6 @@
-import { feed, state } from './app-state.js';
+import { feed, onJournalChange, state } from './app-state.js';
 import { endGlide } from './feed.js';
-import { renderLiked } from './liked.js';
 import { rail } from './rail.js';
-import { renderReflections } from './reflections.js';
 
 // ---------- Tabs ----------
 
@@ -12,6 +10,13 @@ export const likedView = document.getElementById('likedView');
 const tabViews = { reflections: reflectionsView, liked: likedView };
 const bibleView = [feed, rail, document.querySelector('.topbar')];
 export let tab = 'bible';
+const renders = {};
+
+/** `render` fills tab `name` each time it is shown, and again when the journal changes under it. */
+export function registerTab(name, render) {
+  renders[name] = render;
+}
+onJournalChange(() => renders[tab]?.());
 
 /** The Bible view is only hidden, never removed, so the feed keeps its place. */
 export function showTab(name) {
@@ -31,8 +36,7 @@ export function showTab(name) {
     clearTimeout(state.advanceTimer);
     endGlide();
   }
-  if (name === 'reflections') renderReflections();
-  if (name === 'liked') renderLiked();
+  renders[name]?.();
 }
 
 tabBar.addEventListener('click', (e) => {

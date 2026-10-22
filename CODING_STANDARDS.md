@@ -15,7 +15,7 @@ A home-screen web app for reading the Bible on iPhone, one verse per page. It is
 ```text
 index.html, style.css, manifest.webmanifest, sw.js   the page, its styles, offline cache
 src/main.js                start-up: loads the data, opens the feed
-src/core/                  pure logic, no DOM, no storage: references, Bible text, feed model, backup reading
+src/core/                  pure logic, no DOM, no storage: references, Bible text, feed model, dates, backup reading
 src/data/                  storage: the journal (IndexedDB); preferences (localStorage) from phase 6
 src/ui/                    one module per screen or shared behaviour
 tests/, tests.html         automated tests (tests/run.sh)
@@ -37,7 +37,7 @@ docs/                      review findings, plans, the device checklist
 ## Saved data
 
 - All reflections and marks go through the `Journal` API; nothing else opens IndexedDB.
-- After any write, the journal emits a change event; screens refresh from that event, not from hand-written refresh calls at each write site (from refactor phase 5).
+- After any write, the journal emits a change event; screens refresh from that event, not from hand-written refresh calls at each write site. A module subscribes with `onJournalChange()` for what it owns; a tab registers its render with `registerTab()`, which runs it when the tab is shown and when the journal changes while it is visible.
 - Never overwrite or delete the person's data as a side effect. Restoring merges; a backup that may hold less than the file it replaces asks first.
 - Changing the database shape needs a new `indexedDB.open` version with an upgrade step, and a test that upgrades a database of the previous version without losing anything.
 - Changing the backup file: new fields are optional, so older versions of the app ignore them; anything an older version can't safely ignore needs a new `BACKUP_FORMAT` and a test.
@@ -46,7 +46,7 @@ docs/                      review findings, plans, the device checklist
 
 - iOS gives script no haptic API. Every tappable control carries a hidden `<input type="checkbox" switch class="haptic">`: in HTML, or added with `withHaptic()` for buttons made in script.
 - A native switch toggles on release even after the finger has slid away, so every control with a haptic must pass the press test in `docs/device-checklist.md`: a press that slides off, is cancelled by iOS (long press), or turns into a scroll does nothing and plays no tick.
-- That behaviour comes from one shared guard (refactor phase 5). Never write touch tracking for a new control; register its container with the guard.
+- That behaviour comes from one shared guard, `guardPresses()` in `src/ui/pressable.js`. Never write touch tracking for a new control; register its container (and any scrolling area it sits in) with the guard. Code that disables a button with a haptic calls `syncSwitches()` afterwards.
 - Hit targets are at least 44×44 points.
 
 ## Sheets
@@ -73,7 +73,7 @@ docs/                      review findings, plans, the device checklist
 - `tests/run.sh` must pass before every commit. It runs `tests.html` in headless Chrome (about 2 seconds) and exits non-zero on failure.
 - New or changed logic in `src/core/` or the journal comes with a test in `tests/`. Tests use their own database name and never touch the app's data.
 - Changes to touch handling, sheets, the feed or saved data are checked against the relevant sections of `docs/device-checklist.md` in the simulator.
-- Temporary test code in the app is marked with `// TEMP-TEST` on every line and removed before committing (`rg TEMP app.js sw.js` prints nothing).
+- Temporary test code in the app is marked with `// TEMP-TEST` on every line and removed before committing (`rg TEMP src sw.js` prints nothing).
 
 ## Releasing
 
@@ -86,6 +86,5 @@ docs/                      review findings, plans, the device checklist
 The refactor plan (`docs/plans/2026-10-22-refactor-plan.md`) removes these; until then, don't add more of them.
 
 - `src/ui/app-state.js` still holds state that several modules write (`state`, the feed timers); each moves to its owner in phase 6.
-- The slide-off guard is written four times (History, verse actions, Jump sheet, Reflections controls); screens refresh by hand after journal writes (phase 5).
-- Several sections set `.haptic.disabled`; localStorage keys are declared in the sections that use them (phase 6).
+- localStorage keys are declared in the sections that use them (phase 6).
 - The History menu is a `<div>`, not a `<dialog>` (phase 9).

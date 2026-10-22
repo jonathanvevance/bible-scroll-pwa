@@ -91,6 +91,7 @@ src/
 - Journal emits a `change` event after every write; one subscriber refreshes counts, hearts, the backup state and the visible tab. This replaces the seven manual refreshes (review #9).
 - `Bible#text(key)`, one `verseCard()`, one `groupByDay()`, shared date helpers (review #13).
 - Verify: tests, plus the checklist's touch section on every surface.
+- Done (v136). `guardPresses(container, { group, scrollers })` registers each surface; the "touch stopped a scroll" rule applies to every container that scrolls. Switches are derived by `syncSwitches()` from the button's `disabled` and `.dragged`, which also does phase 6's switch rule early (review #8). Instead of one subscriber, each module subscribes to `onJournalChange()` for what it owns (feed pages, backup state), and tabs register their render with `registerTab()`, which also re-renders the visible tab; this removed the import cycle between `tabs.js` and the tabs it shows. `groupByDay()` became `appendByDay()` in `ui/cards.js`, because Reflections loads a page at a time; date helpers are in `core/dates.js`. Tests: the guard (touch events), journal change events, dates and `Bible#text`, and an app test that an open Liked or Reflections tab follows the journal. Checked in the simulator: like, write a reflection, both tabs.
 
 ## Phase 6: state ownership
 

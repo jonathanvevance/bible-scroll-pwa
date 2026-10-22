@@ -2,7 +2,7 @@ import { verseName } from '../core/references.js';
 import { shareText, verseActions, verseQuote } from './actions.js';
 import { journal } from './app-state.js';
 import { el } from './dom.js';
-import { settle, updateActions } from './feed.js';
+import { settle } from './feed.js';
 import { DRAG_PX } from './haptics.js';
 import { trackKeyboard } from './sheets.js';
 
@@ -51,7 +51,6 @@ async function renderTimeline() {
       await journal.delete(c);
       // Otherwise Done would save the deleted reflection's text back.
       if (editing?.id === c.id) setEditing(null);
-      updateActions();
       renderTimeline();
     });
     const meta = c.updatedAt ? `${stamp(c)} · Edited` : stamp(c);
@@ -145,7 +144,7 @@ function startEditing(comment) {
   const body = composerText.value.trim();
   const saving = !editing ? (body ? journal.add(body, timelineVerse.key) : null)
     : body && body !== editing.body ? journal.update(editing, body) : null;
-  saving?.then(() => { updateActions(); renderTimeline(); })
+  saving?.then(renderTimeline)
     .catch((error) => alert(`Couldn't save: ${error?.message ?? error}`));
   setEditing(comment);
   composerText.focus();
@@ -174,7 +173,6 @@ async function saveDraft() {
     if (!edited) await journal.add(body, timelineVerse.key);
     else if (body && body !== edited.body) await journal.update(edited, body);
     setEditing(null);
-    updateActions();
     await renderTimeline();
     scrollTimelineToEnd();
   } catch (error) {
@@ -198,7 +196,6 @@ async function keepDraft() {
     setEditing(saved);
     composerText.value = text;
     sizeComposer();
-    updateActions();
     renderTimeline();
   } catch (error) {
     alert(`Couldn't save: ${error?.message ?? error}`);

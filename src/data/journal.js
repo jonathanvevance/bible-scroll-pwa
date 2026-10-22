@@ -35,7 +35,8 @@ function openDatabase(name) {
 // randomUUID only exists on HTTPS; the Wi-Fi preview runs over plain HTTP.
 const newID = () => crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
-export class Journal {
+/** Fires `change` after every write, so screens refresh themselves rather than at each write site. */
+export class Journal extends EventTarget {
   /** `name` is only for tests, which must never touch the real database. */
   static async open(name = DB_NAME) {
     const journal = new Journal(await openDatabase(name));
@@ -51,7 +52,12 @@ export class Journal {
   #marked = new Map([['favourite', new Set()], ['bookmark', new Set()]]);
 
   constructor(db) {
+    super();
     this.#db = db;
+  }
+
+  #changed() {
+    this.dispatchEvent(new Event('change'));
   }
 
   count(verseKey) {
@@ -76,6 +82,7 @@ export class Journal {
     for (const row of rows) tx.objectStore(STORE).add(row);
     await committed(tx);
     for (const row of rows) this.counts.set(row.verseKey, this.count(row.verseKey) + 1);
+    this.#changed();
     return rows;
   }
 
@@ -85,6 +92,7 @@ export class Journal {
     const tx = this.#db.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).put(row);
     await committed(tx);
+    this.#changed();
     return row;
   }
 
@@ -95,6 +103,7 @@ export class Journal {
     const n = this.count(comment.verseKey) - 1;
     if (n > 0) this.counts.set(comment.verseKey, n);
     else this.counts.delete(comment.verseKey);
+    this.#changed();
   }
 
   /** Newest first. */
@@ -125,6 +134,7 @@ export class Journal {
     };
     await committed(tx);
     for (const row of fresh) this.counts.set(row.verseKey, this.count(row.verseKey) + 1);
+    if (fresh.length) this.#changed();
     return { added: fresh.length, skipped: rows.length - fresh.length };
   }
 
@@ -166,6 +176,7 @@ export class Journal {
     tx.objectStore(STORE).clear();
     await committed(tx);
     this.counts.clear();
+    this.#changed();
   }
 
   isMarked(kind, verseKey) {
@@ -182,6 +193,7 @@ export class Journal {
     await committed(tx);
     if (marked) this.#marked.get(kind).add(verseKey);
     else this.#marked.get(kind).delete(verseKey);
+    this.#changed();
     return marked;
   }
 
@@ -203,6 +215,7 @@ export class Journal {
     }
     await committed(tx);
     for (const verseKey of fresh.keys()) marked.add(verseKey);
+    this.#changed();
     return fresh.size;
   }
 

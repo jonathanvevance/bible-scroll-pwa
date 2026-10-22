@@ -1,6 +1,6 @@
 # Device checklist
 
-Run on the simulator (or a phone) after any change that touches touch handling, sheets, the feed, or saved data. Automated tests (`tests/run.sh`) cover the journal; this covers what only a real touch screen shows.
+Run on the simulator (or a phone) after any change that touches touch handling, sheets, the feed, or saved data. Automated tests (`tests/run.sh`) cover the journal and the slide-off guard with simulated touches; this covers what only a real touch screen shows.
 
 Every button with a haptic should pass the **press test**:
 

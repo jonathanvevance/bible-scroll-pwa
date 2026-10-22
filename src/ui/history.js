@@ -1,8 +1,10 @@
+import { daysAgo } from '../core/dates.js';
 import { unpackKey, verseName } from '../core/references.js';
 import { el } from './dom.js';
 import { LAST_VERSE } from './app-state.js';
 import { jumpTo } from './feed.js';
-import { DRAG_PX, withHaptic } from './haptics.js';
+import { withHaptic } from './haptics.js';
+import { guardPresses } from './pressable.js';
 
 // ---------- History ----------
 // Every jump (the chapter picker, a reference, a reflection card, a history entry) records the
@@ -40,7 +42,7 @@ export function rememberPlace() {
 /** "Now", "5 min", "2 h", "Yesterday", "Mon", or "3 Oct". */
 function ago(time) {
   const minutes = Math.floor((Date.now() - time) / 60_000);
-  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(time).setHours(0, 0, 0, 0)) / 86_400_000);
+  const days = daysAgo(time);
   if (minutes < 1) return 'Now';
   if (minutes < 60) return `${minutes} min`;
   if (days === 0) return `${Math.floor(minutes / 60)} h`;
@@ -56,7 +58,6 @@ function openHistory() {
     button.addEventListener('click', () => { closeHistory(); jumpTo(h.key); });
     return el('li', {}, withHaptic(button));
   }));
-  resetMenuTouch();
   historyMenu.hidden = false;
 }
 
@@ -65,45 +66,8 @@ function closeHistory() { historyMenu.hidden = true; }
 historyButton.addEventListener('click', () => { if (historyMenu.hidden) openHistory(); else closeHistory(); });
 historyMenu.addEventListener('click', (e) => { if (e.target === historyMenu) closeHistory(); });
 
-// As in iOS menus, a touch that slides away from where it began picks nothing: the row stops
-// highlighting, the haptic switches (which would toggle on release) are disabled, and the click
-// that follows the lift is swallowed.
-let menuTouch = null;
-function setMenuSwitches(on) {
-  for (const input of historyMenu.querySelectorAll('.haptic')) input.disabled = !on;
-}
-function resetMenuTouch() {
-  menuTouch = null;
-  historyMenu.classList.remove('dragged');
-  setMenuSwitches(true);
-}
-historyMenu.addEventListener('touchstart', (e) => {
-  if (menuTouch?.moved) resetMenuTouch();
-  menuTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY, moved: false };
-}, { passive: true });
-function cancelMenuTouch() {
-  if (!menuTouch || menuTouch.moved) return;
-  menuTouch.moved = true;
-  historyMenu.classList.add('dragged');
-  setMenuSwitches(false);
-}
-historyMenu.addEventListener('touchmove', (e) => {
-  const t = e.touches[0];
-  if (menuTouch && Math.hypot(t.clientX - menuTouch.x, t.clientY - menuTouch.y) > DRAG_PX) cancelMenuTouch();
-}, { passive: true });
-historyMenu.addEventListener('touchend', () => {
-  const ended = menuTouch;
-  if (ended?.moved) setTimeout(() => { if (menuTouch === ended) resetMenuTouch(); }, 400);
-}, { passive: true });
-// iOS cancels the touch when it takes the gesture over (a long press, say). The finger may stay
-// down long after, unseen by the page, and the switch still toggles on its release, so everything
-// stays off until the next touch begins.
-historyMenu.addEventListener('touchcancel', cancelMenuTouch, { passive: true });
-historyMenu.addEventListener('click', (e) => {
-  if (!menuTouch?.moved) return;
-  e.preventDefault();
-  e.stopPropagation();
-}, true);
+// As in iOS menus, a touch that slides away from where it began picks nothing.
+guardPresses(historyMenu);
 document.getElementById('clearHistory').addEventListener('click', () => {
   localStorage.removeItem(HISTORY);
   updateHistory();

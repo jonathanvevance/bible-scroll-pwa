@@ -114,6 +114,30 @@ test('importMarks adds only new verses and keeps existing dates', async () => {
   eq(j.markCount('favourite'), 2, 'count');
 });
 
+test('every write announces a change; writes that change nothing stay quiet', async () => {
+  const j = await fresh();
+  let changes = 0;
+  j.addEventListener('change', () => changes++);
+  const expect = async (write, n, label) => {
+    const before = changes;
+    await write();
+    eq(changes - before, n, label);
+  };
+  let row;
+  await expect(async () => { row = await j.add('one', GEN_1_1); }, 1, 'add');
+  await expect(() => j.add('   ', GEN_1_1), 0, 'blank add');
+  await expect(async () => { row = await j.update(row, 'two'); }, 1, 'update');
+  await expect(() => j.addMany([{ verseKey: GEN_1_2, body: 'x', createdAt: 1 }]), 1, 'addMany');
+  await expect(() => j.addMany([]), 0, 'empty addMany');
+  await expect(() => j.importMany([reflection('r1', JOHN_3_16, 'y', 5)]), 1, 'importMany');
+  await expect(() => j.importMany([reflection('r1', JOHN_3_16, 'y', 5)]), 0, 'importMany of known ids');
+  await expect(() => j.toggleMark('favourite', GEN_1_1), 1, 'toggleMark');
+  await expect(() => j.importMarks('favourite', [{ verseKey: JOHN_3_16, createdAt: 1 }]), 1, 'importMarks');
+  await expect(() => j.importMarks('favourite', [{ verseKey: JOHN_3_16, createdAt: 1 }]), 0, 'importMarks of known verses');
+  await expect(() => j.delete(row), 1, 'delete');
+  await expect(() => j.deleteAll(), 1, 'deleteAll');
+});
+
 test('reopening reloads counts and marks', async () => {
   const name = dbName();
   const j = await Journal.open(name);

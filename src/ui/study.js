@@ -2,7 +2,6 @@ import { HUB_TOOLS, hubURL, verseName } from '../core/references.js';
 import { verseActions } from './actions.js';
 import { bible, journal } from './app-state.js';
 import { el } from './dom.js';
-import { updateActions } from './feed.js';
 import { closeSheet } from './sheets.js';
 
 const study = document.getElementById('study');
@@ -30,13 +29,11 @@ document.getElementById('seedButton').addEventListener('click', async () => {
     createdAt: now - Math.floor(Math.random() * 90 * 86_400_000),
   }));
   await journal.addMany(entries);
-  updateActions();
   closeSheet(study);
 });
 
 document.getElementById('wipeButton').addEventListener('click', async () => {
   if (!confirm('Delete every reflection?')) return;
   await journal.deleteAll();
-  updateActions();
   closeSheet(study);
 });

@@ -1,10 +1,11 @@
 import { BACKUP_FORMAT, readBackup } from '../core/backup-file.js';
+import { daysAgo } from '../core/dates.js';
 import { unpackKey, verseName } from '../core/references.js';
 import { LIKE } from './actions.js';
-import { bible, journal } from './app-state.js';
+import { bible, journal, onJournalChange } from './app-state.js';
 import { el, toast } from './dom.js';
-import { updateActions } from './feed.js';
-import { backupBanner, renderReflections } from './reflections.js';
+import { syncSwitches } from './pressable.js';
+import { backupBanner } from './reflections.js';
 import { closeSheet } from './sheets.js';
 import { tab } from './tabs.js';
 
@@ -26,7 +27,7 @@ const bannerBackup = document.getElementById('bannerBackup');
  * Built ahead of the tap: iOS only allows sharing straight after one, with no waiting in between.
  * Any change to the reflections makes it stale (`invalidateBackup`).
  */
-export let backupReady = null;
+let backupReady = null;
 let backupBuild = 0;
 let backupBuilding = -1;
 
@@ -43,7 +44,7 @@ async function backupFile() {
     return {
       verseKey: m.verseKey,
       reference: v ? verseName(v) : null,
-      verseText: v ? bible.books[v.book - 1]?.[v.chapter - 1]?.[v.verse - 1] ?? null : null,
+      verseText: bible.text(m.verseKey),
       createdAt: m.createdAt,
       createdAtISO: new Date(m.createdAt).toISOString(),
     };
@@ -54,7 +55,7 @@ async function backupFile() {
       id: c.id,
       verseKey: c.verseKey,
       reference: v ? verseName(v) : null,
-      verseText: v ? bible.books[v.book - 1]?.[v.chapter - 1]?.[v.verse - 1] ?? null : null,
+      verseText: bible.text(c.verseKey),
       body: c.body,
       createdAt: c.createdAt,
       createdAtISO: new Date(c.createdAt).toISOString(),
@@ -76,19 +77,23 @@ async function backupFile() {
   return new File([JSON.stringify(data, null, 2)], 'Bible Scroll backup.json', { type: 'application/json' });
 }
 
-export function setBackupEnabled(on) {
+function setBackupEnabled(on) {
   for (const button of [backupNow, bannerBackup]) {
     button.disabled = !on;
-    button.querySelector('.haptic').disabled = !on;
+    syncSwitches(button);
   }
 }
 
-export function invalidateBackup() {
+function invalidateBackup() {
   backupReady = null;
   shrinkAccepted = false;
   backupBuild++;
   setBackupEnabled(false);
 }
+onJournalChange(() => {
+  invalidateBackup();
+  updateBackupReminder();
+});
 
 /** Builds the file once per version of the reflections and likes; the backup buttons wait for it. */
 function prepareBackup() {
@@ -108,7 +113,7 @@ function prepareBackup() {
 /** "Today at 3:51 PM", "Yesterday at …", or "20 Oct 2026 at …", like Settings. */
 function backupTime(ms) {
   const date = new Date(ms);
-  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(ms).setHours(0, 0, 0, 0)) / 86_400_000);
+  const days = daysAgo(ms);
   const day = days === 0 ? 'Today' : days === 1 ? 'Yesterday'
     : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date);
   return `${day} at ${new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(date)}`;
@@ -265,8 +270,6 @@ restoreFile.addEventListener('change', async () => {
   try {
     const { added, skipped, likesAdded } = await restoreFrom(file);
     restored = true;
-    updateActions();
-    renderReflections();
     await closeSheet(backup);
     if (added + likesAdded === 0) toast('Everything in this backup is already here');
     else toast(`Restored ${contents(added, likesAdded)}${skipped ? '; the rest was already here' : ''}`);
