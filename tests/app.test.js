@@ -46,6 +46,34 @@ test('the Jump sheet opens on the book being read', async () => {
   frame.remove();
 });
 
+test('sliding off a tab or a top-bar button does nothing', async () => {
+  const { frame, doc } = await boot();
+  const win = frame.contentWindow;
+  const slideOff = (target) => {
+    const rect = target.getBoundingClientRect();
+    const at = (dy) => new win.Touch({ identifier: 1, target, clientX: rect.left + 10, clientY: rect.top + 10 + dy });
+    target.dispatchEvent(new win.TouchEvent('touchstart', { bubbles: true, touches: [at(0)], changedTouches: [at(0)] }));
+    target.dispatchEvent(new win.TouchEvent('touchmove', { bubbles: true, touches: [at(200)], changedTouches: [at(200)] }));
+    target.dispatchEvent(new win.TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [at(200)] }));
+    target.click();
+  };
+  slideOff(doc.querySelector('[data-tab="reflections"]'));
+  ok(doc.getElementById('reflectionsView').hidden, 'still on the Bible tab');
+  await new Promise((r) => setTimeout(r, 450));
+  slideOff(doc.getElementById('jumpButton'));
+  ok(!doc.getElementById('jump').open, 'Jump sheet stays closed');
+  frame.remove();
+});
+
+test('pressed looks come from the press guard, never :active', async () => {
+  const { frame, doc } = await boot();
+  const rules = (list) => [...list].flatMap((r) => (r.cssRules ? [r, ...rules(r.cssRules)] : [r]));
+  const selectors = rules([...doc.styleSheets].flatMap((s) => [...s.cssRules])).map((r) => r.selectorText ?? '');
+  eq(selectors.filter((s) => s.includes(':active')), [], ':active rules');
+  ok(selectors.some((s) => s.includes('.pressed')), 'a .pressed rule');
+  frame.remove();
+});
+
 // The app's own modules, from inside the frame, so a test can write to the journal the app shows.
 test('an open Liked or Reflections tab updates when the journal changes', async () => {
   const { frame, doc, appModule } = await boot();

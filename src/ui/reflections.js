@@ -3,6 +3,7 @@ import { journal } from './app-state.js';
 import { updateBackupReminder } from './backup.js';
 import { appendByDay } from './cards.js';
 import { openCard } from './liked.js';
+import { guardPresses } from './pressable.js';
 import { reflectionsView, registerTab } from './tabs.js';
 
 // ---------- Reflections tab ----------
@@ -83,3 +84,4 @@ reflectionsFilter.addEventListener('click', (e) => {
 });
 
 export const backupBanner = document.getElementById('backupBanner');
+for (const control of [reflectionsFilter, backupBanner]) guardPresses(control);

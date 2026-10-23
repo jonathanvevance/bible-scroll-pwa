@@ -6,7 +6,8 @@ Every button and link should pass the **press test**:
 
 - **Tap:** it darkens while held (icons and text dim), the action happens. No blue ring.
 - **Press, slide a little, release:** the action happens.
-- **Press, slide well away, release:** nothing happens.
+- **Press, slide well away, release:** the shade clears once the finger is about a finger's width past the edge; nothing happens.
+- **Press, slide well away and back, release:** the shade comes back; the action happens.
 - **Long press until iOS takes over (magnifier or callout), then release:** nothing happens.
 - **Flick the list or page starting on the button:** it scrolls, nothing is pressed.
 - **Two fingers (slide one off, tap with the other, lift both):** nothing unintended happens.

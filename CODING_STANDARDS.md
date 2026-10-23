@@ -47,7 +47,9 @@ docs/                      review findings, plans, the device checklist
 
 ## Touch
 
-- Presses are Safari's own: the pressed look is `:active`, a darker shade (10% brighter in dark mode). List rows take the list highlight; bare icons and text dim. Never write touch tracking for a control.
+- Presses follow iOS: a control looks pressed while the finger is on it or within 70 px of it (inside something that scrolls, after 100 ms); sliding farther lets go, and sliding back presses it again. Lifting while pressed acts; lifting while let go does nothing. A press that turns into a scroll, starts by stopping one, or is taken over by iOS (long press) is cancelled for good.
+- The pressed look is a darker shade (10% brighter in dark mode), from the `.pressed` class only. List rows take the list highlight; bare icons and text dim. Never style `:active`: it stays on after the finger slides away. A test checks this.
+- That behaviour comes from one shared guard in `src/ui/pressable.js`, which covers every `button` and `a[href]` on the page with nothing to register. Never write touch tracking for a new control. Use `guardPresses(root, { group })` only when a whole area should react to a slide-off together (the verse actions, the History menu). The rail is a slider and is never guarded.
 - Hit targets are at least 44×44 points.
 
 ## Sheets

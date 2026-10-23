@@ -3,6 +3,7 @@
 
 import './ui/app-state.js';
 import './ui/dom.js';
+import './ui/pressable.js';
 import './ui/cards.js';
 import './ui/feed.js';
 import './ui/rail.js';
@@ -24,9 +25,6 @@ import { setData } from './ui/app-state.js';
 import { el } from './ui/dom.js';
 import { updateBackupReminder } from './ui/backup.js';
 import { openAt } from './ui/feed.js';
-
-// iOS Safari applies :active, the pressed look, only once the page listens for touches.
-document.addEventListener('touchstart', () => {}, { passive: true });
 
 /** Covers the app with `message`: what went wrong and what to do. Nothing behind it can be used. */
 function stopWith(message) {
