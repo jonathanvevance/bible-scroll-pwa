@@ -250,10 +250,10 @@ button {
 :is(.action, .text-button, .note-cancel).pressed { filter: none; opacity: 0.4; }
 /* An unselected tab or segment is see-through, so it shows the glass a selected one has. */
 :is(.tab, .segmented button):not(.selected).pressed { filter: none; background: var(--glass); }
-.history-list button.pressed, .history-clear.pressed, .reflection-card.pressed,
-.links:not(#bookList) > li > :is(a, button).pressed, .menu-list a.pressed { filter: none; background: var(--press); }
-/* The book list is for scrolling through; its rows don't light up. */
-#bookList button.pressed { filter: none; }
+.reflection-card.pressed,
+.links:not(#bookList, #backup *) > li > :is(a, button).pressed { filter: none; background: var(--press); }
+/* These lists don't light up: the books, History, Study's links and the person sheet's rows. */
+:is(#bookList button, .history-list button, .history-clear, #studyLinks a, #backup .links button).pressed { filter: none; }
 /* No ring on a tapped control. Every control is a button or link, which iOS's own keyboard
    navigation outlines by itself. */
 :is(button, a):focus { outline: none; }
