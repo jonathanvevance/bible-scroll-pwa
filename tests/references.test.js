@@ -1,4 +1,4 @@
-import { packKey, unpackKey, verseName, chapterName, hubURL, HUB_TOOLS, parseReference } from '../src/core/references.js';
+import { packKey, unpackKey, verseName, chapterName, hubURL, HUB_TOOLS, parseReference, youVersionURL } from '../src/core/references.js';
 import { test, eq } from './runner.js';
 import { realBible } from './bible.js';
 
@@ -27,6 +27,11 @@ test('Bible Hub links', () => {
     'https://biblehub.com/crossref/john/3-16.htm',
     'https://biblehub.com/commentaries/john/3-16.htm',
   ], 'links');
+});
+
+test('YouVersion links', () => {
+  eq(youVersionURL(3034, { book: 43, chapter: 3, verse: 16 }), 'https://www.bible.com/bible/3034/JHN.3.16', 'John 3:16');
+  eq(youVersionURL(1693, { book: 19, chapter: 23, verse: 1 }), 'https://www.bible.com/bible/1693/PSA.23.1', 'Psalm 23:1');
 });
 
 const ref = async (text) => {

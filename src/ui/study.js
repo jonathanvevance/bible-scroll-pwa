@@ -1,4 +1,5 @@
-import { HUB_TOOLS, hubURL, verseName } from '../core/references.js';
+import { HUB_TOOLS, hubURL, verseName, youVersionURL } from '../core/references.js';
+import { lang } from '../lang/current.js';
 import { onVerseAction } from './actions.js';
 import { bible, journal } from './app-state.js';
 import { el } from './dom.js';
@@ -11,14 +12,21 @@ document.getElementById('debugSection').hidden = !debug;
 onVerseAction('study', (v) => {
   document.getElementById('studyTitle').textContent = verseName(v);
   document.getElementById('studyVerse').textContent = v.text;
-  document.getElementById('studyLinks').replaceChildren(...HUB_TOOLS.map(([title, tool, icon]) => {
-    const link = el('a', { href: hubURL(tool, v), target: '_blank', rel: 'noopener' });
-    link.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;
-    link.append(el('span', { textContent: title }));
-    return el('li', {}, link);
-  }));
+  document.getElementById('studyLinks').replaceChildren(
+    ...HUB_TOOLS.map(([title, tool, icon]) => studyLink(title, hubURL(tool, v), icon)),
+    studyLink('Open in YouVersion', youVersionURL(lang.youVersion, v), YOUVERSION_ICON),
+  );
   openSheet(study);
 });
+
+const YOUVERSION_ICON = '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>';
+
+function studyLink(title, href, icon) {
+  const link = el('a', { href, target: '_blank', rel: 'noopener' });
+  link.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>`;
+  link.append(el('span', { textContent: title }));
+  return el('li', {}, link);
+}
 
 document.getElementById('seedButton').addEventListener('click', async () => {
   const verses = bible.chapters.flatMap((ch) => bible.verses(ch)).filter((v) => v.text);

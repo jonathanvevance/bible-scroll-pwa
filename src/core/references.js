@@ -28,6 +28,8 @@ export const HUB_TOOLS = [
     '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/>'],
 ];
 export const hubURL = (tool, v) => `https://biblehub.com/${tool(bookInfo(v.book).slug, v.chapter, v.verse)}`;
+/** The verse on bible.com in YouVersion's `version`; iOS opens it in the YouVersion app when installed. */
+export const youVersionURL = (version, v) => `https://www.bible.com/bible/${version}/${bookInfo(v.book).usfm}.${v.chapter}.${v.verse}`;
 
 export const squash = (s) => s.toLowerCase().replaceAll(' ', '');
 

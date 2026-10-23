@@ -9,6 +9,8 @@ export default {
   quoteName: 'BSB',
   /** Written into backups. */
   translation: 'BSB',
+  /** The same translation in YouVersion (bible.com/bible/3034). */
+  youVersion: 3034,
   backupFileName: 'Bible Scroll backup.json',
   database: 'bible-scroll',
   storagePrefix: '',

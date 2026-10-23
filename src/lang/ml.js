@@ -6,6 +6,8 @@ export default {
   bibleFile: 'mal1910.json',
   quoteName: 'Sathyavedapusthakam',
   translation: 'Sathyavedapusthakam 1910',
+  /** The 1910 text in YouVersion: Malayalam OV Bible, MALOVBSI (bible.com/bible/1693). */
+  youVersion: 1693,
   backupFileName: 'Bible Scroll Malayalam backup.json',
   database: 'bible-scroll-ml',
   storagePrefix: 'ml.',
