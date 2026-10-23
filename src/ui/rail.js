@@ -1,7 +1,5 @@
 import { packKey, verseName } from '../core/references.js';
 import { chapterPageIDs, currentVerse, endGlide, itemFor, scrollToPage, settleSoon, stopAdvance } from './feed.js';
-import { tick } from './haptics.js';
-
 // ---------- Verse rail ----------
 
 export const rail = document.getElementById('rail');
@@ -62,16 +60,11 @@ function scrubTo(clientY) {
   railLabel.textContent = verseName(v);
   railLabel.style.top = `${box.top + ((index + 0.5) / n) * box.height}px`;
   railLabel.hidden = false;
-  tick();
 }
 
 rail.addEventListener('pointerdown', (e) => {
   if (!railState.ids.length) return;
-  // Touches are captured to the element under the finger anyway. Capturing to the rail would
-  // retarget the tap's click away from the haptic switch, silencing it.
-  if (e.pointerType !== 'touch') {
-    try { rail.setPointerCapture(e.pointerId); } catch {}
-  }
+  try { rail.setPointerCapture(e.pointerId); } catch {}
   railState.scrubbing = true;
   railState.scrubIndex = -1;
   stopAdvance();

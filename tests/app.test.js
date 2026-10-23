@@ -107,15 +107,6 @@ test('every file each app caches for offline use exists', async () => {
   }
 });
 
-test('only the rail carries a haptic switch', async () => {
-  const { frame, doc } = await boot();
-  doc.getElementById('jumpButton').click();
-  doc.querySelector('#bookList button.chevron').click();
-  await new Promise((r) => setTimeout(r));
-  eq([...doc.querySelectorAll('input.haptic')].filter((s) => !s.closest('#rail')).length, 0, 'switches outside the rail');
-  frame.remove();
-});
-
 test('every sheet opens through openSheet, which pauses the feed', async () => {
   const text = await (await fetch('sw.js')).text();
   const files = [...text.matchAll(/'(src\/[^']+\.js)'/g)].map((m) => m[1]);

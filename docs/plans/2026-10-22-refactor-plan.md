@@ -7,7 +7,7 @@ Findings referenced as "review #N" are in `docs/review-2026-10-22.md`.
 ## Goals
 
 - Behaviour stays the same unless a phase says otherwise. Every phase leaves the app working.
-- One way to do each thing: one haptic guard, one way to refresh after a data change, one card builder.
+- One way to do each thing: one way to refresh after a data change, one card builder.
 - Each module owns its state; nothing reaches into another module's variables.
 - English and Malayalam come from this one repo, so fixes land once.
 - Still no framework and no build step for the app itself; plain ES modules.
@@ -45,7 +45,7 @@ Review #1, #3, #4, #5. Small, targeted changes in the current `app.js`, before a
 
 ## Phase 3: standards
 
-- `CODING_STANDARDS.md`: module layout and what goes where, state ownership, events, the haptic and pressable rule, naming, comment style, how to add a sheet or a tab, release steps. Future agent work follows it.
+- `CODING_STANDARDS.md`: module layout and what goes where, state ownership, events, the touch rule, naming, comment style, how to add a sheet or a tab, release steps. Future agent work follows it.
 - `AGENTS.md`: one paragraph pointing to the standards, the checklist and the test command.
 
 ## Phase 4: split `app.js` into modules (pure moves)
@@ -66,7 +66,6 @@ src/
     prefs.js         every localStorage key in one place
   ui/
     dom.js           el(), templates
-    haptics.js       tick(), withHaptic()
     sheets.js        shared dialog behaviour
     feed.js          verse pages, settling, auto-advance
     rail.js          verse rail scrubber
@@ -83,22 +82,20 @@ src/
 - Each module imports what it uses; module-scope constants move to the module that owns them (review #13).
 - `sw.js` `ASSETS` list updated.
 - Verify: all tests and the full device checklist; the diff should read as moves.
-- Done (v133). Split by a script that works out each module's imports and exports, so no code was retyped. Not a pure move in four places: `bible` and `journal` are set through `setData()` (an import can't be assigned); `LAST_VERSE` moved to `app-state.js` and the card-tap handler became `openCard()` in `liked.js`, both because a module read them while loading before they were set; `DRAG_PX` moved to `haptics.js`. `prefs.js` waits for phase 6. Also added `study.js` and `app-state.js` (shared state, emptied in phase 6), and a start-up test that boots the app in a frame. Section banner comments were left as they were.
+- Done (v133). Split by a script that works out each module's imports and exports, so no code was retyped. Not a pure move in three places: `bible` and `journal` are set through `setData()` (an import can't be assigned); `LAST_VERSE` moved to `app-state.js` and the card-tap handler became `openCard()` in `liked.js`, both because a module read them while loading before they were set. `prefs.js` waits for phase 6. Also added `study.js` and `app-state.js` (shared state, emptied in phase 6), and a start-up test that boots the app in a frame. Section banner comments were left as they were.
 
 ## Phase 5: shared building blocks
 
-- `ui/pressable.js`: one slide-off guard for everything with a hidden haptic switch. It tracks one touch by identifier, disables that container's switches on a drag, scroll or `touchcancel`, swallows the following click, and re-enables when that touch is over. It replaces the four copies, with the Jump sheet's "touch stopped a scroll" rule as an option (review #2, #6, #12, the two-finger risk).
 - Journal emits a `change` event after every write; one subscriber refreshes counts, hearts, the backup state and the visible tab. This replaces the seven manual refreshes (review #9).
 - `Bible#text(key)`, one `verseCard()`, one `groupByDay()`, shared date helpers (review #13).
 - Verify: tests, plus the checklist's touch section on every surface.
-- Done (v136). `guardPresses(container, { group, scrollers })` registers each surface; the "touch stopped a scroll" rule applies to every container that scrolls. Switches are derived by `syncSwitches()` from the button's `disabled` and `.dragged`, which also does phase 6's switch rule early (review #8). Instead of one subscriber, each module subscribes to `onJournalChange()` for what it owns (feed pages, backup state), and tabs register their render with `registerTab()`, which also re-renders the visible tab; this removed the import cycle between `tabs.js` and the tabs it shows. `groupByDay()` became `appendByDay()` in `ui/cards.js`, because Reflections loads a page at a time; date helpers are in `core/dates.js`. Tests: the guard (touch events), journal change events, dates and `Bible#text`, and an app test that an open Liked or Reflections tab follows the journal. Checked in the simulator: like, write a reflection, both tabs.
+- Done (v136). Instead of one subscriber, each module subscribes to `onJournalChange()` for what it owns (feed pages, backup state), and tabs register their render with `registerTab()`, which also re-renders the visible tab; this removed the import cycle between `tabs.js` and the tabs it shows. `groupByDay()` became `appendByDay()` in `ui/cards.js`, because Reflections loads a page at a time; date helpers are in `core/dates.js`. Tests: journal change events, dates and `Bible#text`, and an app test that an open Liked or Reflections tab follows the journal. Checked in the simulator: like, write a reflection, both tabs.
 
 ## Phase 6: state ownership
 
-- Each switch's `disabled` state comes from one rule: `button.disabled || inside .dragged` (review #8).
 - `prefs.js` gives every stored key a prefix, so a second language can share the origin without collisions. The English prefix is empty, so existing data is read as before.
 - `tab`, filters and timers live in their module's state, not in globals read across modules.
-- Done (v141). The switch rule was done in phase 5. `src/data/prefs.js` holds every stored setting (`preferences(prefix, storage)`; English uses `''`, phase 7 picks the Malayalam prefix). The feed owns its window, pages and timers, and exports what others need (`currentVerse()`, `readingPlace()`, `itemFor()`, `chapterPageIDs()`, `scrollToPage()`, `stopAdvance()`, `openAt()`). The same rule was applied where it turned up: the rail's state (`isScrubbing()`), the verse-action table (`onVerseAction()`) and `tab` (`currentTab()`). `app-state.js` now holds only what start-up sets once. Tests: preferences (old keys still read, prefixes stay apart) and an app test that opens the Jump sheet. Checked in the simulator: reopening at the saved verse, Jump, Like, Reflect, Study, scrolling saves the place, auto-advance past a chapter end, the Reflections filter.
+- Done (v141). `src/data/prefs.js` holds every stored setting (`preferences(prefix, storage)`; English uses `''`, phase 7 picks the Malayalam prefix). The feed owns its window, pages and timers, and exports what others need (`currentVerse()`, `readingPlace()`, `itemFor()`, `chapterPageIDs()`, `scrollToPage()`, `stopAdvance()`, `openAt()`). The same rule was applied where it turned up: the rail's state (`isScrubbing()`), the verse-action table (`onVerseAction()`) and `tab` (`currentTab()`). `app-state.js` now holds only what start-up sets once. Tests: preferences (old keys still read, prefixes stay apart) and an app test that opens the Jump sheet. Checked in the simulator: reopening at the saved verse, Jump, Like, Reflect, Study, scrolling saves the place, auto-advance past a chapter end, the Reflections filter.
 
 ## Phase 7: language as configuration
 

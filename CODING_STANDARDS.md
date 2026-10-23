@@ -45,9 +45,8 @@ docs/                      review findings, plans, the device checklist
 - Changing the database shape needs a new `indexedDB.open` version with an upgrade step, and a test that upgrades a database of the previous version without losing anything.
 - Changing the backup file: new fields are optional, so older versions of the app ignore them; anything an older version can't safely ignore needs a new `BACKUP_FORMAT` and a test.
 
-## Touch and haptics
+## Touch
 
-- iOS gives script no haptic API; only a tap on a native switch ticks. Buttons and links carry no switch, so taps and scrolls stay Safari's own; they tick on Android only, through `tick()` in `src/ui/haptics.js`. The rail is the one exception, with its own switch in `index.html`.
 - Presses are Safari's own: the pressed look is `:active`, a darker shade (10% brighter in dark mode). List rows take the list highlight; bare icons and text dim. Never write touch tracking for a control.
 - Hit targets are at least 44×44 points.
 

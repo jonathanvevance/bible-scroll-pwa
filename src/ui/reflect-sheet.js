@@ -3,10 +3,12 @@ import { onVerseAction, shareText, verseQuote } from './actions.js';
 import { journal } from './app-state.js';
 import { el } from './dom.js';
 import { settle } from './feed.js';
-import { DRAG_PX } from './haptics.js';
 import { openSheet, trackKeyboard } from './sheets.js';
 
 // Reflections timeline
+
+/** How far a finger may move before it counts as a swipe rather than a tap. */
+const DRAG_PX = 10;
 
 const timeline = document.getElementById('timeline');
 const composerText = document.getElementById('composerText');

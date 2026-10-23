@@ -10,7 +10,7 @@ const APP = 'bible-scroll-ml';
 const BIBLE = 'mal1910.json';
 /** Where the files every language shares are, relative to this worker. */
 const SHARED = '../';
-const VERSION = 183;
+const VERSION = 184;
 const CACHE = `${APP}-v${VERSION}`;
 const ASSETS = ['./', 'index.html', 'manifest.webmanifest', BIBLE, ...[
   'style.css',
@@ -32,7 +32,6 @@ const ASSETS = ['./', 'index.html', 'manifest.webmanifest', BIBLE, ...[
   'src/ui/cards.js',
   'src/ui/dom.js',
   'src/ui/feed.js',
-  'src/ui/haptics.js',
   'src/ui/history.js',
   'src/ui/jump.js',
   'src/ui/liked.js',

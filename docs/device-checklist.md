@@ -1,16 +1,14 @@
 # Device checklist
 
-Run on the simulator (or a phone) after any change that touches touch handling, sheets, the feed, or saved data. Automated tests (`tests/run.sh`) cover the journal and the slide-off guard with simulated touches; this covers what only a real touch screen shows.
+Run on the simulator (or a phone) after any change that touches touch handling, sheets, the feed, or saved data. Automated tests (`tests/run.sh`) cover the journal; this covers what only a real touch screen shows.
 
 Every button and link should pass the **press test**:
 
-- **Tap:** it darkens while held (icons and text dim), one tick, the action happens. No blue ring.
-- **Press, slide a little, release:** still darkened; one tick, the action happens.
-- **Press, slide well away, release:** the shade clears once the finger is about a finger's width past the edge; no tick, nothing happens.
-- **Press, slide well away and back, release:** the shade comes back; the action happens.
-- **Long press until iOS takes over (magnifier or callout), then release:** nothing happens, no tick.
+- **Tap:** it darkens while held (icons and text dim), the action happens. No blue ring.
+- **Press, slide a little, release:** the action happens.
+- **Press, slide well away, release:** nothing happens.
+- **Long press until iOS takes over (magnifier or callout), then release:** nothing happens.
 - **Flick the list or page starting on the button:** it scrolls, nothing is pressed.
-- **Quick re-tap right after a slide-off:** the second tap works normally.
 - **Two fingers (slide one off, tap with the other, lift both):** nothing unintended happens.
 
 ## Feed
@@ -19,7 +17,7 @@ Every button and link should pass the **press test**:
 - [ ] End of a chapter: the chapter-end page appears and auto-advances to the next chapter.
 - [ ] Tap Jump or History just as the auto-advance starts: the feed stays on the chapter-end page, and History does not list the next chapter.
 - [ ] Start of Genesis and end of Revelation: no crash, sensible boundary pages.
-- [ ] Verse rail: drag to scrub, release lands on that verse, tick on each verse.
+- [ ] Verse rail: drag to scrub, release lands on that verse.
 - [ ] Relaunch: opens at the last verse read.
 - [ ] Press test on the Bible, Reflections and Liked tabs, the Jump and History pills, the person button, sheet Done and Cancel buttons, the testament switch, the Reflections and Liked cards, and the Edit, Share and Delete swipe buttons.
 
@@ -29,7 +27,7 @@ Every button and link should pass the **press test**:
 - [ ] Like: heart fills red with the pop; tap again to unlike; the Liked tab updates.
 - [ ] Reflect: sheet opens on the right verse; the count badge updates after saving.
 - [ ] Share: share sheet with the verse text and reference.
-- [ ] Study: opens Bible Hub on the right verse; each link ticks and opens once.
+- [ ] Study: opens Bible Hub on the right verse; each link opens once.
 
 ## History menu
 
