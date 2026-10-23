@@ -1,6 +1,7 @@
 import { daysAgo } from '../core/dates.js';
 import { unpackKey, verseName } from '../core/references.js';
 import { prefs } from '../data/prefs.js';
+import { reduceMotion } from './app-state.js';
 import { el } from './dom.js';
 import { jumpTo, pauseFeed } from './feed.js';
 import { guardPresses } from './pressable.js';
@@ -46,6 +47,8 @@ function ago(time) {
 
 /** Not a sheet: it opens under the top bar, so the History pill can close it again. */
 function openHistory() {
+  clearTimeout(closeTimer);
+  historyMenu.classList.remove('closing');
   pauseFeed();
   historyList.replaceChildren(...historyPlaces().map((h) => {
     const button = el('button', {}, verseName(unpackKey(h.key)), el('time', {}, ago(h.time)));
@@ -56,9 +59,24 @@ function openHistory() {
   historyMenu.hidden = false;
 }
 
-function closeHistory() { historyMenu.hidden = true; }
+const HISTORY_CLOSE_MS = 200;
+let closeTimer;
 
-historyButton.addEventListener('click', () => { if (historyMenu.hidden) openHistory(); else closeHistory(); });
+/** Shrinks back into the pill, the way it came out, then hides. */
+function closeHistory() {
+  if (historyMenu.hidden || historyMenu.classList.contains('closing')) return;
+  if (reduceMotion.matches) { historyMenu.hidden = true; return; }
+  historyMenu.classList.add('closing');
+  closeTimer = setTimeout(() => {
+    historyMenu.classList.remove('closing');
+    historyMenu.hidden = true;
+  }, HISTORY_CLOSE_MS);
+}
+
+historyButton.addEventListener('click', () => {
+  if (historyMenu.hidden || historyMenu.classList.contains('closing')) openHistory();
+  else closeHistory();
+});
 historyMenu.addEventListener('click', (e) => { if (e.target === historyMenu) closeHistory(); });
 
 // As in iOS menus, a touch that slides away from where it began picks nothing.

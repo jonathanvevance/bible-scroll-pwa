@@ -73,7 +73,8 @@ test('with History open, a tap on the Jump pill only closes History', async () =
   doc.getElementById('historyMenu').hidden = false;
   const centre = (node) => { const r = node.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
   doc.elementFromPoint(...centre(jumpButton)).click();
-  ok(doc.getElementById('historyMenu').hidden, 'History closed');
+  await new Promise((r) => setTimeout(r, 250));
+  ok(doc.getElementById('historyMenu').hidden, 'History closed, after its animation');
   ok(!doc.getElementById('jump').open, 'Jump sheet not opened');
   doc.getElementById('historyMenu').hidden = false;
   ok(history.contains(doc.elementFromPoint(...centre(history))), 'the History pill still takes taps');

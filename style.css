@@ -316,8 +316,12 @@ button {
 .history-menu[hidden] { display: none; }
 /* While it is open a tap anywhere else only closes it, as in iOS: the top bar lets taps through
    to the menu's backdrop, except on the History pill, which closes it itself. */
-.history-menu:not([hidden]) ~ .topbar { pointer-events: none; }
-.history-menu:not([hidden]) ~ .topbar #historyButton { pointer-events: auto; }
+.history-menu:not([hidden], .closing) ~ .topbar { pointer-events: none; }
+.history-menu:not([hidden], .closing) ~ .topbar #historyButton { pointer-events: auto; }
+/* Closing runs the opening backwards; taps already go to whatever is underneath. */
+.history-menu.closing { pointer-events: none; animation: fade-out 0.2s ease-in forwards; }
+.history-menu.closing .history-card { animation: menu-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards; }
+@keyframes menu-out { to { opacity: 0; transform: scale(0.6); } }
 .history-card {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 52px);
