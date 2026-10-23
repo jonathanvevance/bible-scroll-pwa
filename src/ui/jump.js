@@ -3,7 +3,7 @@ import { bookInfo, parseReference, squash, verseName } from '../core/references.
 import { lang } from '../lang/current.js';
 import { bible } from './app-state.js';
 import { el } from './dom.js';
-import { jumpTo, readingPlace } from './feed.js';
+import { jumpUnder, readingPlace } from './feed.js';
 import { guardPresses } from './pressable.js';
 import { closeSheet, openSheet, slideIn } from './sheets.js';
 
@@ -17,15 +17,19 @@ const jumpTitle = document.getElementById('jumpTitle');
 const bookSearch = document.getElementById('bookSearch');
 const testaments = document.getElementById('testaments');
 let testament = 'old';
+/** What the book list was last built for, and where it was scrolled when a book was opened. */
+let listedFor = null;
+let bookScroll = 0;
 document.getElementById('attribution').innerHTML = lang.attribution;
 
-async function goToReference(verse) {
-  await closeSheet(jump);
-  jumpTo(verse.key);
+function goToReference(verse) {
+  closeSheet(jump);
+  jumpUnder(verse.key);
 }
 
 function renderBooks() {
   const query = squash(bookSearch.value);
+  listedFor = `${testament}|${query}`;
   testaments.hidden = query !== '';
   readingSection.hidden = query !== '';
   for (const b of testaments.children) b.classList.toggle('selected', b.dataset.testament === testament);
@@ -49,14 +53,15 @@ function showBooks() {
   bookView.hidden = false;
   jumpBack.hidden = true;
   jumpTitle.textContent = 'Books';
-  renderBooks();
+  if (listedFor === `${testament}|${squash(bookSearch.value)}`) bookView.scrollTop = bookScroll;
+  else renderBooks();
 }
-jumpBack.addEventListener('click', () => slideIn(bookView, -40));
 
 function showChapters(order) {
   const book = bookInfo(order);
   const here = readingPlace();
   testament = order <= 39 ? 'old' : 'new';
+  bookScroll = bookView.scrollTop;
   bookView.hidden = true;
   chapterView.hidden = false;
   jumpBack.hidden = false;
@@ -65,9 +70,9 @@ function showChapters(order) {
   grid.replaceChildren(...Array.from({ length: book.chapters }, (_, i) => {
     const button = el('button', { textContent: String(i + 1) });
     if (here.book === order && here.chapter === i + 1) button.classList.add('current');
-    button.addEventListener('click', async () => {
-      await closeSheet(jump);
-      jumpTo(bible.chapter(order, i + 1).key + 1);
+    button.addEventListener('click', () => {
+      closeSheet(jump);
+      jumpUnder(bible.chapter(order, i + 1).key + 1);
     });
     return button;
   }));
@@ -83,7 +88,7 @@ bookSearch.addEventListener('keydown', (e) => {
   const verse = e.key === 'Enter' && parseReference(bookSearch.value, bible);
   if (verse) goToReference(verse);
 });
-jumpBack.addEventListener('click', showBooks);
+jumpBack.addEventListener('click', () => { showBooks(); slideIn(bookView, -40); });
 
 // Opens on the books, since swiping already moves between nearby chapters. The book being read
 // sits at the top, one tap from its chapters.

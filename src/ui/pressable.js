@@ -1,5 +1,6 @@
 // Presses that behave like iOS buttons. A control looks pressed (the `pressed` class) while the
-// finger is on it or near it. Sliding well away lets go: the look clears and lifting there does
+// finger is on it or near it (in something that scrolls, after a moment, so a scroll starting
+// there never flashes it). Sliding well away lets go: the look clears and lifting there does
 // nothing. Sliding back presses it again. A press that turns into a scroll, begins by stopping a
 // scroll, or is taken over by iOS (a long press shows the magnifier) is cancelled for good.
 // While a press doesn't count, its group has the `dragged` class, the click that follows the
@@ -14,19 +15,26 @@
 const SLOP_PX = 70;
 /** How long after a press that didn't count the controls wait before taking presses again. */
 const RESET_MS = 400;
-/** A touch this soon after a scroll is stopping it, not pressing. */
+/** A touch this soon after a scroll that was still moving is stopping it, not pressing. */
 const SCROLL_GRACE_MS = 150;
-/** A switch turned off and on again mid-press may not toggle on the lift; then the press clicks. */
+/** A scroll creeping less than this per event has come to rest, though it still reports. */
+const SETTLED_PX = 1;
+/** In something that scrolls a touch may be a scroll starting, so the look waits, as in UIKit. */
+const PRESS_DELAY_MS = 100;
+/** A press that slid away and back clicks itself on the lift; a real click this soon after is the same press. */
 const CLICK_WAIT_MS = 300;
 
 const areas = [];
-/** When each element (or the page) last scrolled. */
-const scrolledAt = new Map();
+/** Each element (or the page) that scrolled: { at, top, left, moving }. */
+const scrolls = new Map();
 /**
- * The latest touch, or null: { id, control, group, rect, down, near, left, cancelled, clicked }.
- * `near`: the finger is within the slop of the control; `left`: it has been away and back.
+ * The latest touch, or null: { id, control, group, rect, down, near, left, cancelled, lit }.
+ * `near`: the finger is within the slop of the control; `left`: it has been away and back;
+ * `lit`: the pressed look may show.
  */
 let touch = null;
+/** The last press that clicked itself, until the next touch: { control, at, clicking }. */
+let selfClick = null;
 
 /** The rail is a slider: dragging along it is the point, so it is never guarded. */
 const pressable = (target) => (target.closest('#rail') ? null : target.closest('button, a[href]'));
@@ -45,12 +53,24 @@ function groupFor(target, control) {
   return area?.group(target) ?? control;
 }
 
-const scrolling = (target, since) => [...scrolledAt].some(([node, time]) => time > since && node.contains(target));
+const scrolling = (target, since) => [...scrolls].some(([node, s]) => s.moving && s.at > since && node.contains(target));
 const counts = () => touch.near && !touch.cancelled;
+
+function inScroller(control) {
+  for (let node = control.parentElement; node; node = node.parentElement) {
+    if (node.scrollHeight <= node.clientHeight + 1 && node.scrollWidth <= node.clientWidth + 1) continue;
+    const { overflowX, overflowY } = getComputedStyle(node);
+    if (/auto|scroll/.test(overflowX + overflowY)) return true;
+  }
+  return false;
+}
 
 document.addEventListener('scroll', (e) => {
   const node = e.target === document ? document.documentElement : e.target;
-  scrolledAt.set(node, performance.now());
+  const last = scrolls.get(node);
+  const { scrollTop: top, scrollLeft: left } = node;
+  const moved = last ? Math.abs(top - last.top) + Math.abs(left - last.left) : Infinity;
+  scrolls.set(node, { at: performance.now(), top, left, moving: moved >= SETTLED_PX });
   if (touch?.down && node.contains(touch.control)) cancel();
 }, { capture: true, passive: true });
 
@@ -63,7 +83,7 @@ export function syncSwitches(root) {
 
 function show() {
   const { control, group } = touch;
-  control.classList.toggle('pressed', touch.down && counts());
+  control.classList.toggle('pressed', touch.down && touch.lit && counts());
   group.classList.toggle('dragged', !counts());
   syncSwitches(group);
 }
@@ -88,15 +108,23 @@ const followed = (e) => touch && [...e.changedTouches].some((t) => t.identifier 
 document.addEventListener('touchstart', (e) => {
   if (e.touches.length > 1) return cancel();
   release();
+  selfClick = null;
   const control = pressable(e.target);
   if (!control) return;
-  touch = {
+  const started = touch = {
     id: e.changedTouches[0].identifier, control, group: groupFor(e.target, control),
-    rect: control.getBoundingClientRect(), down: true, near: true, left: false, cancelled: false, clicked: false,
+    rect: control.getBoundingClientRect(), down: true, near: true, left: false, cancelled: false, lit: !inScroller(control),
   };
   if (scrolling(e.target, performance.now() - SCROLL_GRACE_MS)) touch.cancelled = true;
+  if (!touch.lit) setTimeout(() => { if (touch === started) { started.lit = true; show(); } }, PRESS_DELAY_MS);
   show();
 }, { capture: true, passive: true });
+
+/** A tap too quick for the delayed look still shows it briefly. */
+function flash(control) {
+  control.classList.add('pressed');
+  setTimeout(() => { if (touch?.control !== control) control.classList.remove('pressed'); }, PRESS_DELAY_MS);
+}
 
 document.addEventListener('touchmove', (e) => {
   if (!touch?.down || touch.cancelled) return;
@@ -117,12 +145,14 @@ document.addEventListener('touchend', (e) => {
   ended.down = false;
   show();
   if (!counts()) return void setTimeout(() => { if (touch === ended) release(); }, RESET_MS);
-  if (!ended.left) return release();
-  setTimeout(() => {
-    if (touch !== ended) return;
-    release();
-    if (!ended.clicked) ended.control.click();
-  }, CLICK_WAIT_MS);
+  release();
+  if (!ended.lit) flash(ended.control);
+  // iOS sends no click after a finger has moved this far, so the press clicks itself, through
+  // its switch where it has one, so the tap ticks like any other.
+  if (!ended.left) return;
+  selfClick = { control: ended.control, at: performance.now(), clicking: true };
+  (ended.control.querySelector(':scope > input.haptic') ?? ended.control).click();
+  selfClick.clicking = false;
 }, { capture: true, passive: true });
 
 // After a cancel the finger may stay down long after, unseen by the page, and a switch still
@@ -130,11 +160,10 @@ document.addEventListener('touchend', (e) => {
 document.addEventListener('touchcancel', (e) => { if (followed(e)) cancel(); }, { capture: true, passive: true });
 
 document.addEventListener('click', (e) => {
-  if (!touch || !(touch.group.contains(e.target) || touch.control.contains(e.target))) return;
-  if (counts()) {
-    touch.clicked = true;
-    return;
-  }
+  const repeat = selfClick && !selfClick.clicking && performance.now() - selfClick.at < CLICK_WAIT_MS
+    && selfClick.control.contains(e.target);
+  const swallowed = touch && !counts() && (touch.group.contains(e.target) || touch.control.contains(e.target));
+  if (!repeat && !swallowed) return;
   e.preventDefault();
   e.stopPropagation();
 }, true);

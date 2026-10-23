@@ -34,26 +34,36 @@ export function fadeToVerse(key) {
 export function slideIn(node, from) {
   if (reduceMotion.matches) return;
   node.animate(
-    [{ opacity: 0, transform: `translateX(${from}px)` }, { opacity: 1, transform: 'none' }],
+    [{ transform: `translateX(${from}px)` }, { transform: 'none' }],
     { duration: 300, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
   );
 }
+
+// One scroller at a time: a swipe only moves a sheet body that can scroll. Everywhere else on a
+// sheet, and on a body too short to scroll, CSS touch-action stops it, so the page behind never
+// pans. CSS rather than a touchmove handler, which would hold every scroll until script ran.
+// iOS reads touch-action when the finger lands, so `still` is kept up to date beforehand.
+function markStill(body) {
+  const canScroll = body.scrollHeight > body.clientHeight + 1 && getComputedStyle(body).overflowY !== 'hidden';
+  body.classList.toggle('still', !canScroll);
+}
+const resized = new ResizeObserver((entries) => { for (const e of entries) markStill(e.target); });
 
 for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog || e.target.closest('[data-close]')) closeSheet(dialog);
   });
   dialog.addEventListener('close', stopAdvance);
-  // One scroller at a time: a swipe only moves the area under the finger if that area can
-  // scroll; otherwise it is swallowed, so the page behind never pans or scrolls.
-  dialog.addEventListener('touchmove', (e) => {
-    for (let node = e.target; node && node !== dialog; node = node.parentElement) {
-      if (!node.matches('.sheet-body, textarea')) continue;
-      const canScroll = node.scrollHeight > node.clientHeight + 1 && getComputedStyle(node).overflowY !== 'hidden';
-      if (canScroll) return;
-    }
-    e.preventDefault();
-  }, { passive: false });
+  let queued = false;
+  new MutationObserver(() => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      for (const body of dialog.querySelectorAll('.sheet-body')) markStill(body);
+    });
+  }).observe(dialog, { childList: true, subtree: true });
+  for (const body of dialog.querySelectorAll('.sheet-body')) resized.observe(body);
 }
 
 // Keep sheets above the keyboard: the layout viewport does not shrink when it opens.

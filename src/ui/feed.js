@@ -242,3 +242,5 @@ export function goToVerse(key) {
 }
 
 export const jumpTo = (key) => { rememberPlace(); fadeToVerse(key); };
+/** For a sheet sliding away: the feed changes under it at once, with nothing to fade. */
+export const jumpUnder = (key) => { rememberPlace(); goToVerse(key); };

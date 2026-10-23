@@ -186,6 +186,34 @@ test('pressable: a touch that stops a scroll, or turns into one, presses nothing
   f.remove();
 });
 
+test('pressable: in a scroller the pressed look waits, and a quick tap still flashes it', async () => {
+  const f = fixture();
+  f.root.style.cssText = 'height: 20px; overflow-y: auto';
+  f.root.append(Object.assign(document.createElement('div'), { style: 'height: 200px' }));
+  const p = finger(f.button);
+  p.down();
+  ok(!f.button.classList.contains('pressed'), 'not pressed at once');
+  await wait(150);
+  ok(f.button.classList.contains('pressed'), 'pressed after a moment');
+  p.up();
+  const q = finger(f.button);
+  q.down(); q.up();
+  ok(f.button.classList.contains('pressed'), 'a quick tap flashes');
+  await wait(150);
+  ok(!f.button.classList.contains('pressed'), 'and clears');
+  f.remove();
+});
+
+test('pressable: a scroll creeping to rest does not block a tap', async () => {
+  const f = fixture();
+  f.root.dispatchEvent(new Event('scroll'));
+  f.root.dispatchEvent(new Event('scroll')); // same position: settled
+  const p = finger(f.button);
+  p.down(); p.up(); f.button.click();
+  eq(f.clicks(), 1, 'the tap counts');
+  f.remove();
+});
+
 test('pressable: only the touched group is affected', async () => {
   const f = fixture((root) => ({ group: (target) => target.closest('button') }));
   const p = finger(f.button);

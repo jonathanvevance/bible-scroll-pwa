@@ -690,7 +690,8 @@ html:has(dialog[open]) .tab-bar {
 .sheet::backdrop { background: rgba(0, 0, 0, 0.3); }
 .sheet[open] { animation: sheet-up 0.5s var(--ease-ios); }
 .sheet[open]::backdrop { animation: fade-in 0.4s ease-out; }
-.sheet.closing { animation: sheet-down 0.26s cubic-bezier(0.4, 0, 1, 1) forwards; }
+/* A sheet on its way out takes no more taps: a second chapter tapped then would open too. */
+.sheet.closing { animation: sheet-down 0.26s cubic-bezier(0.4, 0, 1, 1) forwards; pointer-events: none; }
 .sheet.closing::backdrop { animation: fade-out 0.26s ease-in forwards; }
 @keyframes sheet-up { from { transform: translateY(calc(100% + var(--sheet-gap, 0px))); } }
 @keyframes sheet-down { to { transform: translateY(calc(100% + var(--sheet-gap, 0px))); } }
@@ -723,6 +724,11 @@ html:has(dialog[open]) .tab-bar {
   padding: 8px 16px calc(env(safe-area-inset-bottom) + 16px);
   overscroll-behavior: contain;
 }
+/* Only a body that can scroll, or a text box, pans; the rest of a sheet never moves the page
+   behind it (see markStill in sheets.js). */
+.sheet { touch-action: none; }
+.sheet :is(.sheet-body, textarea) { touch-action: pan-y; }
+.sheet .sheet-body.still { touch-action: none; }
 
 .verse-card {
   margin: 0 0 20px;
