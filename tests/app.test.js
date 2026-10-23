@@ -65,6 +65,21 @@ test('sliding off a tab or a top-bar button does nothing', async () => {
   frame.remove();
 });
 
+test('with History open, a tap on the Jump pill only closes History', async () => {
+  const { frame, doc } = await boot();
+  const jumpButton = doc.getElementById('jumpButton');
+  const history = doc.getElementById('historyButton');
+  history.hidden = false;
+  doc.getElementById('historyMenu').hidden = false;
+  const centre = (node) => { const r = node.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  doc.elementFromPoint(...centre(jumpButton)).click();
+  ok(doc.getElementById('historyMenu').hidden, 'History closed');
+  ok(!doc.getElementById('jump').open, 'Jump sheet not opened');
+  doc.getElementById('historyMenu').hidden = false;
+  ok(history.contains(doc.elementFromPoint(...centre(history))), 'the History pill still takes taps');
+  frame.remove();
+});
+
 test('pressed looks come from the press guard, never :active', async () => {
   const { frame, doc } = await boot();
   const rules = (list) => [...list].flatMap((r) => (r.cssRules ? [r, ...rules(r.cssRules)] : [r]));

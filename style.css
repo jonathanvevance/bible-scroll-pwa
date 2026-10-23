@@ -314,6 +314,10 @@ button {
   animation: fade-in 0.2s;
 }
 .history-menu[hidden] { display: none; }
+/* While it is open a tap anywhere else only closes it, as in iOS: the top bar lets taps through
+   to the menu's backdrop, except on the History pill, which closes it itself. */
+.history-menu:not([hidden]) ~ .topbar { pointer-events: none; }
+.history-menu:not([hidden]) ~ .topbar #historyButton { pointer-events: auto; }
 .history-card {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 52px);
