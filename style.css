@@ -251,7 +251,9 @@ button {
 /* An unselected tab or segment is see-through, so it shows the glass a selected one has. */
 :is(.tab, .segmented button):not(.selected).pressed { filter: none; background: var(--glass); }
 .history-list button.pressed, .history-clear.pressed, .reflection-card.pressed,
-.links > li > :is(a, button).pressed, .menu-list a.pressed { filter: none; background: var(--press); }
+.links:not(#bookList) > li > :is(a, button).pressed, .menu-list a.pressed { filter: none; background: var(--press); }
+/* The book list is for scrolling through; its rows don't light up. */
+#bookList button.pressed { filter: none; }
 /* No ring on a tapped control. Every control is a button or link, which iOS's own keyboard
    navigation outlines by itself. */
 :is(button, a):focus { outline: none; }
@@ -309,8 +311,8 @@ button {
   inset: 0;
   z-index: 1;
   background: rgba(0, 0, 0, 0.06);
-  -webkit-backdrop-filter: blur(3.5px);
-  backdrop-filter: blur(3.5px);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   animation: fade-in 0.2s;
 }
 .history-menu[hidden] { display: none; }
@@ -320,7 +322,7 @@ button {
 .history-menu:not([hidden], .closing) ~ .topbar #historyButton { pointer-events: auto; }
 /* The top bar sits above the backdrop so the pill stays sharp; the rest of it blurs by itself. */
 #jumpButton { transition: filter 0.2s; }
-.history-menu:not([hidden], .closing) ~ .topbar #jumpButton { filter: blur(3.5px) brightness(0.94); }
+.history-menu:not([hidden], .closing) ~ .topbar #jumpButton { filter: blur(2px) brightness(0.94); }
 /* Closing runs the opening backwards; taps already go to whatever is underneath. */
 .history-menu.closing { pointer-events: none; animation: fade-out 0.2s ease-in forwards; }
 .history-menu.closing .history-card { animation: menu-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards; }
