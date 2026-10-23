@@ -4,7 +4,6 @@ import { lang } from '../lang/current.js';
 import { bible } from './app-state.js';
 import { el } from './dom.js';
 import { jumpUnder, readingPlace } from './feed.js';
-import { guardPresses } from './pressable.js';
 import { closeSheet, openSheet, slideIn } from './sheets.js';
 
 // Jump to
@@ -108,5 +107,3 @@ document.getElementById('readingButton').addEventListener('click', () => {
   showChapters((readingPlace()).book);
   slideIn(chapterView, 40);
 });
-
-guardPresses(jump);

@@ -6,7 +6,6 @@ import { lang } from '../lang/current.js';
 import { LIKE } from './actions.js';
 import { bible, journal, onJournalChange } from './app-state.js';
 import { el, toast } from './dom.js';
-import { syncSwitches } from './pressable.js';
 import { backupBanner } from './reflections.js';
 import { closeSheet, openSheet } from './sheets.js';
 import { currentTab } from './tabs.js';
@@ -79,7 +78,6 @@ async function backupFile() {
 function setBackupEnabled(on) {
   for (const button of [backupNow, bannerBackup]) {
     button.disabled = !on;
-    syncSwitches(button);
   }
 }
 

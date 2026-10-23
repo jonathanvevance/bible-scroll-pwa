@@ -3,8 +3,6 @@ import { unpackKey, verseName } from '../core/references.js';
 import { prefs } from '../data/prefs.js';
 import { el } from './dom.js';
 import { jumpTo, pauseFeed } from './feed.js';
-import { guardPresses } from './pressable.js';
-
 // ---------- History ----------
 // Every jump (the chapter picker, a reference, a reflection card, a history entry) records the
 // place being left: newest first, one entry per chapter, five at most. The History pill lists
@@ -61,8 +59,6 @@ function closeHistory() { historyMenu.hidden = true; }
 historyButton.addEventListener('click', () => { if (historyMenu.hidden) openHistory(); else closeHistory(); });
 historyMenu.addEventListener('click', (e) => { if (e.target === historyMenu) closeHistory(); });
 
-// As in iOS menus, a touch that slides away from where it began picks nothing.
-guardPresses(historyMenu);
 document.getElementById('clearHistory').addEventListener('click', () => {
   prefs.history.clear();
   updateHistory();

@@ -3,8 +3,6 @@ import { lang } from '../lang/current.js';
 import { feed, journal } from './app-state.js';
 import { toast } from './dom.js';
 import { itemFor } from './feed.js';
-import { guardPresses } from './pressable.js';
-
 // ---------- Verse actions ----------
 
 /** Handlers for the buttons on each verse page, keyed by their data-action. */
@@ -19,10 +17,6 @@ feed.addEventListener('click', (e) => {
   const id = e.target.closest('.page').dataset.id;
   handlers[action](itemFor(id).verse, e.target.closest('[data-action]'));
 });
-
-// A slide off one verse action quiets the whole row, not just that button.
-guardPresses(feed, { group: (target) => target.closest('.actions') });
-
 /** Likes are the journal's 'favourite' marks, so favourites saved before keep showing. */
 export const LIKE = 'favourite';
 export function showLiked(button, liked) {

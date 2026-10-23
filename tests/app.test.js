@@ -46,25 +46,6 @@ test('the Jump sheet opens on the book being read', async () => {
   frame.remove();
 });
 
-test('sliding off a tab or a top-bar button does nothing', async () => {
-  const { frame, doc } = await boot();
-  const win = frame.contentWindow;
-  const slideOff = (target) => {
-    const rect = target.getBoundingClientRect();
-    const at = (dy) => new win.Touch({ identifier: 1, target, clientX: rect.left + 10, clientY: rect.top + 10 + dy });
-    target.dispatchEvent(new win.TouchEvent('touchstart', { bubbles: true, touches: [at(0)], changedTouches: [at(0)] }));
-    target.dispatchEvent(new win.TouchEvent('touchmove', { bubbles: true, touches: [at(200)], changedTouches: [at(200)] }));
-    target.dispatchEvent(new win.TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [at(200)] }));
-    target.click();
-  };
-  slideOff(doc.querySelector('[data-tab="reflections"]'));
-  ok(doc.getElementById('reflectionsView').hidden, 'still on the Bible tab');
-  await new Promise((r) => setTimeout(r, 450));
-  slideOff(doc.getElementById('jumpButton'));
-  ok(!doc.getElementById('jump').open, 'Jump sheet stays closed');
-  frame.remove();
-});
-
 // The app's own modules, from inside the frame, so a test can write to the journal the app shows.
 test('an open Liked or Reflections tab updates when the journal changes', async () => {
   const { frame, doc, appModule } = await boot();
@@ -126,41 +107,12 @@ test('every file each app caches for offline use exists', async () => {
   }
 });
 
-test('every button and link has a haptic switch, including ones built later', async () => {
+test('only the rail carries a haptic switch', async () => {
   const { frame, doc } = await boot();
-  const bare = () => [...doc.querySelectorAll('button, a[href]')]
-    .filter((b) => !b.closest('#rail') && !b.querySelector(':scope > input.haptic'))
-    .map((b) => b.id || b.className || b.textContent.trim());
-  const later = () => new Promise((r) => setTimeout(r));
-  eq(bare(), [], 'at start-up');
   doc.getElementById('jumpButton').click();
   doc.querySelector('#bookList button.chevron').click();
-  await later();
-  eq(bare(), [], 'in the Jump sheet');
-  const button = doc.body.appendChild(doc.createElement('button'));
-  await later();
-  eq(bare(), [], 'a button added later');
-  button.textContent = 'New text';
-  await later();
-  eq(bare(), [], 'after its text is replaced');
-  frame.remove();
-});
-
-test('tapping a link\'s switch follows the link', async () => {
-  const { frame, doc } = await boot();
-  const link = doc.body.appendChild(Object.assign(doc.createElement('a'), { href: '#followed', textContent: 'Link' }));
   await new Promise((r) => setTimeout(r));
-  link.querySelector('input.haptic').click();
-  eq(frame.contentWindow.location.hash, '#followed', 'followed');
-  frame.remove();
-});
-
-test('pressed looks come from the press guard, never :active', async () => {
-  const { frame, doc } = await boot();
-  const rules = (list) => [...list].flatMap((r) => (r.cssRules ? [r, ...rules(r.cssRules)] : [r]));
-  const selectors = rules([...doc.styleSheets].flatMap((s) => [...s.cssRules])).map((r) => r.selectorText ?? '');
-  eq(selectors.filter((s) => s.includes(':active')), [], ':active rules');
-  ok(selectors.some((s) => s.includes('.pressed')), 'a .pressed rule');
+  eq([...doc.querySelectorAll('input.haptic')].filter((s) => !s.closest('#rail')).length, 0, 'switches outside the rail');
   frame.remove();
 });
 

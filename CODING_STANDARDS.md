@@ -34,8 +34,8 @@ docs/                      review findings, plans, the device checklist
 - `src/ui/app-state.js` holds only what start-up sets once and every screen shares: the Bible, the journal, the feed element. Nothing there changes afterwards.
 - No module reads another module's variables directly, and no module-level `let` is written from outside its module.
 - Stored settings are declared once, in `src/data/prefs.js`, and read and written through `prefs` (`prefs.lastVerse.get()`). Nothing else touches `localStorage`. A new setting needs a new entry there; renaming a stored key loses what people have saved under it.
-- The DOM shows state; it is not where state lives. Exception: a CSS class used purely for styling (`.pressed`, `.dragged`, `.closing`).
-- A value derived from several reasons (for example, whether a haptic switch is enabled: the button is disabled, or a drag is in progress) is computed by one function from all the reasons, never set separately by each.
+- The DOM shows state; it is not where state lives. Exception: a CSS class used purely for styling (`.closing`, `.still`).
+- A value derived from several reasons is computed by one function from all the reasons, never set separately by each.
 
 ## Saved data
 
@@ -47,10 +47,8 @@ docs/                      review findings, plans, the device checklist
 
 ## Touch and haptics
 
-- iOS gives script no haptic API. Every button and link carries a hidden `<input type="checkbox" switch class="haptic">`, added by `src/ui/haptics.js`, including ones built later. Don't write the switch by hand. A tap on a link's switch doesn't follow the link, so `haptics.js` follows it. The rail is a div and has its own switch in `index.html`.
-- Presses follow iOS: a control looks pressed while the finger is on it or within 70 px of it; sliding farther lets go, and sliding back presses it again. Lifting while pressed acts, lifting while let go does nothing and plays no tick. A press that turns into a scroll, starts by stopping one, or is taken over by iOS (long press) is cancelled for good. Every control must pass the press test in `docs/device-checklist.md`.
-- The pressed look is a darker shade (10% brighter in dark mode), from the `.pressed` class only. List rows take the list highlight; bare icons and text dim. Never style `:active`: it stays on after the finger slides away. A test checks this.
-- That behaviour comes from one shared guard in `src/ui/pressable.js`, which covers every `button` and `a[href]` on the page with nothing to register; a scroll of anything the control sits in cancels the press. Never write touch tracking for a new control. Use `guardPresses(root, { group })` only when a whole area should react to a slide-off together (the verse actions, the History menu). The rail is a slider and is never guarded. Code that disables a button with a haptic calls `syncSwitches()` afterwards.
+- iOS gives script no haptic API; only a tap on a native switch ticks. Buttons and links carry no switch, so taps and scrolls stay Safari's own; they tick on Android only, through `tick()` in `src/ui/haptics.js`. The rail is the one exception, with its own switch in `index.html`.
+- Presses are Safari's own: the pressed look is `:active`, a darker shade (10% brighter in dark mode). List rows take the list highlight; bare icons and text dim. Never write touch tracking for a control.
 - Hit targets are at least 44×44 points.
 
 ## Sheets

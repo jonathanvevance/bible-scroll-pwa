@@ -242,7 +242,7 @@ button {
 }
 .rail-label[hidden] { display: block; opacity: 0; }
 
-/* Invisible native switch over a tappable element; tapping it plays the iOS haptic tick.
+/* Invisible native switch over the rail; tapping it plays the iOS haptic tick.
    It must keep its native appearance (opacity 0, not display: none) to count as a switch. */
 .haptic {
   position: absolute;
@@ -256,20 +256,17 @@ button {
   appearance: auto;
   opacity: 0;
 }
-/* Keeps each control's switch inside it; a control's own position wins over this. */
-:where(button:has(> .haptic), a:has(> .haptic)) { position: relative; }
-.chapter-pill, .links > li > button.chevron, .links > li > button.go-to, .chapter-grid button { position: relative; }
-
-/* Pressed look: a darker shade, as in iOS, set by the press guard (src/ui/pressable.js) while
-   the press counts. Style .pressed, never :active, which stays on after the finger slides away.
+/* Pressed look: a darker shade, as in iOS, from Safari's own :active, which waits a moment in
+   a scrolling list and clears when a scroll starts (it needs a touchstart listener; main.js).
    List rows take the list highlight; bare icons and text have nothing to shade, so they dim.
    A filter, since a control's own background rule would undo a background shade. */
-.pressed { filter: brightness(var(--press-brightness)); }
-:is(.action, .text-button, .note-cancel).pressed { filter: none; opacity: 0.4; }
+:where(button, a[href]):active { filter: brightness(var(--press-brightness)); }
+:is(.action, .text-button, .note-cancel):active { filter: none; opacity: 0.4; }
 /* An unselected tab or segment is see-through, so it shows the glass a selected one has. */
-:is(.tab, .segmented button):not(.selected).pressed { filter: none; background: var(--glass); }
-.history-list button.pressed, .history-clear.pressed, .reflection-card.pressed,
-.links > li > :is(a, button).pressed, .menu-list a.pressed { filter: none; background: var(--press); }
+:is(.tab, .segmented button):not(.selected):active { filter: none; background: var(--glass); }
+.history-list button:active, .history-clear:active, .reflection-card:active,
+.links > li > :is(a, button):active, .menu-list a:active { filter: none; background: var(--press); }
+#rail :active { filter: none; }
 /* No ring on a tapped control. Every control is a button or link, which iOS's own keyboard
    navigation outlines by itself. */
 :is(button, a, .haptic):focus { outline: none; }
