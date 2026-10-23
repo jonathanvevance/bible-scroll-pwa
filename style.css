@@ -309,8 +309,8 @@ button {
   inset: 0;
   z-index: 1;
   background: rgba(0, 0, 0, 0.06);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
   animation: fade-in 0.2s;
 }
 .history-menu[hidden] { display: none; }
@@ -320,7 +320,7 @@ button {
 .history-menu:not([hidden], .closing) ~ .topbar #historyButton { pointer-events: auto; }
 /* The top bar sits above the backdrop so the pill stays sharp; the rest of it blurs by itself. */
 #jumpButton { transition: filter 0.2s; }
-.history-menu:not([hidden], .closing) ~ .topbar #jumpButton { filter: blur(14px) brightness(0.94); }
+.history-menu:not([hidden], .closing) ~ .topbar #jumpButton { filter: blur(7px) brightness(0.94); }
 /* Closing runs the opening backwards; taps already go to whatever is underneath. */
 .history-menu.closing { pointer-events: none; animation: fade-out 0.2s ease-in forwards; }
 .history-menu.closing .history-card { animation: menu-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards; }
