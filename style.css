@@ -43,7 +43,7 @@
     --accent: #0a84ff;
     --destructive: #ff453a;
     --press: #3a3a3c;
-    --press-brightness: 1.25; /* any brighter and blue turns a glaring cyan */
+    --press-brightness: 1.1; /* any brighter and blue glares on a phone screen */
     --bar: rgba(44, 44, 48, 0.75);
   }
 }
