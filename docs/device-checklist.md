@@ -4,10 +4,10 @@ Run on the simulator (or a phone) after any change that touches touch handling, 
 
 Every button and link should pass the **press test**:
 
-- **Tap:** it darkens while held (icons and text dim), one tick, the action happens. No blue ring.
-- **Press, slide a little, release:** still darkened; one tick, the action happens.
-- **Press, slide well away, release:** the shade clears once the finger is about a finger's width past the edge; no tick, nothing happens.
-- **Press, slide well away and back, release:** the shade comes back; the action happens.
+- **Tap:** it fades while held (list rows turn grey instead), in light and dark mode; one tick, the action happens. No blue ring.
+- **Press, slide a little, release:** still faded; one tick, the action happens.
+- **Press, slide well away, release:** the fade clears once the finger is about a finger's width past the edge; no tick, nothing happens.
+- **Press, slide well away and back, release:** the fade comes back; the action happens.
 - **Long press until iOS takes over (magnifier or callout), then release:** nothing happens, no tick.
 - **Flick the list or page starting on the button:** it scrolls, nothing is pressed.
 - **Quick re-tap right after a slide-off:** the second tap works normally.
