@@ -2,7 +2,7 @@ import { HUB_TOOLS, hubURL, verseName } from '../core/references.js';
 import { onVerseAction } from './actions.js';
 import { bible, journal } from './app-state.js';
 import { el } from './dom.js';
-import { closeSheet } from './sheets.js';
+import { closeSheet, openSheet } from './sheets.js';
 
 const study = document.getElementById('study');
 const debug = location.hash.includes('debug');
@@ -17,7 +17,7 @@ onVerseAction('study', (v) => {
     link.append(el('span', { textContent: title }));
     return el('li', {}, link);
   }));
-  study.showModal();
+  openSheet(study);
 });
 
 document.getElementById('seedButton').addEventListener('click', async () => {

@@ -1,9 +1,16 @@
 import { reduceMotion } from './app-state.js';
-import { goToVerse, stopAdvance } from './feed.js';
+import { goToVerse, pauseFeed, stopAdvance } from './feed.js';
 
 // ---------- Sheets ----------
 
 const SHEET_CLOSE_MS = 260;
+
+/** Every sheet opens here, so none opens over a moving feed. `fill` runs after the pause. */
+export function openSheet(dialog, fill) {
+  pauseFeed();
+  fill?.();
+  dialog.showModal();
+}
 
 /** Slides the sheet away before closing it; resolves once it is gone. */
 export function closeSheet(dialog) {

@@ -8,7 +8,7 @@ import { bible, journal, onJournalChange } from './app-state.js';
 import { el, toast } from './dom.js';
 import { syncSwitches } from './pressable.js';
 import { backupBanner } from './reflections.js';
-import { closeSheet } from './sheets.js';
+import { closeSheet, openSheet } from './sheets.js';
 import { currentTab } from './tabs.js';
 
 // ---------- Backup ----------
@@ -149,7 +149,7 @@ function updateStats() {
 const help = document.getElementById('help');
 document.getElementById('helpButton').addEventListener('click', async () => {
   await closeSheet(backup);
-  help.showModal();
+  openSheet(help);
 });
 
 for (const button of document.querySelectorAll('.you-button')) {
@@ -157,7 +157,7 @@ for (const button of document.querySelectorAll('.you-button')) {
     updateStats();
     updateBackupStatus();
     prepareBackup();
-    backup.showModal();
+    openSheet(backup);
   });
 }
 

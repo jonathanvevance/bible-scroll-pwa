@@ -4,9 +4,8 @@ import { lang } from '../lang/current.js';
 import { bible } from './app-state.js';
 import { el } from './dom.js';
 import { jumpTo, readingPlace } from './feed.js';
-import { withHaptic } from './haptics.js';
 import { guardPresses } from './pressable.js';
-import { closeSheet, slideIn } from './sheets.js';
+import { closeSheet, openSheet, slideIn } from './sheets.js';
 
 // Jump to
 
@@ -34,12 +33,12 @@ function renderBooks() {
     ? BOOKS.filter((b) => [b.name, b.bsbName, b.usfm].some((n) => squash(n).includes(query)))
     : BOOKS.filter((b) => (b.order <= 39) === (testament === 'old'));
   const verse = query ? parseReference(bookSearch.value, bible) : null;
-  const goTo = verse && withHaptic(el('button', { className: 'go-to', textContent: `Go to ${verseName(verse)}` }));
+  const goTo = verse && el('button', { className: 'go-to', textContent: `Go to ${verseName(verse)}` });
   goTo?.addEventListener('click', () => goToReference(verse));
   document.getElementById('bookList').replaceChildren(...(goTo ? [el('li', {}, goTo)] : []), ...books.map((b) => {
-    const button = withHaptic(el('button', { className: 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
+    const button = el('button', { className: 'chevron', ariaLabel: `${b.name}, ${b.chapters} chapters` },
       el('span', { className: 'book-name', textContent: b.name }),
-      el('span', { className: 'chapter-count', textContent: String(b.chapters) })));
+      el('span', { className: 'chapter-count', textContent: String(b.chapters) }));
     button.addEventListener('click', () => { showChapters(b.order); slideIn(chapterView, 40); });
     return el('li', {}, button);
   }));
@@ -64,7 +63,7 @@ function showChapters(order) {
   jumpTitle.textContent = book.name;
   const grid = document.getElementById('chapterGrid');
   grid.replaceChildren(...Array.from({ length: book.chapters }, (_, i) => {
-    const button = withHaptic(el('button', { textContent: String(i + 1) }));
+    const button = el('button', { textContent: String(i + 1) });
     if (here.book === order && here.chapter === i + 1) button.classList.add('current');
     button.addEventListener('click', async () => {
       await closeSheet(jump);
@@ -90,13 +89,14 @@ jumpBack.addEventListener('click', showBooks);
 // sits at the top, one tap from its chapters.
 const readingSection = document.getElementById('reading');
 document.getElementById('jumpButton').addEventListener('click', () => {
-  bookSearch.value = '';
-  const here = readingPlace();
-  testament = here.book <= 39 ? 'old' : 'new';
-  document.getElementById('readingBook').textContent = bookInfo(here.book).name;
-  document.getElementById('readingChapter').textContent = `Reading · Ch ${here.chapter}`;
-  showBooks();
-  jump.showModal();
+  openSheet(jump, () => {
+    bookSearch.value = '';
+    const here = readingPlace();
+    testament = here.book <= 39 ? 'old' : 'new';
+    document.getElementById('readingBook').textContent = bookInfo(here.book).name;
+    document.getElementById('readingChapter').textContent = `Reading · Ch ${here.chapter}`;
+    showBooks();
+  });
   bookView.scrollTop = 0;
 });
 document.getElementById('readingButton').addEventListener('click', () => {

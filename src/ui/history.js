@@ -2,8 +2,7 @@ import { daysAgo } from '../core/dates.js';
 import { unpackKey, verseName } from '../core/references.js';
 import { prefs } from '../data/prefs.js';
 import { el } from './dom.js';
-import { jumpTo, stopAdvance } from './feed.js';
-import { withHaptic } from './haptics.js';
+import { jumpTo, pauseFeed } from './feed.js';
 import { guardPresses } from './pressable.js';
 
 // ---------- History ----------
@@ -47,12 +46,12 @@ function ago(time) {
 
 /** Not a sheet: it opens under the top bar, so the History pill can close it again. */
 function openHistory() {
-  stopAdvance();
+  pauseFeed();
   historyList.replaceChildren(...historyPlaces().map((h) => {
     const button = el('button', {}, verseName(unpackKey(h.key)), el('time', {}, ago(h.time)));
     button.setAttribute('role', 'menuitem');
     button.addEventListener('click', () => { closeHistory(); jumpTo(h.key); });
-    return el('li', {}, withHaptic(button));
+    return el('li', {}, button);
   }));
   historyMenu.hidden = false;
 }

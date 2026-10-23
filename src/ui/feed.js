@@ -186,6 +186,21 @@ export function endGlide() {
   settleSoon();
 }
 
+/**
+ * For anything that covers the feed: no move starts, and a glide under way goes back to the
+ * page it left, so the reader does not come back to a page they never saw.
+ */
+export function pauseFeed() {
+  stopAdvance();
+  if (state.glideTop == null) return;
+  clearTimeout(state.glideTimer);
+  state.glideTop = null;
+  const id = state.settledID;
+  scrollToPage(id);
+  requestAnimationFrame(() => scrollToPage(id)); // the smooth scroll can still take one more step
+  feed.style.scrollSnapType = '';
+}
+
 export function settleSoon() {
   clearTimeout(state.settleTimer);
   state.settleTimer = setTimeout(settle, SETTLE_DELAY_MS);

@@ -15,10 +15,11 @@ Every button with a haptic should pass the **press test**:
 
 - [ ] Swipe up and down one verse at a time; it settles on each verse.
 - [ ] End of a chapter: the chapter-end page appears and auto-advances to the next chapter.
+- [ ] Tap Jump or History just as the auto-advance starts: the feed stays on the chapter-end page, and History does not list the next chapter.
 - [ ] Start of Genesis and end of Revelation: no crash, sensible boundary pages.
 - [ ] Verse rail: drag to scrub, release lands on that verse, tick on each verse.
 - [ ] Relaunch: opens at the last verse read.
-- [ ] Press test on the Bible, Reflections and Liked tabs, the Jump and History pills, the person button, sheet Done and Cancel buttons, and the Reflections and Liked cards.
+- [ ] Press test on the Bible, Reflections and Liked tabs, the Jump and History pills, the person button, sheet Done and Cancel buttons, the testament switch, the Reflections and Liked cards, and the Edit, Share and Delete swipe buttons.
 
 ## Verse actions (like, reflect, share, study)
 

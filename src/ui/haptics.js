@@ -10,14 +10,32 @@ import { el } from './dom.js';
 export function tick() {
   navigator.vibrate?.(8);
 }
-/** Gives a button made in script the haptic switch the HTML ones carry. */
-export function withHaptic(button) {
-  button.append(el('input', { type: 'checkbox', className: 'haptic', tabIndex: -1 }));
-  const input = button.lastChild;
+/**
+ * Every button carries the switch, including buttons built later or whose text is replaced.
+ * Links do not: a switch inside a link takes the tap, so the link might not open. The rail's
+ * switch is in the HTML because the rail is a div.
+ */
+function giveSwitch(button) {
+  if (button.closest('#rail') || button.querySelector(':scope > input.haptic')) return;
+  const input = el('input', { type: 'checkbox', className: 'haptic', tabIndex: -1 });
   input.setAttribute('switch', '');
   input.setAttribute('aria-hidden', 'true');
-  return button;
+  input.disabled = button.disabled;
+  button.append(input);
 }
+function giveSwitches(node) {
+  if (node.nodeType !== Node.ELEMENT_NODE) return;
+  if (node.matches('button')) giveSwitch(node);
+  for (const button of node.querySelectorAll('button')) giveSwitch(button);
+}
+giveSwitches(document.body);
+new MutationObserver((records) => {
+  for (const record of records) {
+    const button = record.target.closest?.('button');
+    if (button) giveSwitch(button);
+    for (const node of record.addedNodes) giveSwitches(node);
+  }
+}).observe(document.body, { childList: true, subtree: true });
 // The rail ticks from scrubTo on every verse it passes, so its switch need not add another.
 document.addEventListener('click', (e) => {
   if (e.target.matches?.('input.haptic') && !e.target.closest('#rail')) tick();

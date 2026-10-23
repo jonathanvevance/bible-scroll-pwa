@@ -1,5 +1,5 @@
 import { feed, onJournalChange } from './app-state.js';
-import { endGlide, stopAdvance } from './feed.js';
+import { pauseFeed } from './feed.js';
 import { rail } from './rail.js';
 
 // ---------- Tabs ----------
@@ -35,10 +35,7 @@ export function showTab(name) {
   }
   for (const node of bibleView) node.inert = !reading;
   for (const [key, view] of Object.entries(tabViews)) view.hidden = key !== name;
-  if (!reading) {
-    stopAdvance();
-    endGlide();
-  }
+  if (!reading) pauseFeed();
   renders[name]?.();
 }
 

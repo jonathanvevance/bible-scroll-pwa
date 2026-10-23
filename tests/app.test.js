@@ -125,6 +125,75 @@ test('every file each app caches for offline use exists', async () => {
   }
 });
 
+test('every button has a haptic switch, including ones built later', async () => {
+  const { frame, doc } = await boot();
+  const bare = () => [...doc.querySelectorAll('button')]
+    .filter((b) => !b.closest('#rail') && !b.querySelector(':scope > input.haptic'))
+    .map((b) => b.id || b.className || b.textContent.trim());
+  const later = () => new Promise((r) => setTimeout(r));
+  eq(bare(), [], 'at start-up');
+  doc.getElementById('jumpButton').click();
+  doc.querySelector('#bookList button.chevron').click();
+  await later();
+  eq(bare(), [], 'in the Jump sheet');
+  const button = doc.body.appendChild(doc.createElement('button'));
+  await later();
+  eq(bare(), [], 'a button added later');
+  button.textContent = 'New text';
+  await later();
+  eq(bare(), [], 'after its text is replaced');
+  frame.remove();
+});
+
+test('every pressed look goes away when the finger slides off', async () => {
+  const { frame, doc } = await boot();
+  const rules = (list) => [...list].flatMap((r) => (r.cssRules ? [r, ...rules(r.cssRules)] : [r]));
+  const active = rules([...doc.styleSheets].flatMap((s) => [...s.cssRules]))
+    .map((r) => r.selectorText ?? '')
+    .filter((s) => s.includes(':active'));
+  ok(active.length > 5, 'found the :active rules');
+  for (const selector of active) {
+    const count = (part) => selector.split(part).length - 1;
+    eq(count(':active'), count(':active:not(.dragged, .dragged *)'), selector);
+  }
+  frame.remove();
+});
+
+test('every sheet opens through openSheet, which pauses the feed', async () => {
+  const text = await (await fetch('sw.js')).text();
+  const files = [...text.matchAll(/'(src\/[^']+\.js)'/g)].map((m) => m[1]);
+  ok(files.length > 10, 'found the modules');
+  for (const file of files) {
+    const source = await (await fetch(file)).text();
+    const calls = (source.match(/\.showModal\(/g) ?? []).length;
+    eq(calls, file === 'src/ui/sheets.js' ? 1 : 0, `showModal() in ${file}`);
+  }
+});
+
+test('opening a sheet mid-glide keeps the reader on the page they saw', async () => {
+  const { frame, doc } = await boot();
+  const feed = doc.getElementById('feed');
+  const pages = () => [...feed.children];
+  const offset = (page) => page.getBoundingClientRect().top - feed.getBoundingClientRect().top;
+  const settled = (page) => until(() => Math.abs(offset(page)) <= 2 && page, 3000);
+  const before = localStorage.getItem('lastVerseKey');
+
+  const boundary = pages().find((p, i) => i > 0 && p.matches('.boundary') && !p.dataset.id.endsWith('-0'));
+  const lastVerse = boundary.previousElementSibling;
+  feed.scrollTop += offset(lastVerse);
+  ok(await settled(lastVerse), 'on the last verse of a chapter');
+  await until(() => localStorage.getItem('lastVerseKey') === lastVerse.dataset.id.slice(1), 3000);
+  feed.scrollTop += offset(boundary);
+  ok(await until(() => feed.style.scrollSnapType === 'none', 3000), 'the glide to the next chapter started');
+
+  doc.getElementById('jumpButton').click();
+  await new Promise((r) => setTimeout(r, 1500));
+  ok(Math.abs(offset(boundary)) <= 2, `back on the chapter break (off by ${offset(boundary)}px)`);
+  eq(localStorage.getItem('lastVerseKey'), lastVerse.dataset.id.slice(1), 'reading place');
+  if (before) localStorage.setItem('lastVerseKey', before);
+  frame.remove();
+});
+
 // Last, since it leaves the English test database at a version the app can't open.
 test('the app stops with a message when another tab upgrades its database', async () => {
   const { frame, doc } = await boot();

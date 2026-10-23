@@ -4,7 +4,7 @@ import { journal } from './app-state.js';
 import { el } from './dom.js';
 import { settle } from './feed.js';
 import { DRAG_PX } from './haptics.js';
-import { trackKeyboard } from './sheets.js';
+import { openSheet, trackKeyboard } from './sheets.js';
 
 // Reflections timeline
 
@@ -212,7 +212,7 @@ onVerseAction('reflect', (v) => {
   document.getElementById('timelineCount').textContent = '';
   document.getElementById('timelineList').replaceChildren();
   setEditing(null);
-  timeline.showModal();
+  openSheet(timeline);
   renderTimeline().then(scrollTimelineToEnd);
 });
 

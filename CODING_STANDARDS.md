@@ -47,15 +47,16 @@ docs/                      review findings, plans, the device checklist
 
 ## Touch and haptics
 
-- iOS gives script no haptic API. Every tappable control carries a hidden `<input type="checkbox" switch class="haptic">`: in HTML, or added with `withHaptic()` for buttons made in script.
+- iOS gives script no haptic API. Every button carries a hidden `<input type="checkbox" switch class="haptic">`, added by `src/ui/haptics.js` to every button on the page, including ones built later. Don't write the switch by hand. Links get none: a switch inside a link takes the tap, so the link might not open. The rail is a div and has its own switch in `index.html`.
+- Every `:active` rule ends in `:not(.dragged, .dragged *)`, so a control stops looking pressed as soon as the finger slides off. A test checks this.
 - A native switch toggles on release even after the finger has slid away, so every control with a haptic must pass the press test in `docs/device-checklist.md`: a press that slides off, is cancelled by iOS (long press), or turns into a scroll does nothing and plays no tick.
 - That behaviour comes from one shared guard in `src/ui/pressable.js`, which covers every `button` and `a[href]` on the page with nothing to register; a scroll of anything the control sits in counts as a drag. Never write touch tracking for a new control. Use `guardPresses(root, { group })` only when a whole area should react to a slide-off together (the verse actions, the History menu). The rail is a slider and is never guarded. Code that disables a button with a haptic calls `syncSwitches()` afterwards.
 - Hit targets are at least 44×44 points.
 
 ## Sheets
 
-- Every sheet is a `<dialog class="sheet">` in `index.html`, opened with `showModal()` and closed with `closeSheet()`, so it gets the shared close animation, tap-outside and scroll behaviour.
-- Anything that floats over the feed and should pause auto-advance is a `<dialog>`. The History menu is a `<div>` because it opens under the top bar, so the History pill can close it; opening it calls `stopAdvance()`.
+- Every sheet is a `<dialog class="sheet">` in `index.html`, opened with `openSheet()` and closed with `closeSheet()`, so it gets the shared close animation, tap-outside and scroll behaviour. Never call `showModal()` directly; a test checks this.
+- Anything that covers the feed calls `pauseFeed()` as it opens: no move to the next chapter starts, and a glide under way goes back to the page it left. `openSheet()` does it for sheets. The History menu is a `<div>` because it opens under the top bar, so the History pill can close it; opening it calls `pauseFeed()`, and so does leaving the Bible tab.
 
 ## Style
 

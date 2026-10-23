@@ -249,13 +249,19 @@ button {
   appearance: auto;
   opacity: 0;
 }
+/* Keeps each button's switch inside the button; a button's own position wins over this. */
+:where(button:has(> .haptic)) { position: relative; }
 .chapter-pill, .links > li > button.chevron, .links > li > button.go-to, .chapter-grid button { position: relative; }
 
 /* Press feedback, like native buttons. */
 .action svg, .chapter-pill, .glass-button {
   transition: transform 0.2s var(--ease-ios), opacity 0.2s;
 }
-.action:active svg, .chapter-pill:active, .glass-button:active {
+/* Every :active rule ends in :not(.dragged, .dragged *): once the finger slides off, the press
+   is cancelled, so the control must stop looking pressed. */
+.action:active:not(.dragged, .dragged *) svg,
+.chapter-pill:active:not(.dragged, .dragged *),
+.glass-button:active:not(.dragged, .dragged *) {
   transform: scale(0.88);
   opacity: 0.7;
 }
@@ -349,8 +355,8 @@ button {
 }
 .history-list time { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--fg-2); }
 .history-clear { border-top: 8px solid var(--sep); color: var(--destructive); }
-.history-list button:active, .history-clear:active { background: var(--press); }
-.history-menu.dragged button:active { background: none; }
+.history-list button:active:not(.dragged, .dragged *),
+.history-clear:active:not(.dragged, .dragged *) { background: var(--press); }
 .history-menu { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
 /* ---------- Right-hand action column ---------- */
@@ -387,7 +393,6 @@ button {
 }
 .action-count { font-size: 12px; font-weight: 600; line-height: 1; margin-top: 2px; }
 .action-count:empty { display: none; }
-.actions.dragged .action:active svg { transform: none; opacity: 1; }
 .actions { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .like[aria-pressed="true"] svg { fill: var(--destructive); stroke: var(--destructive); }
 .like.pop svg { animation: like-pop 0.4s var(--ease-ios); }
@@ -460,7 +465,7 @@ html:has(dialog[open]) .tab-bar {
   stroke-linejoin: round;
   transition: transform 0.2s var(--ease-ios);
 }
-.tab:active svg { transform: scale(0.88); }
+.tab:active:not(.dragged, .dragged *) svg { transform: scale(0.88); }
 
 /* ---------- Reflections tab ---------- */
 
@@ -500,7 +505,7 @@ html:has(dialog[open]) .tab-bar {
   color: var(--fg);
   transition: transform 0.2s var(--ease-ios), opacity 0.2s;
 }
-.round-glass:active { transform: scale(0.88); opacity: 0.7; }
+.round-glass:active:not(.dragged, .dragged *) { transform: scale(0.88); opacity: 0.7; }
 .round-glass svg {
   width: 22px;
   height: 22px;
@@ -585,7 +590,7 @@ html:has(dialog[open]) .tab-bar {
   transition: transform 0.2s var(--ease-ios), opacity 0.2s;
 }
 .banner-button.primary { background: var(--accent); color: #fff; }
-.banner-button:active { transform: scale(0.94); opacity: 0.8; }
+.banner-button:active:not(.dragged, .dragged *) { transform: scale(0.94); opacity: 0.8; }
 .banner-button:disabled { opacity: 0.5; }
 
 .reflection-day + .reflection-day { margin-top: 22px; }
@@ -607,7 +612,7 @@ html:has(dialog[open]) .tab-bar {
   text-align: left;
   transition: background-color 0.2s;
 }
-.reflection-card:active { background: var(--press); }
+.reflection-card:active:not(.dragged, .dragged *) { background: var(--press); }
 .reflection-top {
   display: flex;
   justify-content: space-between;
@@ -799,10 +804,10 @@ html:has(dialog[open]) .tab-bar {
 }
 .menu-list a span { flex: 1; }
 .menu-list a::after { content: "›"; font-size: 22px; line-height: 1; color: var(--fg-2); }
-.menu-list a:active { opacity: 0.6; }
+.menu-list a:active:not(.dragged, .dragged *) { opacity: 0.6; }
 /* Settings-style action row: blue text, no chevron, grey footer under the card. */
 .backup-list > li > button { position: relative; color: var(--accent); }
-.backup-list > li > button:active { background: var(--press); }
+.backup-list > li > button:active:not(.dragged, .dragged *) { background: var(--press); }
 .backup-list > li > button:disabled { color: var(--fg-2); background: none; }
 .help-list > li { display: flex; align-items: flex-start; gap: 14px; }
 .help-list svg {
