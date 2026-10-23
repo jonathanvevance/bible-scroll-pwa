@@ -322,8 +322,10 @@ button {
 .history-menu:not([hidden], .closing) ~ .topbar { pointer-events: none; }
 .history-menu:not([hidden], .closing) ~ .topbar #historyButton { pointer-events: auto; }
 /* The top bar sits above the backdrop so the pill stays sharp; the rest of it blurs by itself. */
-#jumpButton { transition: filter 0.2s; }
+:is(#jumpButton, #historyButton) { transition: filter 0.2s; }
 .history-menu:not([hidden], .closing) ~ .topbar #jumpButton { filter: blur(2px) brightness(0.94); }
+/* Likewise the History pill while the Jump sheet is open. */
+html:has(#jump[open]:not(.closing)) #historyButton { filter: blur(2px); }
 /* Closing runs the opening backwards; taps already go to whatever is underneath. */
 .history-menu.closing { pointer-events: none; animation: fade-out 0.2s ease-in forwards; }
 .history-menu.closing .history-card { animation: menu-out 0.2s cubic-bezier(0.4, 0, 1, 1) forwards; }
