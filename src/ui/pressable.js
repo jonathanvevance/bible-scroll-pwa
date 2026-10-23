@@ -5,9 +5,9 @@ import { DRAG_PX } from './haptics.js';
 // the control stops highlighting, the click that follows the lift is swallowed, and the haptic
 // switches are disabled, since a native switch would otherwise toggle (and tick) on release.
 //
-// One touch is followed at a time, across the whole page; a second finger cancels it. Screens
-// register the areas that hold their controls with guardPresses() and never track touches
-// themselves.
+// Every button and link on the page is guarded, with nothing to register; the scroll that counts
+// is one of anything the control sits in. One touch is followed at a time, across the whole
+// page; a second finger cancels it. Screens never track touches themselves.
 
 /** How long after a slide-off ends the controls wait before taking presses again. */
 const RESET_MS = 400;
@@ -15,24 +15,35 @@ const RESET_MS = 400;
 const SCROLL_GRACE_MS = 150;
 
 const areas = [];
-/** { id, x, y, area, group, moved, down } for the latest touch, or null. */
+/** When each element (or the page) last scrolled. */
+const scrolledAt = new Map();
+/** { id, x, y, target, group, moved, down } for the latest touch, or null. */
 let touch = null;
 
+/** The rail is a slider: dragging along it is the point, so it is never guarded. */
+const pressable = (target) => (target.closest('#rail') ? null : target.closest('button, a[href]'));
+
 /**
- * Guards the presses inside `root`. `group(target)` names the element a press belongs to (it
- * gets the `dragged` class and its switches turn off), or null to leave that touch alone.
- * A scroll of any of `scrollers` during or just before a touch counts as a drag.
+ * Makes everything inside `root` one press: a slide-off anywhere in it gives `group(target)` the
+ * `dragged` class and turns its switches off. Return null from `group` to fall back to the
+ * button itself. Only needed where a whole area should react together.
  */
-export function guardPresses(root, { group = () => root, scrollers = [] } = {}) {
-  const area = { root, group, lastScroll: 0 };
-  areas.push(area);
-  for (const scroller of scrollers) {
-    scroller.addEventListener('scroll', () => {
-      area.lastScroll = performance.now();
-      if (touch?.area === area && touch.down) drag();
-    }, { passive: true });
-  }
+export function guardPresses(root, { group = () => root } = {}) {
+  areas.push({ root, group });
 }
+
+function groupFor(target) {
+  const area = areas.find((a) => a.root.contains(target));
+  return area?.group(target) ?? pressable(target);
+}
+
+const scrolling = (target, since) => [...scrolledAt].some(([node, time]) => time > since && node.contains(target));
+
+document.addEventListener('scroll', (e) => {
+  const node = e.target === document ? document.documentElement : e.target;
+  scrolledAt.set(node, performance.now());
+  if (touch?.down && node.contains(touch.target)) drag();
+}, { capture: true, passive: true });
 
 /** A haptic switch is on only when its control is enabled and no slide-off is in progress. */
 export function syncSwitches(root) {
@@ -61,12 +72,11 @@ const followed = (e) => touch && [...e.changedTouches].some((t) => t.identifier 
 document.addEventListener('touchstart', (e) => {
   if (e.touches.length > 1) return drag();
   release();
-  const area = areas.find((a) => a.root.contains(e.target));
-  const group = area?.group(e.target);
+  const group = groupFor(e.target);
   if (!group) return;
   const t = e.changedTouches[0];
-  touch = { id: t.identifier, x: t.clientX, y: t.clientY, area, group, moved: false, down: true };
-  if (performance.now() - area.lastScroll < SCROLL_GRACE_MS) drag();
+  touch = { id: t.identifier, x: t.clientX, y: t.clientY, target: e.target, group, moved: false, down: true };
+  if (scrolling(e.target, performance.now() - SCROLL_GRACE_MS)) drag();
 }, { capture: true, passive: true });
 
 document.addEventListener('touchmove', (e) => {

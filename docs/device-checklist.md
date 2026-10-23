@@ -18,6 +18,7 @@ Every button with a haptic should pass the **press test**:
 - [ ] Start of Genesis and end of Revelation: no crash, sensible boundary pages.
 - [ ] Verse rail: drag to scrub, release lands on that verse, tick on each verse.
 - [ ] Relaunch: opens at the last verse read.
+- [ ] Press test on the Bible, Reflections and Liked tabs, the Jump and History pills, the person button, sheet Done and Cancel buttons, and the Reflections and Liked cards.
 
 ## Verse actions (like, reflect, share, study)
 

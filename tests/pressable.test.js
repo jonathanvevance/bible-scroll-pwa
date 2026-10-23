@@ -4,15 +4,16 @@ import { test, eq, ok } from './runner.js';
 // Synthetic touches on a button with a haptic switch, as the app's controls have.
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function fixture(options) {
+function fixture(options, { register = true, id = '' } = {}) {
   const root = document.createElement('div');
+  root.id = id;
   root.innerHTML = '<button><input type="checkbox" switch class="haptic">Tap</button>';
   document.body.append(root);
   const button = root.querySelector('button');
   const input = root.querySelector('input');
   let clicks = 0;
   button.addEventListener('click', () => clicks++);
-  guardPresses(root, options?.(root));
+  if (register) guardPresses(root, options?.(root));
   return { root, button, input, clicks: () => clicks, remove: () => root.remove() };
 }
 
@@ -96,9 +97,42 @@ test('pressable: a second finger cancels the press', async () => {
   f.remove();
 });
 
+test('pressable: any button is guarded, without registering', async () => {
+  const f = fixture(null, { register: false });
+  const p = finger(f.button);
+  p.down(); p.move(0, 30);
+  ok(f.input.disabled && f.button.classList.contains('dragged'), 'the button itself is dragged');
+  p.up(); f.button.click();
+  eq(f.clicks(), 0, 'click swallowed');
+  await wait(450);
+  f.remove();
+});
+
+test('pressable: the rail is a slider and is never guarded', async () => {
+  const f = fixture(null, { register: false, id: 'rail' });
+  const p = finger(f.button);
+  p.down(); p.move(0, 30);
+  ok(!f.input.disabled, 'switch stays on');
+  p.up(); f.button.click();
+  eq(f.clicks(), 1, 'click counts');
+  f.remove();
+});
+
+test('pressable: a scroll elsewhere does not cancel a press', async () => {
+  const f = fixture();
+  const other = document.createElement('div');
+  document.body.append(other);
+  other.dispatchEvent(new Event('scroll'));
+  const p = finger(f.button);
+  p.down(); other.dispatchEvent(new Event('scroll')); p.up(); f.button.click();
+  eq(f.clicks(), 1, 'click counts');
+  other.remove();
+  f.remove();
+});
+
 test('pressable: a touch that stops a scroll, or turns into one, presses nothing', async () => {
-  const scroller = document.createElement('div');
-  const f = fixture(() => ({ scrollers: [scroller] }));
+  const f = fixture();
+  const scroller = f.root;
   scroller.dispatchEvent(new Event('scroll'));
   const stop = finger(f.button);
   stop.down(); stop.up(); f.button.click();

@@ -20,8 +20,8 @@ feed.addEventListener('click', (e) => {
   handlers[action](itemFor(id).verse, e.target.closest('[data-action]'));
 });
 
-// As with any iOS button, a press that slides off (or begins by stopping the feed) does nothing.
-guardPresses(feed, { group: (target) => target.closest('.actions'), scrollers: [feed] });
+// A slide off one verse action quiets the whole row, not just that button.
+guardPresses(feed, { group: (target) => target.closest('.actions') });
 
 /** Likes are the journal's 'favourite' marks, so favourites saved before keep showing. */
 export const LIKE = 'favourite';

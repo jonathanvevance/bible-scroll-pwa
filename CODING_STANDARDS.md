@@ -49,7 +49,7 @@ docs/                      review findings, plans, the device checklist
 
 - iOS gives script no haptic API. Every tappable control carries a hidden `<input type="checkbox" switch class="haptic">`: in HTML, or added with `withHaptic()` for buttons made in script.
 - A native switch toggles on release even after the finger has slid away, so every control with a haptic must pass the press test in `docs/device-checklist.md`: a press that slides off, is cancelled by iOS (long press), or turns into a scroll does nothing and plays no tick.
-- That behaviour comes from one shared guard, `guardPresses()` in `src/ui/pressable.js`. Never write touch tracking for a new control; register its container (and any scrolling area it sits in) with the guard. Code that disables a button with a haptic calls `syncSwitches()` afterwards.
+- That behaviour comes from one shared guard in `src/ui/pressable.js`, which covers every `button` and `a[href]` on the page with nothing to register; a scroll of anything the control sits in counts as a drag. Never write touch tracking for a new control. Use `guardPresses(root, { group })` only when a whole area should react to a slide-off together (the verse actions, the History menu). The rail is a slider and is never guarded. Code that disables a button with a haptic calls `syncSwitches()` afterwards.
 - Hit targets are at least 44×44 points.
 
 ## Sheets

@@ -104,6 +104,4 @@ document.getElementById('readingButton').addEventListener('click', () => {
   slideIn(chapterView, 40);
 });
 
-// Only a real tap opens a book or chapter: not a slide, a scroll of the list during the touch,
-// or a touch that stops a gliding list.
-guardPresses(jump, { scrollers: [bookView, chapterView] });
+guardPresses(jump);

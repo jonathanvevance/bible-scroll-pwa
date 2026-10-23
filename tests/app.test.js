@@ -46,6 +46,24 @@ test('the Jump sheet opens on the book being read', async () => {
   frame.remove();
 });
 
+test('sliding off a tab or a top-bar button does nothing', async () => {
+  const { frame, doc } = await boot();
+  const win = frame.contentWindow;
+  const slideOff = (target) => {
+    const at = (y) => new win.Touch({ identifier: 1, target, clientX: 10, clientY: y });
+    target.dispatchEvent(new win.TouchEvent('touchstart', { bubbles: true, touches: [at(10)], changedTouches: [at(10)] }));
+    target.dispatchEvent(new win.TouchEvent('touchmove', { bubbles: true, touches: [at(60)], changedTouches: [at(60)] }));
+    target.dispatchEvent(new win.TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [at(60)] }));
+    target.click();
+  };
+  slideOff(doc.querySelector('[data-tab="reflections"]'));
+  ok(doc.getElementById('reflectionsView').hidden, 'still on the Bible tab');
+  await new Promise((r) => setTimeout(r, 450));
+  slideOff(doc.getElementById('jumpButton'));
+  ok(!doc.getElementById('jump').open, 'Jump sheet stays closed');
+  frame.remove();
+});
+
 // The app's own modules, from inside the frame, so a test can write to the journal the app shows.
 test('an open Liked or Reflections tab updates when the journal changes', async () => {
   const { frame, doc, appModule } = await boot();

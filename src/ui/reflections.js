@@ -83,6 +83,5 @@ reflectionsFilter.addEventListener('click', (e) => {
   if (range) setFilter(range);
 });
 
-// The filter and the backup banner scroll with the list; a scroll neither ticks nor presses them.
 export const backupBanner = document.getElementById('backupBanner');
-for (const control of [reflectionsFilter, backupBanner]) guardPresses(control, { scrollers: [reflectionsView] });
+for (const control of [reflectionsFilter, backupBanner]) guardPresses(control);
