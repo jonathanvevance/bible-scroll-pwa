@@ -18,8 +18,12 @@ function fixture(options, { register = true, id = '' } = {}) {
 }
 
 let nextId = 1;
-function finger(target, x = 10, y = 10) {
+/** A finger on the middle of `target`; `move` is relative to where it went down. */
+function finger(target, dx = 0, dy = 0) {
   const id = nextId++;
+  const rect = target.getBoundingClientRect();
+  const x = rect.left + rect.width / 2 + dx;
+  const y = rect.top + rect.height / 2 + dy;
   const fire = (type, cx, cy, rest = []) => {
     const t = new Touch({ identifier: id, target, clientX: cx, clientY: cy });
     const touches = type === 'touchend' || type === 'touchcancel' ? rest : [t, ...rest];
@@ -34,21 +38,38 @@ function finger(target, x = 10, y = 10) {
   };
 }
 
-test('pressable: a tap clicks', async () => {
+const FAR = 200; // well past the 70 px a press may wander
+
+test('pressable: a tap clicks, looking pressed while the finger is down', async () => {
   const f = fixture();
   const p = finger(f.button);
-  p.down(); p.move(3, 2); p.up(); f.button.click();
+  p.down();
+  ok(f.button.classList.contains('pressed'), 'pressed while down');
+  p.move(3, 2); p.up();
+  ok(!f.button.classList.contains('pressed'), 'not pressed after the lift');
+  f.button.click();
   eq(f.clicks(), 1, 'clicks');
   ok(!f.input.disabled, 'switch stays on');
   f.remove();
 });
 
-test('pressable: sliding off cancels the press and silences the switch', async () => {
+test('pressable: a small slide still presses, as in iOS', async () => {
   const f = fixture();
   const p = finger(f.button);
-  p.down(); p.move(0, 30);
+  p.down(); p.move(0, 50);
+  ok(f.button.classList.contains('pressed') && !f.input.disabled, 'still pressed');
+  p.up(); f.button.click();
+  eq(f.clicks(), 1, 'clicks');
+  f.remove();
+});
+
+test('pressable: sliding well away lets go and silences the switch', async () => {
+  const f = fixture();
+  const p = finger(f.button);
+  p.down(); p.move(0, FAR);
   ok(f.input.disabled, 'switch off during the slide');
   ok(f.root.classList.contains('dragged'), 'dragged class');
+  ok(!f.button.classList.contains('pressed'), 'no longer looks pressed');
   p.up(); f.button.click();
   eq(f.clicks(), 0, 'click swallowed');
   await wait(450);
@@ -58,10 +79,31 @@ test('pressable: sliding off cancels the press and silences the switch', async (
   f.remove();
 });
 
+test('pressable: sliding away and back presses again', async () => {
+  const f = fixture();
+  const p = finger(f.button);
+  p.down(); p.move(0, FAR); p.move(0, 5);
+  ok(f.button.classList.contains('pressed') && !f.input.disabled, 'pressed again, switch on');
+  p.up(); f.button.click();
+  eq(f.clicks(), 1, 'the switch click counts');
+  await wait(350);
+  eq(f.clicks(), 1, 'and is not doubled');
+  f.remove();
+});
+
+test('pressable: away and back clicks even if the switch stays silent', async () => {
+  const f = fixture();
+  const p = finger(f.button);
+  p.down(); p.move(0, FAR); p.move(0, 5); p.up();
+  await wait(350);
+  eq(f.clicks(), 1, 'clicked for it');
+  f.remove();
+});
+
 test('pressable: a quick re-tap after a slide-off works', async () => {
   const f = fixture();
   const slide = finger(f.button);
-  slide.down(); slide.move(40, 0); slide.up();
+  slide.down(); slide.move(FAR, 0); slide.up();
   const tap = finger(f.button);
   tap.down();
   ok(!f.input.disabled, 'switch back on at the new touch');
@@ -89,7 +131,7 @@ test('pressable: a second finger cancels the press', async () => {
   const f = fixture();
   const first = finger(f.button);
   first.down();
-  const second = finger(f.button, 50, 50);
+  const second = finger(f.button, 5, 5);
   second.down([first.touch()]);
   ok(f.input.disabled, 'switch off');
   first.up(); f.button.click();
@@ -100,7 +142,7 @@ test('pressable: a second finger cancels the press', async () => {
 test('pressable: any button is guarded, without registering', async () => {
   const f = fixture(null, { register: false });
   const p = finger(f.button);
-  p.down(); p.move(0, 30);
+  p.down(); p.move(0, FAR);
   ok(f.input.disabled && f.button.classList.contains('dragged'), 'the button itself is dragged');
   p.up(); f.button.click();
   eq(f.clicks(), 0, 'click swallowed');
@@ -111,7 +153,7 @@ test('pressable: any button is guarded, without registering', async () => {
 test('pressable: the rail is a slider and is never guarded', async () => {
   const f = fixture(null, { register: false, id: 'rail' });
   const p = finger(f.button);
-  p.down(); p.move(0, 30);
+  p.down(); p.move(0, FAR);
   ok(!f.input.disabled, 'switch stays on');
   p.up(); f.button.click();
   eq(f.clicks(), 1, 'click counts');
@@ -147,7 +189,7 @@ test('pressable: a touch that stops a scroll, or turns into one, presses nothing
 test('pressable: only the touched group is affected', async () => {
   const f = fixture((root) => ({ group: (target) => target.closest('button') }));
   const p = finger(f.button);
-  p.down(); p.move(0, 30);
+  p.down(); p.move(0, FAR);
   ok(f.button.classList.contains('dragged') && !f.root.classList.contains('dragged'), 'dragged is on the group');
   p.up();
   f.remove();

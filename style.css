@@ -11,6 +11,7 @@
   --accent: #007aff;
   --destructive: #ff3b30;
   --press: #d1d1d6; /* row highlight while pressed, as in iOS lists */
+  --press-brightness: 0.85; /* any other control while pressed */
   --serif: ui-serif, "New York", Georgia, serif;
   --sans: system-ui, -apple-system, "Helvetica Neue", sans-serif;
   /* Reflections are the reader's own voice: rounded, set apart from the serif verse. */
@@ -42,6 +43,7 @@
     --accent: #0a84ff;
     --destructive: #ff453a;
     --press: #3a3a3c;
+    --press-brightness: 1.8;
     --bar: rgba(44, 44, 48, 0.75);
   }
 }
@@ -249,22 +251,23 @@ button {
   appearance: auto;
   opacity: 0;
 }
-/* Keeps each button's switch inside the button; a button's own position wins over this. */
-:where(button:has(> .haptic)) { position: relative; }
+/* Keeps each control's switch inside it; a control's own position wins over this. */
+:where(button:has(> .haptic), a:has(> .haptic)) { position: relative; }
 .chapter-pill, .links > li > button.chevron, .links > li > button.go-to, .chapter-grid button { position: relative; }
 
-/* Press feedback, like native buttons. */
-.action svg, .chapter-pill, .glass-button {
-  transition: transform 0.2s var(--ease-ios), opacity 0.2s;
-}
-/* Every :active rule ends in :not(.dragged, .dragged *): once the finger slides off, the press
-   is cancelled, so the control must stop looking pressed. */
-.action:active:not(.dragged, .dragged *) svg,
-.chapter-pill:active:not(.dragged, .dragged *),
-.glass-button:active:not(.dragged, .dragged *) {
-  transform: scale(0.88);
-  opacity: 0.7;
-}
+/* Pressed look: a darker shade, as in iOS, set by the press guard (src/ui/pressable.js) while
+   the press counts. Style .pressed, never :active, which stays on after the finger slides away.
+   List rows take the list highlight; bare icons and text have nothing to shade, so they dim.
+   A filter, since a control's own background rule would undo a background shade. */
+.pressed { filter: brightness(var(--press-brightness)); }
+:is(.action, .text-button, .note-cancel).pressed { filter: none; opacity: 0.4; }
+/* An unselected tab or segment is see-through, so it shows the glass a selected one has. */
+:is(.tab, .segmented button):not(.selected).pressed { filter: none; background: var(--glass); }
+.history-list button.pressed, .history-clear.pressed, .reflection-card.pressed,
+.links > li > :is(a, button).pressed, .menu-list a.pressed { filter: none; background: var(--press); }
+/* No ring on a tapped control. Every control is a button or link, which iOS's own keyboard
+   navigation outlines by itself. */
+:is(button, a, .haptic):focus { outline: none; }
 
 /* ---------- Top bar ---------- */
 
@@ -355,8 +358,6 @@ button {
 }
 .history-list time { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--fg-2); }
 .history-clear { border-top: 8px solid var(--sep); color: var(--destructive); }
-.history-list button:active:not(.dragged, .dragged *),
-.history-clear:active:not(.dragged, .dragged *) { background: var(--press); }
 .history-menu { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
 /* ---------- Right-hand action column ---------- */
@@ -463,9 +464,7 @@ html:has(dialog[open]) .tab-bar {
   stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: transform 0.2s var(--ease-ios);
 }
-.tab:active:not(.dragged, .dragged *) svg { transform: scale(0.88); }
 
 /* ---------- Reflections tab ---------- */
 
@@ -503,9 +502,7 @@ html:has(dialog[open]) .tab-bar {
   background: var(--glass);
   box-shadow: inset 0 0 0 0.5px var(--glass-edge);
   color: var(--fg);
-  transition: transform 0.2s var(--ease-ios), opacity 0.2s;
 }
-.round-glass:active:not(.dragged, .dragged *) { transform: scale(0.88); opacity: 0.7; }
 .round-glass svg {
   width: 22px;
   height: 22px;
@@ -587,10 +584,8 @@ html:has(dialog[open]) .tab-bar {
   color: var(--fg);
   font-size: 15px;
   font-weight: 600;
-  transition: transform 0.2s var(--ease-ios), opacity 0.2s;
 }
 .banner-button.primary { background: var(--accent); color: #fff; }
-.banner-button:active:not(.dragged, .dragged *) { transform: scale(0.94); opacity: 0.8; }
 .banner-button:disabled { opacity: 0.5; }
 
 .reflection-day + .reflection-day { margin-top: 22px; }
@@ -610,9 +605,7 @@ html:has(dialog[open]) .tab-bar {
   background: var(--card);
   color: var(--fg);
   text-align: left;
-  transition: background-color 0.2s;
 }
-.reflection-card:active:not(.dragged, .dragged *) { background: var(--press); }
 .reflection-top {
   display: flex;
   justify-content: space-between;
@@ -804,10 +797,8 @@ html:has(dialog[open]) .tab-bar {
 }
 .menu-list a span { flex: 1; }
 .menu-list a::after { content: "›"; font-size: 22px; line-height: 1; color: var(--fg-2); }
-.menu-list a:active:not(.dragged, .dragged *) { opacity: 0.6; }
 /* Settings-style action row: blue text, no chevron, grey footer under the card. */
 .backup-list > li > button { position: relative; color: var(--accent); }
-.backup-list > li > button:active:not(.dragged, .dragged *) { background: var(--press); }
 .backup-list > li > button:disabled { color: var(--fg-2); background: none; }
 .help-list > li { display: flex; align-items: flex-start; gap: 14px; }
 .help-list svg {

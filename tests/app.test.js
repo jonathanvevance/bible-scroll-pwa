@@ -50,10 +50,11 @@ test('sliding off a tab or a top-bar button does nothing', async () => {
   const { frame, doc } = await boot();
   const win = frame.contentWindow;
   const slideOff = (target) => {
-    const at = (y) => new win.Touch({ identifier: 1, target, clientX: 10, clientY: y });
-    target.dispatchEvent(new win.TouchEvent('touchstart', { bubbles: true, touches: [at(10)], changedTouches: [at(10)] }));
-    target.dispatchEvent(new win.TouchEvent('touchmove', { bubbles: true, touches: [at(60)], changedTouches: [at(60)] }));
-    target.dispatchEvent(new win.TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [at(60)] }));
+    const rect = target.getBoundingClientRect();
+    const at = (dy) => new win.Touch({ identifier: 1, target, clientX: rect.left + 10, clientY: rect.top + 10 + dy });
+    target.dispatchEvent(new win.TouchEvent('touchstart', { bubbles: true, touches: [at(0)], changedTouches: [at(0)] }));
+    target.dispatchEvent(new win.TouchEvent('touchmove', { bubbles: true, touches: [at(200)], changedTouches: [at(200)] }));
+    target.dispatchEvent(new win.TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [at(200)] }));
     target.click();
   };
   slideOff(doc.querySelector('[data-tab="reflections"]'));
@@ -125,9 +126,9 @@ test('every file each app caches for offline use exists', async () => {
   }
 });
 
-test('every button has a haptic switch, including ones built later', async () => {
+test('every button and link has a haptic switch, including ones built later', async () => {
   const { frame, doc } = await boot();
-  const bare = () => [...doc.querySelectorAll('button')]
+  const bare = () => [...doc.querySelectorAll('button, a[href]')]
     .filter((b) => !b.closest('#rail') && !b.querySelector(':scope > input.haptic'))
     .map((b) => b.id || b.className || b.textContent.trim());
   const later = () => new Promise((r) => setTimeout(r));
@@ -145,17 +146,21 @@ test('every button has a haptic switch, including ones built later', async () =>
   frame.remove();
 });
 
-test('every pressed look goes away when the finger slides off', async () => {
+test('tapping a link\'s switch follows the link', async () => {
+  const { frame, doc } = await boot();
+  const link = doc.body.appendChild(Object.assign(doc.createElement('a'), { href: '#followed', textContent: 'Link' }));
+  await new Promise((r) => setTimeout(r));
+  link.querySelector('input.haptic').click();
+  eq(frame.contentWindow.location.hash, '#followed', 'followed');
+  frame.remove();
+});
+
+test('pressed looks come from the press guard, never :active', async () => {
   const { frame, doc } = await boot();
   const rules = (list) => [...list].flatMap((r) => (r.cssRules ? [r, ...rules(r.cssRules)] : [r]));
-  const active = rules([...doc.styleSheets].flatMap((s) => [...s.cssRules]))
-    .map((r) => r.selectorText ?? '')
-    .filter((s) => s.includes(':active'));
-  ok(active.length > 5, 'found the :active rules');
-  for (const selector of active) {
-    const count = (part) => selector.split(part).length - 1;
-    eq(count(':active'), count(':active:not(.dragged, .dragged *)'), selector);
-  }
+  const selectors = rules([...doc.styleSheets].flatMap((s) => [...s.cssRules])).map((r) => r.selectorText ?? '');
+  eq(selectors.filter((s) => s.includes(':active')), [], ':active rules');
+  ok(selectors.some((s) => s.includes('.pressed')), 'a .pressed rule');
   frame.remove();
 });
 

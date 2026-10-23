@@ -11,28 +11,28 @@ export function tick() {
   navigator.vibrate?.(8);
 }
 /**
- * Every button carries the switch, including buttons built later or whose text is replaced.
- * Links do not: a switch inside a link takes the tap, so the link might not open. The rail's
- * switch is in the HTML because the rail is a div.
+ * Every button and link carries the switch, including ones built later or whose text is
+ * replaced. The rail's switch is in the HTML because the rail is a div.
  */
-function giveSwitch(button) {
-  if (button.closest('#rail') || button.querySelector(':scope > input.haptic')) return;
+const CONTROLS = 'button, a[href]';
+function giveSwitch(control) {
+  if (control.closest('#rail') || control.querySelector(':scope > input.haptic')) return;
   const input = el('input', { type: 'checkbox', className: 'haptic', tabIndex: -1 });
   input.setAttribute('switch', '');
   input.setAttribute('aria-hidden', 'true');
-  input.disabled = button.disabled;
-  button.append(input);
+  input.disabled = control.disabled === true;
+  control.append(input);
 }
 function giveSwitches(node) {
   if (node.nodeType !== Node.ELEMENT_NODE) return;
-  if (node.matches('button')) giveSwitch(node);
-  for (const button of node.querySelectorAll('button')) giveSwitch(button);
+  if (node.matches(CONTROLS)) giveSwitch(node);
+  for (const control of node.querySelectorAll(CONTROLS)) giveSwitch(control);
 }
 giveSwitches(document.body);
 new MutationObserver((records) => {
   for (const record of records) {
-    const button = record.target.closest?.('button');
-    if (button) giveSwitch(button);
+    const control = record.target.closest?.(CONTROLS);
+    if (control) giveSwitch(control);
     for (const node of record.addedNodes) giveSwitches(node);
   }
 }).observe(document.body, { childList: true, subtree: true });
@@ -40,7 +40,12 @@ new MutationObserver((records) => {
 document.addEventListener('click', (e) => {
   if (e.target.matches?.('input.haptic') && !e.target.closest('#rail')) tick();
 }, true);
+// A tap on a link's switch toggles the switch instead of following the link, so follow it here.
+// Not reached when the press guard swallows the click.
+document.addEventListener('click', (e) => {
+  if (e.target.matches?.('input.haptic') && e.target.parentElement.matches('a[href]')) e.target.parentElement.click();
+});
 
 
-/** How far a finger may move before a press counts as a drag. */
+/** How far a finger may move before it counts as a swipe rather than a tap. */
 export const DRAG_PX = 10;

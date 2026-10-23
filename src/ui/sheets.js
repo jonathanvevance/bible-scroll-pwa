@@ -39,9 +39,6 @@ export function slideIn(node, from) {
   );
 }
 
-// iOS only shows :active press states when the page listens for touches.
-document.addEventListener('touchstart', () => {}, { passive: true });
-
 for (const dialog of document.querySelectorAll('dialog')) {
   dialog.addEventListener('click', (e) => {
     if (e.target === dialog || e.target.closest('[data-close]')) closeSheet(dialog);

@@ -2,10 +2,12 @@
 
 Run on the simulator (or a phone) after any change that touches touch handling, sheets, the feed, or saved data. Automated tests (`tests/run.sh`) cover the journal and the slide-off guard with simulated touches; this covers what only a real touch screen shows.
 
-Every button with a haptic should pass the **press test**:
+Every button and link should pass the **press test**:
 
-- **Tap:** one tick, the action happens.
-- **Press, slide off, release:** no tick, nothing happens, the highlight clears when the finger leaves.
+- **Tap:** it darkens while held (icons and text dim), one tick, the action happens. No blue ring.
+- **Press, slide a little, release:** still darkened; one tick, the action happens.
+- **Press, slide well away, release:** the shade clears once the finger is about a finger's width past the edge; no tick, nothing happens.
+- **Press, slide well away and back, release:** the shade comes back; the action happens.
 - **Long press until iOS takes over (magnifier or callout), then release:** nothing happens, no tick.
 - **Flick the list or page starting on the button:** it scrolls, nothing is pressed.
 - **Quick re-tap right after a slide-off:** the second tap works normally.
@@ -27,7 +29,7 @@ Every button with a haptic should pass the **press test**:
 - [ ] Like: heart fills red with the pop; tap again to unlike; the Liked tab updates.
 - [ ] Reflect: sheet opens on the right verse; the count badge updates after saving.
 - [ ] Share: share sheet with the verse text and reference.
-- [ ] Study: opens Bible Hub on the right verse.
+- [ ] Study: opens Bible Hub on the right verse; each link ticks and opens once.
 
 ## History menu
 
