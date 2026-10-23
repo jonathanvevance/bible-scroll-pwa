@@ -220,6 +220,11 @@ button {
   transition: top 0.25s var(--ease-ios);
   pointer-events: none;
 }
+/* The chapter's first and last verse numbers, dim beside the bright current one. */
+.rail-end {
+  color: var(--fg-2);
+  transition: none;
+}
 
 .rail-label {
   position: fixed;

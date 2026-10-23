@@ -8,6 +8,9 @@ export const rail = document.getElementById('rail');
 const railTrack = document.getElementById('railTrack');
 const railLabel = document.getElementById('railLabel');
 const railNumber = document.getElementById('railNumber');
+const railEnds = [document.getElementById('railFirst'), document.getElementById('railLast')];
+/** An end number closer than this to the current one would overlap it, so it hides. */
+const NUMBER_GAP_PX = 14;
 const railState = { chapterKey: 0, ids: [], current: -1, scrubbing: false, scrubIndex: -1 };
 
 /** True while a finger is dragging along the rail. */
@@ -26,6 +29,11 @@ export function updateRail() {
     railTrack.style.gap = railState.ids.length > 80 ? '1px' : '2px';
     railTrack.replaceChildren(...railState.ids.map(() => document.createElement('span')));
     railState.current = -1;
+    const last = railState.ids.length - 1;
+    for (const [end, i] of [[railEnds[0], 0], [railEnds[1], last]]) {
+      end.textContent = String(itemFor(railState.ids[i]).verse.verse);
+      end.style.top = top(i);
+    }
   }
   const index = railState.ids.indexOf(`v${v.key}`);
   if (index === railState.current) return;
@@ -33,8 +41,14 @@ export function updateRail() {
   railTrack.children[index]?.classList.add('current');
   railState.current = index;
   railNumber.textContent = String(v.verse);
-  railNumber.style.top = `${((index + 0.5) / railState.ids.length) * 100}%`;
+  railNumber.style.top = top(index);
+  const n = railState.ids.length;
+  const spacing = railTrack.clientHeight / n;
+  railEnds[0].hidden = index * spacing < NUMBER_GAP_PX;
+  railEnds[1].hidden = (n - 1 - index) * spacing < NUMBER_GAP_PX;
 }
+
+const top = (index) => `${((index + 0.5) / railState.ids.length) * 100}%`;
 
 function scrubTo(clientY) {
   const box = railTrack.getBoundingClientRect();
