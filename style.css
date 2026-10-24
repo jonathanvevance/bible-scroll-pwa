@@ -23,7 +23,7 @@
   /* The curve iOS uses for sheets and navigation pushes. */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --bar: rgba(255, 255, 255, 0.75);
-  --menu: rgba(255, 255, 255, 0.875);
+  --menu: rgba(255, 255, 255, 0.9);
   /* The floating tab bar dips into the home-indicator area, as iOS 26 tab bars do. */
   --tab-bar-bottom: max(12px, calc(env(safe-area-inset-bottom) - 12px));
   --tab-bar-height: 62px;
@@ -46,7 +46,7 @@
     --press: #3a3a3c;
     --press-brightness: 1.1; /* any brighter and blue glares on a phone screen */
     --bar: rgba(44, 44, 48, 0.75);
-    --menu: rgba(44, 44, 48, 0.875);
+    --menu: rgba(44, 44, 48, 0.9);
   }
 }
 
