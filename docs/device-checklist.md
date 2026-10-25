@@ -34,7 +34,8 @@ Every button and link should pass the **press test**:
 
 - [ ] Press test on the history items.
 - [ ] Tap an item: goes there; the menu closes.
-- [ ] Pin: tap the pin on the left; it fills blue and the place moves to the top. Up to three; with three pinned the other pins fade and tapping one says "Unpin one to pin this". Pins stay through more jumps and through Clear History.
+- [ ] The place being read is listed as "Now"; tapping it only closes the menu, and its pin works like any other.
+- [ ] Pin: tap the pin on the left; it fills in and the place moves to the top. Up to three; with three pinned the other pins fade and tapping one says "Unpin one to pin this". Pins stay through more jumps and through Clear History.
 - [ ] Jump from History while the feed is still gliding: it stays at the new place.
 
 ## Jump sheet
