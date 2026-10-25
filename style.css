@@ -676,10 +676,11 @@ html:has(dialog[open]) .tab-bar {
 .sheet.fit { height: auto; }
 .sheet.fit .sheet-inner { height: auto; }
 .sheet.fit .sheet-body { flex: 0 1 auto; min-height: 0; }
-/* A card floating just above the bottom edge, rounded on every corner. */
+/* A card resting on the bottom edge, inset at the sides, rounded on every corner. Nothing shows
+   below it, where a gap let the page behind peek through. */
 .sheet.floating {
   --sheet-gap: 8px;
-  inset: auto var(--sheet-gap) var(--sheet-gap);
+  inset: auto var(--sheet-gap) 0;
   width: auto;
   border-radius: 36px;
 }
