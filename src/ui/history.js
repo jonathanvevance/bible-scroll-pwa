@@ -13,7 +13,6 @@ import { guardPresses } from './pressable.js';
 // Every jump (the chapter picker, a reference, a reflection card, a history entry) records the
 // place being left, one entry per chapter (rules in core/history-list.js). The History pill
 // lists them, pins first, with the place being read among them as "Now", so it can be pinned.
-// The pill shows whenever there is somewhere other than this chapter to go, or a pin.
 
 const historyButton = document.getElementById('historyButton');
 const historyMenu = document.getElementById('historyMenu');
@@ -31,9 +30,7 @@ function withHere() {
 /** Every entry, in the order the menu shows them. */
 const historyPlaces = () => ordered(withHere()).filter((h) => unpackKey(h.key));
 
-export function updateHistory() {
-  historyButton.hidden = !historyPlaces().some((h) => !isHere(h) || isPinned(h));
-}
+export function updateHistory() { historyButton.hidden = !historyPlaces().length; }
 
 /** Call before jumping, while `prefs.lastVerse` still holds the verse being read. */
 export function rememberPlace() {
