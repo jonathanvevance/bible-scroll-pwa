@@ -376,7 +376,7 @@ html:has(#jump[open]:not(.closing)) #historyButton { filter: blur(2px); }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.history-pin[aria-pressed="true"] { color: var(--accent); }
+.history-pin[aria-pressed="true"] { color: var(--fg); }
 .history-pin[aria-pressed="true"] svg { fill: currentColor; }
 .history-pin.full { opacity: 0.3; }
 .history-clear { border-top: 8px solid var(--sep); color: var(--destructive); }
