@@ -336,7 +336,7 @@ html:has(#jump[open]:not(.closing)) #historyButton { filter: blur(2px); }
   position: absolute;
   top: calc(env(safe-area-inset-top) + 52px);
   left: 12px;
-  width: min(290px, calc(100vw - 24px));
+  width: min(310px, calc(100vw - 24px));
   overflow: hidden;
   border-radius: 14px;
   background: var(--menu);
@@ -349,19 +349,36 @@ html:has(#jump[open]:not(.closing)) #historyButton { filter: blur(2px); }
 @keyframes menu-in { from { opacity: 0; transform: scale(0.6); } }
 .history-title { margin: 0; padding: 10px 16px 6px; font-size: 13px; color: var(--fg-2); }
 .history-list { margin: 0; padding: 0; list-style: none; }
-.history-list button, .history-clear {
+.history-list li { display: flex; border-top: 0.5px solid var(--sep); }
+.history-place, .history-clear {
   position: relative;
   display: flex;
   align-items: baseline;
   gap: 12px;
   width: 100%;
   padding: 11px 16px;
-  border-top: 0.5px solid var(--sep);
   font-size: 17px;
   text-align: left;
   color: var(--fg);
 }
-.history-list time { margin-left: auto; font-size: 13px; font-weight: 400; color: var(--fg-2); }
+.history-place { min-width: 0; padding-left: 0; }
+/* A long name ("Song of Solomon 8:14") ends in … on a narrow phone rather than wrapping. */
+.history-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-list time { flex: none; margin-left: auto; font-size: 13px; font-weight: 400; color: var(--fg-2); }
+/* The pin: an outline when off, filled in the accent colour when on, faded when the pins are full. */
+.history-pin { flex: none; width: 44px; display: grid; place-items: center; color: var(--fg-2); }
+.history-pin svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.history-pin[aria-pressed="true"] { color: var(--accent); }
+.history-pin[aria-pressed="true"] svg { fill: currentColor; }
+.history-pin.full { opacity: 0.3; }
 .history-clear { border-top: 8px solid var(--sep); color: var(--destructive); }
 .history-menu { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
@@ -406,6 +423,7 @@ html:has(#jump[open]:not(.closing)) #historyButton { filter: blur(2px); }
 
 .toast {
   position: fixed;
+  z-index: 3; /* above the History menu, which can show one */
   left: 50%;
   bottom: calc(var(--tab-bar-space) + 16px);
   margin: 0;
