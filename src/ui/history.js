@@ -75,7 +75,8 @@ function renderHistory() {
     place.setAttribute('role', 'menuitem');
     place.addEventListener('click', () => {
       closeHistory();
-      if (isPinned(h) ? h.pinnedAt === following() : isHere(h)) return;
+      const onTrack = isFollowing(prefs.history.get(), following());
+      if (isPinned(h) ? h.pinnedAt === following() : !onTrack && isHere(h)) return;
       jumpTo(h.key);
       if (isPinned(h)) prefs.followingPin.set(h.pinnedAt);
       updateHistory();

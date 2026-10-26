@@ -68,8 +68,20 @@ test('history: a followed pin moves to whichever chapter the reader scrolled on 
   list = remember(list, verse(1, 1, 5), 80, 70); // read back from Genesis 2 into Genesis 1
   const pins = list.filter((h) => h.pinnedAt === 70);
   eq(pins.map((h) => h.key), [verse(1, 1, 5)], 'the pin is now at Genesis 1:5');
-  eq(list.length, 2, 'no new entry; the old Genesis 1 entry gave way');
   ok(!list.some((h) => h.key === verse(1, 2)), 'Genesis 2 is no longer listed');
+  ok(list.some((h) => h.key === verse(1, 1) && h.pinnedAt == null), 'the Genesis 1:1 visit stays');
+  eq(list.length, 3, 'no new entry');
+});
+
+test('history: a verse looked up in the track\'s chapter stays when the track is opened again', () => {
+  let list = togglePin(remember([], verse(20, 8), 1), verse(20, 8), 70); // pinned Proverbs 8:1
+  list = remember(list, verse(20, 8, 1), 2, 70); // on the track, then the Jump sheet to 8:15
+  list = remember(list, verse(20, 8, 15), 3); // off the track at 8:15, then the pin is tapped
+  ok(list.some((h) => h.key === verse(20, 8, 15) && h.pinnedAt == null), '8:15 recorded');
+  const reading = remember(list, verse(20, 8, 4), 4, 70); // reading on the track again
+  ok(reading.some((h) => h.key === verse(20, 8, 15) && h.pinnedAt == null), '8:15 still listed');
+  eq(reading.find((h) => h.pinnedAt === 70)?.key, verse(20, 8, 4), 'the track moved on');
+  eq(remember(list, verse(20, 8, 15), 5, 70).filter((h) => h.key === verse(20, 8, 15)).length, 1, 'the same verse is never listed twice');
 });
 
 test('history: without following, a new chapter is a new entry and the pin stays', () => {

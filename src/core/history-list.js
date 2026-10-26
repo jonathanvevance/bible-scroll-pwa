@@ -17,14 +17,15 @@ function trim(list) {
 }
 
 /**
- * Records leaving `key` at `time`. The pin being followed (its `pinnedAt`) moves to `key`;
- * otherwise `key` is an unpinned entry. An unpinned entry for the same chapter gives way to it.
+ * Records leaving `key` at `time`. The pin being followed (its `pinnedAt`) moves to `key`, and
+ * unpinned entries stay, except one for that very verse. Otherwise `key` is an unpinned entry,
+ * and an unpinned entry for the same chapter gives way to it.
  */
 export function remember(list, key, time, following = null) {
-  const sameChapter = (h) => !isPinned(h) && chapterOf(h.key) === chapterOf(key);
   const followed = following != null && list.find((h) => h.pinnedAt === following);
+  const replaced = followed ? (h) => h.key === key : (h) => chapterOf(h.key) === chapterOf(key);
   const entry = { key, time, ...(followed ? { pinnedAt: followed.pinnedAt } : {}) };
-  return trim([entry, ...list.filter((h) => h !== followed && !sameChapter(h))]);
+  return trim([entry, ...list.filter((h) => h !== followed && !(!isPinned(h) && replaced(h)))]);
 }
 
 /** Whether `following` names a pin that is still in `list`. */
