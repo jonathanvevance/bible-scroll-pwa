@@ -39,12 +39,28 @@ test('history: pins first in the order pinned, then newest first', () => {
   eq(ordered(list).map((h) => h.key), [5, 2, 6, 4, 3, 1].map((c) => verse(1, c)), 'order');
 });
 
-test('history: a pinned chapter keeps its pin when left again at another verse', () => {
+test('history: only the followed pin moves; reading a pinned chapter off its track leaves the pin', () => {
   let list = togglePin(visits(3), verse(1, 2), 70);
+  const followed = remember(list, verse(1, 2, 30), 80, 70);
+  eq(followed.find((h) => h.pinnedAt === 70)?.key, verse(1, 2, 30), 'followed: same pin, new verse');
   list = remember(list, verse(1, 2, 30), 80);
-  const entry = list.find((h) => h.key === verse(1, 2, 30));
-  eq(entry?.pinnedAt, 70, 'same pin, new verse');
-  eq(list.filter((h) => Math.floor(h.key / 1_000) === Math.floor(verse(1, 2) / 1_000)).length, 1, 'one entry');
+  eq(list.find((h) => h.pinnedAt === 70)?.key, verse(1, 2), 'not followed: the pin stays put');
+  ok(list.some((h) => h.key === verse(1, 2, 30) && h.pinnedAt == null), 'and the visit is its own entry');
+});
+
+test('history: following one pin into another pin\'s chapter leaves the other pin alone', () => {
+  let list = togglePin(togglePin(visits(3), verse(1, 2), 70), verse(1, 3), 71);
+  list = remember(list, verse(1, 3, 9), 80, 70);
+  eq(list.find((h) => h.pinnedAt === 70)?.key, verse(1, 3, 9), 'the followed pin moved');
+  eq(list.find((h) => h.pinnedAt === 71)?.key, verse(1, 3), 'the other pin did not');
+  eq(pinCount(list), 2, 'no pin lost');
+});
+
+test('history: togglePin picks the pinned or unpinned entry when both share a verse', () => {
+  const list = [{ key: verse(1, 3), time: 9 }, { key: verse(1, 3), time: 1, pinnedAt: 5 }];
+  const unpinned = togglePin(list, verse(1, 3), 10, 5);
+  eq(pinCount(unpinned), 0, 'unpinned the pin, not the visit');
+  eq(pinCount(togglePin(list, verse(1, 3), 10, null)), 2, 'pinned the visit');
 });
 
 test('history: a followed pin moves to whichever chapter the reader scrolled on to', () => {

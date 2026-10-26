@@ -1,6 +1,6 @@
 import { daysAgo } from '../core/dates.js';
 import {
-  MAX_PINS, chapterOf, isPinned, ordered, pinCount, remember, togglePin, withoutUnpinned,
+  MAX_PINS, chapterOf, isFollowing, isPinned, ordered, pinCount, remember, togglePin, withoutUnpinned,
 } from '../core/history-list.js';
 import { unpackKey, verseName } from '../core/references.js';
 import { prefs } from '../data/prefs.js';
@@ -13,8 +13,11 @@ import { guardPresses } from './pressable.js';
 // Every jump (the chapter picker, a reference, a reflection card, a history entry) records the
 // place being left, one entry per chapter (rules in core/history-list.js). The History pill
 // lists them, pins first, with the place being read among them as "Now", so it can be pinned.
+// Opening a pin, or pinning "Now", puts the reader on that track, shown by a pin on the chapter
+// pill; scrolling keeps them on it, and any jump takes them off.
 
 const historyButton = document.getElementById('historyButton');
+const trackPin = document.getElementById('trackPin');
 const historyMenu = document.getElementById('historyMenu');
 const historyList = document.getElementById('historyList');
 
@@ -31,7 +34,10 @@ function withHere() {
 /** Every entry, in the order the menu shows them. */
 const historyPlaces = () => ordered(withHere()).filter((h) => unpackKey(h.key));
 
-export function updateHistory() { historyButton.hidden = !historyPlaces().length; }
+export function updateHistory() {
+  historyButton.hidden = !historyPlaces().length;
+  trackPin.toggleAttribute('hidden', !isFollowing(prefs.history.get(), following())); // an <svg> has no .hidden
+}
 
 /** Call before jumping, while `prefs.lastVerse` still holds the verse being read. Ends following. */
 export function rememberPlace() {
@@ -50,11 +56,12 @@ function pinButton(h, pinsFull) {
   if (!pin && pinsFull) button.classList.add('full');
   button.addEventListener('click', () => {
     const time = Date.now();
-    const next = togglePin(withHere(), h.key, time);
+    const next = togglePin(withHere(), h.key, time, h.pinnedAt ?? null);
     if (!next) return toast('Unpin one to pin this');
     prefs.history.set(next);
     if (!pin && isHere(h)) prefs.followingPin.set(time);
     renderHistory();
+    updateHistory();
   });
   return button;
 }
@@ -68,9 +75,10 @@ function renderHistory() {
     place.setAttribute('role', 'menuitem');
     place.addEventListener('click', () => {
       closeHistory();
-      if (isHere(h)) return;
+      if (isPinned(h) ? h.pinnedAt === following() : isHere(h)) return;
       jumpTo(h.key);
       if (isPinned(h)) prefs.followingPin.set(h.pinnedAt);
+      updateHistory();
     });
     return el('li', {}, pinButton(h, pinsFull), place);
   }));

@@ -1,7 +1,7 @@
 // The History list's rules, with no DOM. Entries are { key, time, pinnedAt? }, stored newest
 // first, one per chapter. Pinned entries are never displaced; only unpinned ones roll off.
-// A pin is a reading track: opened from History, it is followed, and moves to wherever the
-// reader scrolls on to, in any chapter, until they jump somewhere else.
+// A pin is a reading track. Only the track being read (followed) ever moves: to wherever the
+// reader scrolls on to, in any chapter. Every other pin stays exactly where it was left.
 
 export const HISTORY_SIZE = 6;
 export const MAX_PINS = 3;
@@ -17,19 +17,25 @@ function trim(list) {
 }
 
 /**
- * Records leaving `key` at `time`. The pin being followed (its `pinnedAt`), or else a pinned
- * entry for the same chapter, moves to `key`; any other entry for that chapter gives way to it.
+ * Records leaving `key` at `time`. The pin being followed (its `pinnedAt`) moves to `key`;
+ * otherwise `key` is an unpinned entry. An unpinned entry for the same chapter gives way to it.
  */
 export function remember(list, key, time, following = null) {
-  const sameChapter = (h) => chapterOf(h.key) === chapterOf(key);
-  const old = (following != null && list.find((h) => h.pinnedAt === following)) || list.find(sameChapter);
-  const entry = { key, time, ...(old && isPinned(old) ? { pinnedAt: old.pinnedAt } : {}) };
-  return trim([entry, ...list.filter((h) => h !== old && !sameChapter(h))]);
+  const sameChapter = (h) => !isPinned(h) && chapterOf(h.key) === chapterOf(key);
+  const followed = following != null && list.find((h) => h.pinnedAt === following);
+  const entry = { key, time, ...(followed ? { pinnedAt: followed.pinnedAt } : {}) };
+  return trim([entry, ...list.filter((h) => h !== followed && !sameChapter(h))]);
 }
 
-/** Pins or unpins `key`. Returns null when it can't be pinned because the pins are full. */
-export function togglePin(list, key, time) {
-  const entry = list.find((h) => h.key === key);
+/** Whether `following` names a pin that is still in `list`. */
+export const isFollowing = (list, following) => following != null && list.some((h) => h.pinnedAt === following);
+
+/**
+ * Pins or unpins `key`; pass `pinnedAt` (null for unpinned) when a pin and another entry may
+ * share the verse. Returns null when it can't be pinned because the pins are full.
+ */
+export function togglePin(list, key, time, pinnedAt) {
+  const entry = list.find((h) => h.key === key && (pinnedAt === undefined || (h.pinnedAt ?? null) === pinnedAt));
   if (!entry) return list;
   if (isPinned(entry)) {
     const { pinnedAt, ...rest } = entry;
