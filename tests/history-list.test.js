@@ -47,6 +47,23 @@ test('history: a pinned chapter keeps its pin when left again at another verse',
   eq(list.filter((h) => Math.floor(h.key / 1_000) === Math.floor(verse(1, 2) / 1_000)).length, 1, 'one entry');
 });
 
+test('history: a followed pin moves to whichever chapter the reader scrolled on to', () => {
+  let list = togglePin(visits(3), verse(1, 2), 70);
+  list = remember(list, verse(1, 1, 5), 80, 70); // read back from Genesis 2 into Genesis 1
+  const pins = list.filter((h) => h.pinnedAt === 70);
+  eq(pins.map((h) => h.key), [verse(1, 1, 5)], 'the pin is now at Genesis 1:5');
+  eq(list.length, 2, 'no new entry; the old Genesis 1 entry gave way');
+  ok(!list.some((h) => h.key === verse(1, 2)), 'Genesis 2 is no longer listed');
+});
+
+test('history: without following, a new chapter is a new entry and the pin stays', () => {
+  let list = togglePin(visits(3), verse(1, 2), 70);
+  list = remember(list, verse(1, 4), 80);
+  ok(list.some((h) => h.key === verse(1, 2) && h.pinnedAt === 70), 'pin unchanged');
+  ok(list.some((h) => h.key === verse(1, 4) && h.pinnedAt == null), 'Genesis 4 added, unpinned');
+  ok(remember(list, verse(1, 5), 90, 999).some((h) => h.pinnedAt === 70 && h.key === verse(1, 2)), 'following a removed pin changes nothing');
+});
+
 test('history: Clear History keeps the pins', () => {
   const list = togglePin(visits(4), verse(1, 3), 5);
   eq(withoutUnpinned(list).map((h) => h.key), [verse(1, 3)], 'only the pin');

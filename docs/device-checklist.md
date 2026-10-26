@@ -36,6 +36,7 @@ Every button and link should pass the **press test**:
 - [ ] Tap an item: goes there; the menu closes.
 - [ ] The place being read is listed as "Now"; tapping it only closes the menu, and its pin works like any other.
 - [ ] Pin: tap the pin on the left; it fills in and the place moves to the top. Up to three; with three pinned the other pins fade and tapping one says "Unpin one to pin this". Pins stay through more jumps and through Clear History.
+- [ ] Open a pinned place from History and scroll into the next or previous chapter: History shows that pin as "Now" at the new place, with no new entry. Jump elsewhere from the Jump sheet: the pin stays where you left it.
 - [ ] Jump from History while the feed is still gliding: it stays at the new place.
 
 ## Jump sheet

@@ -29,6 +29,8 @@ export function preferences(prefix, storage = localStorage) {
     lastVerse: number('lastVerseKey'),
     /** Recently read chapters for the History menu: `{ key, time }`, newest first. */
     history: json('history', () => []),
+    /** The `pinnedAt` of the History pin being read along, or 0. */
+    followingPin: number('followingPin'),
     /** The Reflections tab's range: today, week, month or all. */
     reflectionsFilter: text('reflectionsFilter'),
     lastBackupAt: number('lastBackupAt'),

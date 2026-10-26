@@ -9,7 +9,7 @@ const APP = 'bible-scroll';
 const BIBLE = 'bsb.json';
 /** Where the files every language shares are, relative to this worker. */
 const SHARED = '';
-const VERSION = 218;
+const VERSION = 219;
 const CACHE = `${APP}-v${VERSION}`;
 const ASSETS = ['./', 'index.html', 'manifest.webmanifest', BIBLE, ...[
   'style.css',

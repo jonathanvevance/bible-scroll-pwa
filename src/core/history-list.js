@@ -1,5 +1,7 @@
 // The History list's rules, with no DOM. Entries are { key, time, pinnedAt? }, stored newest
 // first, one per chapter. Pinned entries are never displaced; only unpinned ones roll off.
+// A pin is a reading track: opened from History, it is followed, and moves to wherever the
+// reader scrolls on to, in any chapter, until they jump somewhere else.
 
 export const HISTORY_SIZE = 6;
 export const MAX_PINS = 3;
@@ -14,11 +16,15 @@ function trim(list) {
   return list.filter((h) => isPinned(h) || room-- > 0);
 }
 
-/** Records leaving `key` at `time`. A pinned chapter keeps its pin and moves to the new verse. */
-export function remember(list, key, time) {
-  const old = list.find((h) => chapterOf(h.key) === chapterOf(key));
+/**
+ * Records leaving `key` at `time`. The pin being followed (its `pinnedAt`), or else a pinned
+ * entry for the same chapter, moves to `key`; any other entry for that chapter gives way to it.
+ */
+export function remember(list, key, time, following = null) {
+  const sameChapter = (h) => chapterOf(h.key) === chapterOf(key);
+  const old = (following != null && list.find((h) => h.pinnedAt === following)) || list.find(sameChapter);
   const entry = { key, time, ...(old && isPinned(old) ? { pinnedAt: old.pinnedAt } : {}) };
-  return trim([entry, ...list.filter((h) => h !== old)]);
+  return trim([entry, ...list.filter((h) => h !== old && !sameChapter(h))]);
 }
 
 /** Pins or unpins `key`. Returns null when it can't be pinned because the pins are full. */

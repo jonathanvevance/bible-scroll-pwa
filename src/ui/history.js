@@ -19,12 +19,13 @@ const historyMenu = document.getElementById('historyMenu');
 const historyList = document.getElementById('historyList');
 
 const isHere = (h) => chapterOf(h.key) === chapterOf(prefs.lastVerse.get());
+const following = () => prefs.followingPin.get() || null;
 
 /** The stored list as it would be on leaving now: the place being read recorded as just left. */
 function withHere() {
   const key = prefs.lastVerse.get();
   const list = prefs.history.get();
-  return unpackKey(key) ? remember(list, key, Date.now()) : list;
+  return unpackKey(key) ? remember(list, key, Date.now(), following()) : list;
 }
 
 /** Every entry, in the order the menu shows them. */
@@ -32,11 +33,11 @@ const historyPlaces = () => ordered(withHere()).filter((h) => unpackKey(h.key));
 
 export function updateHistory() { historyButton.hidden = !historyPlaces().length; }
 
-/** Call before jumping, while `prefs.lastVerse` still holds the verse being read. */
+/** Call before jumping, while `prefs.lastVerse` still holds the verse being read. Ends following. */
 export function rememberPlace() {
   const key = prefs.lastVerse.get();
-  if (!unpackKey(key)) return;
-  prefs.history.set(remember(prefs.history.get(), key, Date.now()));
+  if (unpackKey(key)) prefs.history.set(remember(prefs.history.get(), key, Date.now(), following()));
+  prefs.followingPin.clear();
 }
 
 const PIN_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17v5"/>'
@@ -48,9 +49,11 @@ function pinButton(h, pinsFull) {
   button.setAttribute('aria-pressed', String(pin));
   if (!pin && pinsFull) button.classList.add('full');
   button.addEventListener('click', () => {
-    const next = togglePin(withHere(), h.key, Date.now());
+    const time = Date.now();
+    const next = togglePin(withHere(), h.key, time);
     if (!next) return toast('Unpin one to pin this');
     prefs.history.set(next);
+    if (!pin && isHere(h)) prefs.followingPin.set(time);
     renderHistory();
   });
   return button;
@@ -63,7 +66,12 @@ function renderHistory() {
       el('span', { className: 'history-name', textContent: verseName(unpackKey(h.key)) }),
       el('time', {}, ago(h.time)));
     place.setAttribute('role', 'menuitem');
-    place.addEventListener('click', () => { closeHistory(); if (!isHere(h)) jumpTo(h.key); });
+    place.addEventListener('click', () => {
+      closeHistory();
+      if (isHere(h)) return;
+      jumpTo(h.key);
+      if (isPinned(h)) prefs.followingPin.set(h.pinnedAt);
+    });
     return el('li', {}, pinButton(h, pinsFull), place);
   }));
 }
