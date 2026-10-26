@@ -304,10 +304,12 @@ button {
   stroke-linejoin: round;
 }
 .chapter-pill svg { width: 16px; height: 16px; color: var(--fg-2); }
-/* On a reading track: a round pin beside the chapter pill. */
-.track-pin { width: 38px; justify-content: center; padding: 0; }
+/* On a reading track: a pin before the chapter name. Its viewBox is shifted so the pin's head,
+   not the whole shape with its thin needle, centres on the letters. */
+.track-pin { display: grid; }
 .track-pin[hidden] { display: none; }
-.track-pin svg { width: 18px; height: 18px; fill: currentColor; }
+.chapter-pill .track-pin svg { width: 15px; height: 15px; color: var(--fg); fill: currentColor; }
+.chapter-pill:has(.track-pin:not([hidden])) { gap: 6px; padding-left: 11px; }
 .history-pill { gap: 6px; padding: 0 14px 0 11px; }
 .history-pill[hidden] { display: none; }
 
@@ -328,8 +330,8 @@ button {
 .history-menu:not([hidden], .closing) ~ .topbar { pointer-events: none; }
 .history-menu:not([hidden], .closing) ~ .topbar #historyButton { pointer-events: auto; }
 /* The top bar sits above the backdrop so the pill stays sharp; the rest of it blurs by itself. */
-:is(#jumpButton, #historyButton, #trackPin) { transition: filter 0.2s; }
-.history-menu:not([hidden], .closing) ~ .topbar :is(#jumpButton, #trackPin) { filter: blur(2px) brightness(0.94); }
+:is(#jumpButton, #historyButton) { transition: filter 0.2s; }
+.history-menu:not([hidden], .closing) ~ .topbar #jumpButton { filter: blur(2px) brightness(0.94); }
 /* Likewise the History pill while the Jump sheet is open. */
 html:has(#jump[open]:not(.closing)) #historyButton { filter: blur(2px); }
 /* Closing runs the opening backwards; taps already go to whatever is underneath. */

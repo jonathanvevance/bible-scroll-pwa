@@ -36,7 +36,7 @@ Every button and link should pass the **press test**:
 - [ ] Tap an item: goes there; the menu closes.
 - [ ] The place being read is listed as "Now"; tapping it only closes the menu, and its pin works like any other.
 - [ ] Pin: tap the pin on the left; it fills in and the place moves to the top. Up to three; with three pinned the other pins fade and tapping one says "Unpin one to pin this". Pins stay through more jumps and through Clear History.
-- [ ] Open a pinned place from History: a round pin appears beside the chapter pill. Scroll into the next or previous chapter: the pin stays, and History shows that pin as "Now" at the new place, with no other new row. Jump elsewhere (Jump sheet, a card, an unpinned row): the round pin goes, and the track waits at the last verse read on it. Pinning "Now" also shows the round pin.
+- [ ] Open a pinned place from History: a pin appears in the chapter pill, before the name. Scroll into the next or previous chapter: the pin stays, and History shows that pin as "Now" at the new place, with no other new row. Jump elsewhere (Jump sheet, a card, an unpinned row): the pin goes, and the track waits at the last verse read on it. Pinning "Now" also shows the pin.
 - [ ] Jump from History while the feed is still gliding: it stays at the new place.
 
 ## Jump sheet

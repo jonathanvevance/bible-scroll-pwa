@@ -13,7 +13,7 @@ import { guardPresses } from './pressable.js';
 // Every jump (the chapter picker, a reference, a reflection card, a history entry) records the
 // place being left, one entry per chapter (rules in core/history-list.js). The History pill
 // lists them, pins first, with the place being read among them as "Now", so it can be pinned.
-// Opening a pin, or pinning "Now", puts the reader on that track, shown by a round pin beside the chapter
+// Opening a pin, or pinning "Now", puts the reader on that track, shown by a pin on the chapter
 // pill; scrolling keeps them on it, and any jump takes them off.
 
 const historyButton = document.getElementById('historyButton');
