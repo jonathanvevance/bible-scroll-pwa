@@ -53,10 +53,22 @@
   <section id="reflectionsView" class="reflections-view" aria-label="Reflections" hidden>
     <header class="reflections-header">
       <h1>Reflections</h1>
-      <button class="round-glass you-button" aria-label="Backup and help">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.8 18.2a6 6 0 0 1 10.4 0"/></svg>
-      </button>
+      <div class="header-buttons">
+        <button id="searchButton" class="round-glass" aria-label="Search reflections">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        </button>
+        <button class="round-glass you-button" aria-label="Backup and help">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.8 18.2a6 6 0 0 1 10.4 0"/></svg>
+        </button>
+      </div>
     </header>
+    <form id="reflectionsSearch" class="reflections-search" role="search">
+      <label class="search-field">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        <input id="reflectionsQuery" class="search" type="search" placeholder="Search" aria-label="Search reflections" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false">
+      </label>
+      <button id="searchCancel" class="search-cancel" type="button">Cancel</button>
+    </form>
     <div id="reflectionsFilter" class="segmented four">
       <button data-range="today">Today</button>
       <button data-range="week">Week</button>

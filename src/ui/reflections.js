@@ -37,18 +37,43 @@ function filterRange(f) {
 /** The list shown so far; replaced whenever the list starts over, which cancels a load in flight. */
 let listing = null;
 
-/** Newest first, under a heading for each day, loaded a page at a time as the list scrolls. */
+const searchField = document.getElementById('reflectionsQuery');
+const searching = () => reflectionsView.classList.contains('searching');
+const fold = (s) => s.normalize('NFC').toLowerCase();
+/** Every reflection, read once per search and dropped when the journal changes. */
+let searchRows = null;
+
+/**
+ * Newest first, under a heading for each day, loaded a page at a time as the list scrolls.
+ * While searching, the period is set aside: an empty search lists everything, and a query lists
+ * every reflection whose own text holds it.
+ */
 export function renderReflections() {
   if (!journal) return;
   for (const node of reflectionsFilter.children) node.classList.toggle('selected', node.dataset.range === filter);
-  listing = { ...filterRange(filter), loaded: 0, done: false, loading: false, last: null };
+  const query = searching() ? searchField.value.trim() : '';
+  listing = { ...filterRange(searching() ? 'all' : filter), query, loaded: 0, done: false, loading: false, last: null };
   reflectionsList.replaceChildren();
   reflectionsEmpty.hidden = true;
   reflectionsView.scrollTop = 0;
-  loadMoreReflections();
+  if (query) showMatches();
+  else loadMoreReflections();
   updateBackupReminder();
 }
-registerTab('reflections', renderReflections);
+registerTab('reflections', () => { searchRows = null; renderReflections(); });
+
+async function showMatches() {
+  const run = listing;
+  const all = searchRows ?? await journal.allComments();
+  if (run !== listing) return;
+  searchRows = all;
+  const query = fold(run.query);
+  const rows = all.filter((c) => fold(c.body).includes(query)).reverse();
+  run.done = true;
+  appendByDay(reflectionsList, rows);
+  reflectionsEmpty.textContent = `No reflections contain “${run.query}”`;
+  reflectionsEmpty.hidden = rows.length > 0;
+}
 
 async function loadMoreReflections() {
   const run = listing;
@@ -82,6 +107,25 @@ reflectionsFilter.addEventListener('click', (e) => {
   const range = e.target.closest('button[data-range]')?.dataset.range;
   if (range) setFilter(range);
 });
+
+const reflectionsSearch = document.getElementById('reflectionsSearch');
+document.getElementById('searchButton').addEventListener('click', () => {
+  reflectionsView.classList.add('searching');
+  searchField.value = '';
+  searchField.focus();
+  renderReflections();
+});
+document.getElementById('searchCancel').addEventListener('click', () => {
+  reflectionsView.classList.remove('searching');
+  searchField.value = '';
+  searchField.blur();
+  searchRows = null;
+  renderReflections();
+});
+searchField.addEventListener('input', renderReflections);
+// Return, or dragging the list, puts the keyboard away and keeps the results.
+reflectionsSearch.addEventListener('submit', (e) => { e.preventDefault(); searchField.blur(); });
+reflectionsList.addEventListener('touchmove', () => searchField.blur(), { passive: true });
 
 export const backupBanner = document.getElementById('backupBanner');
 for (const control of [reflectionsFilter, backupBanner]) guardPresses(control);

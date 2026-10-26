@@ -538,6 +538,29 @@ html:has(dialog[open]) .tab-bar {
 
 .reflections-empty { margin: 25vh 0 0; text-align: center; }
 
+.header-buttons { display: flex; gap: 10px; }
+
+/* Searching swaps the title, period and backup banner for a search field, as iOS Notes does. */
+.reflections-search { display: none; align-items: center; gap: 12px; height: 44px; margin-bottom: 16px; }
+.searching .reflections-search { display: flex; }
+.searching :is(.reflections-header, #reflectionsFilter, #backupBanner) { display: none; }
+.search-field { position: relative; flex: 1; }
+.search-field svg {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  width: 17px;
+  height: 17px;
+  translate: 0 -50%;
+  fill: none;
+  stroke: var(--fg-2);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.search-field .search { height: 36px; margin: 0; padding-left: 32px; font-size: 17px; }
+.search-cancel { color: var(--accent); font-size: 17px; }
+
 .segmented.four { grid-template-columns: repeat(4, 1fr); margin-bottom: 22px; }
 .segmented.four button { position: relative; }
 /* On the dark grouped background the card colour barely shows; iOS uses a lighter grey. */

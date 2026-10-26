@@ -113,6 +113,32 @@ test('an open Liked or Reflections tab updates when the journal changes', async 
   frame.remove();
 });
 
+test('Reflections search matches only the reflection text, from any period', async () => {
+  const { frame, doc, appModule } = await boot();
+  const { journal } = await appModule('src/ui/app-state.js');
+  const PSALM_23_1 = 19_023_001;
+  const rows = [
+    await journal.add('My Shepherd walks ahead', 43_010_011, Date.now() - 400 * 86_400_000),
+    await journal.add('Still waters', PSALM_23_1),
+  ];
+  doc.querySelector('[data-tab="reflections"]').click();
+  doc.getElementById('searchButton').click();
+  ok(doc.getElementById('reflectionsView').classList.contains('searching'), 'searching');
+  const field = doc.getElementById('reflectionsQuery');
+  field.value = 'shepherd';
+  field.dispatchEvent(new frame.contentWindow.Event('input'));
+  const texts = () => [...doc.querySelectorAll('#reflectionsList .reflection-text')].map((n) => n.textContent);
+  ok(await until(() => texts().length), 'results shown');
+  eq(texts(), ['My Shepherd walks ahead'], 'a year-old match; not Psalm 23 through its verse text');
+  field.value = 'nothing like this';
+  field.dispatchEvent(new frame.contentWindow.Event('input'));
+  ok(await until(() => !doc.getElementById('reflectionsEmpty').hidden), 'says nothing matched');
+  doc.getElementById('searchCancel').click();
+  ok(!doc.getElementById('reflectionsView').classList.contains('searching'), 'Cancel ends the search');
+  for (const row of rows) await journal.delete(row);
+  frame.remove();
+});
+
 test('the Malayalam app shows its own text and keeps its data apart from English', async () => {
   const { frame, doc, appModule } = await boot('ml/index.html');
   ok(doc, 'app started');

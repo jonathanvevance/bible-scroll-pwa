@@ -53,6 +53,7 @@ Every button and link should pass the **press test**:
 - [ ] Edit one, delete it from its row, tap Done: it stays deleted.
 - [ ] Start writing, swipe home, reopen: the text is still there and saved.
 - [ ] Reflections tab: the date filters work; press test on the filter pills and the backup banner.
+- [ ] Search (magnifier): the keyboard opens; typing lists, newest first, every reflection whose own words match, from any period; dragging the list or Return puts the keyboard away; the keyboard doesn't hide the results; Cancel brings back the title and filter.
 
 ## Liked
 
