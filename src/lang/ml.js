@@ -14,5 +14,6 @@ export default {
   cacheName: 'bible-scroll-ml',
   attribution: 'മലയാളം സത്യവേദപുസ്തകം 1910 (contemporary orthography), © 2015 '
     + '<a href="https://ebible.org/details.php?id=mal2015">The Free Bible Foundation</a>, '
-    + '<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Notes and headings omitted.',
+    + '<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Changed: converted from USFM, notes and headings omitted, '
+    + 'psalm titles and Habakkuk\'s closing note set apart from the verses. Not endorsed by The Free Bible Foundation.',
 };
