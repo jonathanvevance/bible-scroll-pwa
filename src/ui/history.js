@@ -36,7 +36,7 @@ const historyPlaces = () => ordered(withHere()).filter((h) => unpackKey(h.key));
 
 export function updateHistory() {
   historyButton.hidden = !historyPlaces().length;
-  trackPin.toggleAttribute('hidden', !isFollowing(prefs.history.get(), following())); // an <svg> has no .hidden
+  trackPin.hidden = !isFollowing(prefs.history.get(), following());
 }
 
 /** Call before jumping, while `prefs.lastVerse` still holds the verse being read. Ends following. */

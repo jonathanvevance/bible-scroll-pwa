@@ -304,8 +304,19 @@ button {
   stroke-linejoin: round;
 }
 .chapter-pill svg { width: 16px; height: 16px; color: var(--fg-2); }
-.chapter-pill .track-pin { width: 14px; height: 14px; margin-left: -3px; color: var(--fg); fill: currentColor; }
+/* On a reading track: a pin badge, 8px from the chapter name. */
+.track-pin {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: 0 4px 0 -6px;
+  border-radius: 50%;
+  background: var(--fg);
+}
 .track-pin[hidden] { display: none; }
+.chapter-pill .track-pin svg { width: 13px; height: 13px; color: var(--bg); fill: currentColor; }
 .history-pill { gap: 6px; padding: 0 14px 0 11px; }
 .history-pill[hidden] { display: none; }
 
