@@ -173,7 +173,7 @@ test('choosing reflections from search shares them oldest first', async () => {
   frame.remove();
 });
 
-test("a verse's reflections share in one tap and edit or delete from •••", async () => {
+test("a verse's reflections edit, share or delete from •••", async () => {
   const { frame, doc, appModule } = await boot();
   const { journal } = await appModule('src/ui/app-state.js');
   const page = doc.querySelector('.page.verse');
@@ -185,11 +185,14 @@ test("a verse's reflections share in one tap and edit or delete from •••",
   page.querySelector('[data-action="reflect"]').click();
   const item = await until(() => doc.querySelector('#timelineList .reflection-row'));
   ok(item, 'reflection listed');
-  item.querySelector('[aria-label="Share"]').click();
-  ok(await until(() => shared?.endsWith('Shared from the sheet')), 'shared with one tap');
   const menu = doc.getElementById('reflectionMenu');
-  item.querySelector('[aria-label="Edit or delete"]').click();
+  const more = item.querySelector('.reflection-icon');
+  more.click();
   ok(!menu.hidden && item.contains(menu), 'menu opens on its reflection');
+  doc.getElementById('menuShare').click();
+  ok(await until(() => shared?.endsWith('Shared from the sheet')), 'shared');
+  ok(menu.hidden, 'menu closes');
+  more.click();
   doc.getElementById('menuDelete').click();
   ok(await until(() => !doc.querySelector('#timelineList .reflection-row')), 'deleted');
   ok(!(await journal.comments(key)).some((c) => c.id === row.id), 'gone from the journal');

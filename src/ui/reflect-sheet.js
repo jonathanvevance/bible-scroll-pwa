@@ -37,26 +37,19 @@ async function renderTimeline() {
     comments.length === 0 ? '' : comments.length === 1 ? 'Reflection' : `Reflections (${comments.length})`;
   closeMenu();
   document.getElementById('timelineList').replaceChildren(...comments.map((c) => {
-    const share = el('button', { className: 'reflection-icon glass', ariaLabel: 'Share' });
-    share.innerHTML = SHARE_ICON;
-    share.addEventListener('click', () => {
-      closeMenu();
-      shareText(`${verseQuote(timelineVerse)}\n\n${c.body}`, 'Reflection copied', alert);
-    });
-    const more = el('button', { className: 'reflection-icon glass', ariaLabel: 'Edit or delete' });
+    const more = el('button', { className: 'reflection-icon glass', ariaLabel: 'Edit, share or delete' });
     more.innerHTML = MORE_ICON;
     const meta = c.updatedAt ? `${stamp(c)} · Edited` : stamp(c);
     const row = el('li', { className: 'reflection-row' },
       el('div', { className: 'reflection-row-top' },
-        el('p', { className: 'reflection-meta', textContent: meta }), share, more),
+        el('p', { className: 'reflection-meta', textContent: meta }), more),
       el('p', { className: 'reflection-body', textContent: c.body }));
     more.addEventListener('click', () => (menuFor === c ? closeMenu() : openMenu(c, row)));
     return row;
   }));
 }
 
-// The ••• on a reflection opens a small menu with Edit and Delete under it. One open at a time.
-const SHARE_ICON = '<svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+// The ••• on a reflection opens a small menu with Edit, Share and Delete under it. One open at a time.
 const MORE_ICON = '<svg viewBox="0 0 24 24" class="filled"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>';
 const reflectionMenu = document.getElementById('reflectionMenu');
 let menuFor = null;
@@ -73,6 +66,11 @@ function closeMenu() {
 }
 
 document.getElementById('menuEdit').addEventListener('click', () => startEditing(menuFor));
+document.getElementById('menuShare').addEventListener('click', () => {
+  const c = menuFor;
+  closeMenu();
+  if (c) shareText(`${verseQuote(timelineVerse)}\n\n${c.body}`, 'Reflection copied', alert);
+});
 document.getElementById('menuDelete').addEventListener('click', async () => {
   const c = menuFor;
   closeMenu();
