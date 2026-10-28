@@ -20,7 +20,7 @@ Every button and link should pass the **press test**:
 - [ ] Start of Genesis and end of Revelation: no crash, sensible boundary pages.
 - [ ] Verse rail: drag to scrub, release lands on that verse.
 - [ ] Relaunch: opens at the last verse read.
-- [ ] Press test on the Bible, Reflections and Liked tabs, the Jump and History pills, the person button, sheet Done and Cancel buttons, the testament switch, the Reflections and Liked cards, and the Edit, Share and Delete swipe buttons.
+- [ ] Press test on the Bible, Reflections and Liked tabs, the Jump and History pills, the person button, sheet Done and Cancel buttons, the testament switch, the Reflections and Liked cards, and each reflection's share and ••• buttons and the Edit and Delete menu.
 
 ## Verse actions (like, reflect, share, study)
 
@@ -48,7 +48,7 @@ Every button and link should pass the **press test**:
 ## Reflections
 
 - [ ] Write a reflection, tap Done: saved, shown in the timeline and the Reflections tab.
-- [ ] Swipe a reflection left: Edit, Share, Delete appear; one row open at a time.
+- [ ] Each reflection shows a share button and •••: share opens the share sheet; ••• opens Edit and Delete under it, one menu at a time; a tap elsewhere or a scroll closes it; Delete asks first.
 - [ ] Edit, change the text, tap Done: saved and marked Edited.
 - [ ] Edit one, then tap Edit on another: the first edit is kept.
 - [ ] Edit one, delete it from its row, tap Done: it stays deleted.

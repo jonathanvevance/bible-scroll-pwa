@@ -7,9 +7,6 @@ import { openSheet, trackKeyboard } from './sheets.js';
 
 // Reflections timeline
 
-/** How far a finger may move before it counts as a swipe rather than a tap. */
-const DRAG_PX = 10;
-
 const timeline = document.getElementById('timeline');
 const composerText = document.getElementById('composerText');
 let timelineVerse = null;
@@ -38,91 +35,60 @@ async function renderTimeline() {
   const comments = (await journal.comments(timelineVerse.key)).reverse();
   document.getElementById('timelineCount').textContent =
     comments.length === 0 ? '' : comments.length === 1 ? 'Reflection' : `Reflections (${comments.length})`;
-  openRow = null;
+  closeMenu();
   document.getElementById('timelineList').replaceChildren(...comments.map((c) => {
-    const share = el('button', { className: 'swipe-share', textContent: 'Share' });
+    const share = el('button', { className: 'reflection-icon glass', ariaLabel: 'Share' });
+    share.innerHTML = SHARE_ICON;
     share.addEventListener('click', () => {
-      closeOpenRow();
+      closeMenu();
       shareText(`${verseQuote(timelineVerse)}\n\n${c.body}`, 'Reflection copied', alert);
     });
-    const edit = el('button', { className: 'swipe-edit', textContent: 'Edit' });
-    edit.addEventListener('click', () => startEditing(c));
-    const del = el('button', { className: 'swipe-delete', textContent: 'Delete' });
-    del.addEventListener('click', async () => {
-      if (!confirm('Delete this reflection?')) return closeOpenRow();
-      await journal.delete(c);
-      // Otherwise Done would save the deleted reflection's text back.
-      if (editing?.id === c.id) setEditing(null);
-      renderTimeline();
-    });
+    const more = el('button', { className: 'reflection-icon glass', ariaLabel: 'Edit or delete' });
+    more.innerHTML = MORE_ICON;
     const meta = c.updatedAt ? `${stamp(c)} · Edited` : stamp(c);
-    const row = el('li', { className: 'swipe-row' },
-      el('div', { className: 'swipe-actions' }, edit, share, del),
-      el('div', { className: 'swipe-content' },
-        el('p', { className: 'reflection-meta', textContent: meta }),
-        el('p', { className: 'reflection-body', textContent: c.body })));
-    makeSwipeable(row);
+    const row = el('li', { className: 'reflection-row' },
+      el('div', { className: 'reflection-row-top' },
+        el('p', { className: 'reflection-meta', textContent: meta }), share, more),
+      el('p', { className: 'reflection-body', textContent: c.body }));
+    more.addEventListener('click', () => (menuFor === c ? closeMenu() : openMenu(c, row)));
     return row;
   }));
 }
 
-// Swiping a reflection left reveals Edit, Share and Delete behind it, as in Mail. One row open at a time.
-const SWIPE_ACTIONS_WIDTH = 240;
-let openRow = null;
+// The ••• on a reflection opens a small menu with Edit and Delete under it. One open at a time.
+const SHARE_ICON = '<svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+const MORE_ICON = '<svg viewBox="0 0 24 24" class="filled"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>';
+const reflectionMenu = document.getElementById('reflectionMenu');
+let menuFor = null;
 
-function closeOpenRow() {
-  openRow?.querySelector('.swipe-content').style.removeProperty('transform');
-  openRow = null;
+function openMenu(comment, row) {
+  menuFor = comment;
+  row.append(reflectionMenu);
+  reflectionMenu.hidden = false;
 }
 
-function makeSwipeable(row) {
-  const content = row.querySelector('.swipe-content');
-  let startX, startY, base, x, mode;
-  row.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.swipe-actions')) return;
-    if (openRow && openRow !== row) closeOpenRow();
-    ({ clientX: startX, clientY: startY } = e.touches[0]);
-    base = openRow === row ? -SWIPE_ACTIONS_WIDTH : 0;
-    x = base;
-    mode = null;
-  }, { passive: true });
-  row.addEventListener('touchmove', (e) => {
-    if (mode === undefined || mode === 'scroll') return;
-    const dx = e.touches[0].clientX - startX;
-    const dy = e.touches[0].clientY - startY;
-    if (!mode) {
-      if (Math.hypot(dx, dy) < DRAG_PX) return;
-      mode = Math.abs(dx) > Math.abs(dy) ? 'swipe' : 'scroll';
-      if (mode === 'scroll') return;
-      row.classList.add('dragging');
-    }
-    e.preventDefault();
-    x = Math.min(0, base + dx);
-    // Past the buttons the row resists, like a rubber band.
-    if (x < -SWIPE_ACTIONS_WIDTH) x = -SWIPE_ACTIONS_WIDTH + (x + SWIPE_ACTIONS_WIDTH) / 3;
-    content.style.transform = `translateX(${x}px)`;
-  }, { passive: false });
-  const settle = () => {
-    if (mode !== 'swipe') return;
-    mode = undefined;
-    row.classList.remove('dragging');
-    if (x < -SWIPE_ACTIONS_WIDTH / 2) {
-      content.style.transform = `translateX(${-SWIPE_ACTIONS_WIDTH}px)`;
-      openRow = row;
-    } else {
-      content.style.removeProperty('transform');
-      if (openRow === row) openRow = null;
-    }
-  };
-  row.addEventListener('touchend', settle);
-  row.addEventListener('touchcancel', settle);
-  content.addEventListener('click', closeOpenRow);
+function closeMenu() {
+  menuFor = null;
+  reflectionMenu.hidden = true;
 }
 
-// A touch anywhere else in the sheet closes an open row.
+document.getElementById('menuEdit').addEventListener('click', () => startEditing(menuFor));
+document.getElementById('menuDelete').addEventListener('click', async () => {
+  const c = menuFor;
+  closeMenu();
+  if (!c || !confirm('Delete this reflection?')) return;
+  await journal.delete(c);
+  // Otherwise Done would save the deleted reflection's text back.
+  if (editing?.id === c.id) setEditing(null);
+  renderTimeline();
+});
+
+// A touch anywhere else in the sheet, or a scroll, closes the menu.
 timeline.addEventListener('touchstart', (e) => {
-  if (openRow && !openRow.contains(e.target)) closeOpenRow();
+  if (menuFor && !e.target.closest('#reflectionMenu, .reflection-icon')) closeMenu();
 }, { passive: true });
+timelineBody.addEventListener('scroll', () => { if (menuFor) closeMenu(); }, { passive: true });
+timeline.addEventListener('close', closeMenu);
 
 /** The reflection being edited in the writing area, or null when writing a new one. */
 let editing = null;
@@ -140,7 +106,7 @@ function setEditing(comment) {
 }
 
 function startEditing(comment) {
-  closeOpenRow();
+  closeMenu();
   // What's in the box, a new reflection or changes to another, is saved rather than replaced.
   // Not awaited, so the keyboard can still open from this tap.
   const body = composerText.value.trim();

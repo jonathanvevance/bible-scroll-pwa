@@ -173,6 +173,30 @@ test('choosing reflections from search shares them oldest first', async () => {
   frame.remove();
 });
 
+test("a verse's reflections share in one tap and edit or delete from •••", async () => {
+  const { frame, doc, appModule } = await boot();
+  const { journal } = await appModule('src/ui/app-state.js');
+  const page = doc.querySelector('.page.verse');
+  const key = Number(page.dataset.id.slice(1));
+  const row = await journal.add('Shared from the sheet', key);
+  let shared = null;
+  Object.defineProperty(frame.contentWindow.navigator, 'share', { configurable: true, value: async ({ text }) => { shared = text; } });
+  frame.contentWindow.confirm = () => true;
+  page.querySelector('[data-action="reflect"]').click();
+  const item = await until(() => doc.querySelector('#timelineList .reflection-row'));
+  ok(item, 'reflection listed');
+  item.querySelector('[aria-label="Share"]').click();
+  ok(await until(() => shared?.endsWith('Shared from the sheet')), 'shared with one tap');
+  const menu = doc.getElementById('reflectionMenu');
+  item.querySelector('[aria-label="Edit or delete"]').click();
+  ok(!menu.hidden && item.contains(menu), 'menu opens on its reflection');
+  doc.getElementById('menuDelete').click();
+  ok(await until(() => !doc.querySelector('#timelineList .reflection-row')), 'deleted');
+  ok(!(await journal.comments(key)).some((c) => c.id === row.id), 'gone from the journal');
+  doc.querySelector('#timeline [data-close]').click();
+  frame.remove();
+});
+
 test('the Malayalam app shows its own text and keeps its data apart from English', async () => {
   const { frame, doc, appModule } = await boot('ml/index.html');
   ok(doc, 'app started');
