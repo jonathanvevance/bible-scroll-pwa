@@ -135,8 +135,8 @@ reflectionsList.addEventListener('touchmove', () => searchField.blur(), { passiv
 
 const choosing = () => reflectionsView.classList.contains('choosing');
 const reflectionsTitle = document.getElementById('reflectionsTitle');
-const chooseCount = document.getElementById('chooseCount');
 const chooseShare = document.getElementById('chooseShare');
+const chooseShareLabel = document.getElementById('chooseShareLabel');
 /** Chosen reflections by id, so a choice outlasts the list being redrawn. */
 const chosen = new Map();
 /** Every reflection on screen by id, to look up the one behind a tapped card. */
@@ -155,7 +155,7 @@ function showChosen(rows) {
 function updateChoosing() {
   const n = chosen.size;
   reflectionsTitle.textContent = !choosing() ? 'Reflections' : n ? `${n} Selected` : 'Choose to share';
-  chooseCount.textContent = n ? `${n} reflection${n > 1 ? 's' : ''}` : 'Tap reflections to choose';
+  chooseShareLabel.textContent = n ? `Share ${n}` : 'Share';
   chooseShare.disabled = !n;
 }
 
@@ -205,7 +205,7 @@ chooseShare.addEventListener('click', () => {
 });
 
 for (const button of document.querySelectorAll('#reflectionsView .choose-button')) button.addEventListener('click', startChoosing);
-for (const button of document.querySelectorAll('#reflectionsView .choose-done')) button.addEventListener('click', stopChoosing);
+document.getElementById('chooseCancel').addEventListener('click', stopChoosing);
 
 let pressTimer = null;
 let longPressed = false;

@@ -160,14 +160,14 @@ test('choosing reflections from search shares them oldest first', async () => {
   ok(field.readOnly, 'the search is locked while choosing');
   ok(doc.getElementById('chooseShare').disabled, 'nothing to share yet');
   for (const card of cards()) card.click();
-  eq(doc.getElementById('chooseCount').textContent, '2 reflections', 'count');
+  eq(doc.getElementById('chooseShare').textContent.trim(), 'Share 2', 'count');
   eq(cards().filter((c) => c.classList.contains('chosen')).length, 2, 'both ticked');
   doc.getElementById('chooseShare').click();
   ok(await until(() => shared), 'shared');
   ok(shared.indexOf('First grace') < shared.indexOf('Second grace'), 'oldest first');
   ok(shared.includes('(John 3:16') && !shared.includes('Not this one'), 'verses with their reflections');
-  doc.querySelector('#reflectionsSearch .choose-done').click();
-  ok(!doc.getElementById('reflectionsView').classList.contains('choosing') && !field.readOnly, 'Done ends choosing');
+  doc.getElementById('chooseCancel').click();
+  ok(!doc.getElementById('reflectionsView').classList.contains('choosing') && !field.readOnly, '✕ ends choosing');
   ok(!cards().some((c) => c.classList.contains('chosen')), 'ticks cleared');
   for (const row of rows) await journal.delete(row);
   frame.remove();
