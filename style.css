@@ -966,7 +966,7 @@ html:has(.choosing) .tab-bar { display: none; }
 }
 
 .reflection-meta { margin: 0; font-size: 12px; font-weight: 600; color: var(--fg-2); }
-.reflection-body { margin: 4px 0 0; font: 17px/1.45 var(--reflection); white-space: pre-wrap; }
+.reflection-body { margin: 10px 0 0; font: 17px/1.45 var(--reflection); white-space: pre-wrap; }
 
 /* Share is one tap on each reflection; ••• holds Edit and Delete. */
 #timelineList { overflow: visible; }
