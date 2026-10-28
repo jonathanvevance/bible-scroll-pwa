@@ -978,14 +978,12 @@ html:has(.choosing) .tab-bar { display: none; }
   flex: none;
   width: 30px;
   height: 30px;
-  margin: -4px 0;
+  margin: -4px -6px -4px 0;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  background: var(--glass);
   color: var(--fg-2);
 }
-.reflection-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.reflection-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .reflection-icon svg.filled { fill: currentColor; stroke: none; }
 .reflection-menu {
   position: absolute;

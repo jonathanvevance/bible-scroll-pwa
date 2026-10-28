@@ -37,7 +37,7 @@ async function renderTimeline() {
     comments.length === 0 ? '' : comments.length === 1 ? 'Reflection' : `Reflections (${comments.length})`;
   closeMenu();
   document.getElementById('timelineList').replaceChildren(...comments.map((c) => {
-    const more = el('button', { className: 'reflection-icon glass', ariaLabel: 'Edit, share or delete' });
+    const more = el('button', { className: 'reflection-icon', ariaLabel: 'Edit, share or delete' });
     more.innerHTML = MORE_ICON;
     const meta = c.updatedAt ? `${stamp(c)} · Edited` : stamp(c);
     const row = el('li', { className: 'reflection-row' },
