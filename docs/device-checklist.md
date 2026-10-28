@@ -55,6 +55,7 @@ Every button and link should pass the **press test**:
 - [ ] Start writing, swipe home, reopen: the text is still there and saved.
 - [ ] Reflections tab: the date filters work; press test on the filter pills and the backup banner.
 - [ ] Search (magnifier): the keyboard opens; typing lists, newest first, every reflection whose own words match, from any period; dragging the list or Return puts the keyboard away; the keyboard doesn't hide the results; Cancel brings back the title and filter.
+- [ ] Share several (share icon in the header, beside Cancel in search, or a long press on a card): circles show on the left and the tabs become a Share bar; ticking cards counts them and turns Share on; the search box and period are locked; Share sends them oldest first, each with its verse and date; Done clears the ticks and brings back the tabs.
 
 ## Liked
 

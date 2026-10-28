@@ -1,5 +1,7 @@
+import { unpackKey } from '../core/references.js';
 import { prefs } from '../data/prefs.js';
-import { journal } from './app-state.js';
+import { shareText, verseQuote } from './actions.js';
+import { bible, journal } from './app-state.js';
 import { updateBackupReminder } from './backup.js';
 import { appendByDay } from './cards.js';
 import { openCard } from './liked.js';
@@ -10,7 +12,6 @@ import { reflectionsView, registerTab } from './tabs.js';
 
 const reflectionsFilter = document.getElementById('reflectionsFilter');
 export const reflectionsList = document.getElementById('reflectionsList');
-reflectionsList.addEventListener('click', openCard);
 const reflectionsEmpty = document.getElementById('reflectionsEmpty');
 const PAGE_SIZE = 50;
 
@@ -54,6 +55,7 @@ export function renderReflections() {
   const query = searching() ? searchField.value.trim() : '';
   listing = { ...filterRange(searching() ? 'all' : filter), query, loaded: 0, done: false, loading: false, last: null };
   reflectionsList.replaceChildren();
+  shown.clear();
   reflectionsEmpty.hidden = true;
   reflectionsView.scrollTop = 0;
   if (query) showMatches();
@@ -71,6 +73,7 @@ async function showMatches() {
   const rows = all.filter((c) => fold(c.body).includes(query)).reverse();
   run.done = true;
   appendByDay(reflectionsList, rows);
+  showChosen(rows);
   reflectionsEmpty.textContent = `No reflections contain “${run.query}”`;
   reflectionsEmpty.hidden = rows.length > 0;
 }
@@ -85,6 +88,7 @@ async function loadMoreReflections() {
   run.loaded += rows.length;
   run.done = rows.length < PAGE_SIZE;
   run.last = appendByDay(reflectionsList, rows, run.last);
+  showChosen(rows);
   reflectionsEmpty.textContent = run.empty;
   reflectionsEmpty.hidden = run.loaded > 0;
   loadIfNearEnd();
@@ -126,6 +130,104 @@ searchField.addEventListener('input', renderReflections);
 // Return, or dragging the list, puts the keyboard away and keeps the results.
 reflectionsSearch.addEventListener('submit', (e) => { e.preventDefault(); searchField.blur(); });
 reflectionsList.addEventListener('touchmove', () => searchField.blur(), { passive: true });
+
+// ---------- Choosing reflections to share ----------
+
+const choosing = () => reflectionsView.classList.contains('choosing');
+const reflectionsTitle = document.getElementById('reflectionsTitle');
+const chooseCount = document.getElementById('chooseCount');
+const chooseShare = document.getElementById('chooseShare');
+/** Chosen reflections by id, so a choice outlasts the list being redrawn. */
+const chosen = new Map();
+/** Every reflection on screen by id, to look up the one behind a tapped card. */
+const shown = new Map();
+/** How long a finger rests on a card before choosing starts, as a long press does in Photos. */
+const LONG_PRESS_MS = 500;
+
+function showChosen(rows) {
+  for (const row of rows) shown.set(row.id, row);
+  if (!chosen.size) return;
+  for (const card of reflectionsList.querySelectorAll('.reflection-card')) {
+    card.classList.toggle('chosen', chosen.has(card.dataset.id));
+  }
+}
+
+function updateChoosing() {
+  const n = chosen.size;
+  reflectionsTitle.textContent = !choosing() ? 'Reflections' : n ? `${n} Selected` : 'Choose to share';
+  chooseCount.textContent = n ? `${n} reflection${n > 1 ? 's' : ''}` : 'Tap reflections to choose';
+  chooseShare.disabled = !n;
+}
+
+function startChoosing() {
+  if (choosing()) return;
+  reflectionsView.classList.add('choosing');
+  searchField.readOnly = true;
+  searchField.blur();
+  updateChoosing();
+}
+
+function stopChoosing() {
+  reflectionsView.classList.remove('choosing');
+  searchField.readOnly = false;
+  chosen.clear();
+  for (const card of reflectionsList.querySelectorAll('.reflection-card.chosen')) card.classList.remove('chosen');
+  updateChoosing();
+}
+
+function toggleChosen(card) {
+  const row = shown.get(card.dataset.id);
+  if (!row) return;
+  if (chosen.delete(row.id)) card.classList.remove('chosen');
+  else {
+    chosen.set(row.id, row);
+    card.classList.add('chosen');
+  }
+  updateChoosing();
+}
+
+const dateOf = (c) => {
+  try {
+    return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: c.timeZoneID }).format(c.createdAt);
+  } catch {
+    return new Date(c.createdAt).toLocaleDateString();
+  }
+};
+
+/** Oldest first, like a journal: each verse, the reflection on it, and the day it was written. */
+chooseShare.addEventListener('click', () => {
+  const rows = [...chosen.values()].sort((a, b) => a.createdAt - b.createdAt);
+  const text = rows.map((c) => {
+    const v = { ...unpackKey(c.verseKey), text: bible.text(c.verseKey) ?? '' };
+    return `${verseQuote(v)}\n${c.body}\n— ${dateOf(c)}`;
+  }).join('\n\n');
+  shareText(text, rows.length > 1 ? 'Reflections copied' : 'Reflection copied');
+});
+
+for (const button of document.querySelectorAll('#reflectionsView .choose-button')) button.addEventListener('click', startChoosing);
+for (const button of document.querySelectorAll('#reflectionsView .choose-done')) button.addEventListener('click', stopChoosing);
+
+let pressTimer = null;
+let longPressed = false;
+reflectionsList.addEventListener('touchstart', (e) => {
+  longPressed = false;
+  const card = e.target.closest('.reflection-card');
+  if (!card || choosing() || e.touches.length > 1) return;
+  pressTimer = setTimeout(() => {
+    longPressed = true;
+    startChoosing();
+    toggleChosen(card);
+  }, LONG_PRESS_MS);
+}, { passive: true });
+for (const type of ['touchmove', 'touchend', 'touchcancel']) {
+  reflectionsList.addEventListener(type, () => clearTimeout(pressTimer), { passive: true });
+}
+
+reflectionsList.addEventListener('click', (e) => {
+  if (longPressed) return void (longPressed = false);
+  const card = e.target.closest('.reflection-card');
+  if (choosing()) { if (card) toggleChosen(card); } else openCard(e);
+});
 
 export const backupBanner = document.getElementById('backupBanner');
 for (const control of [reflectionsFilter, backupBanner]) guardPresses(control);

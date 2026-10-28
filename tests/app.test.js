@@ -139,6 +139,40 @@ test('Reflections search matches only the reflection text, from any period', asy
   frame.remove();
 });
 
+test('choosing reflections from search shares them oldest first', async () => {
+  const { frame, doc, appModule } = await boot();
+  const { journal } = await appModule('src/ui/app-state.js');
+  const rows = [
+    await journal.add('Second grace', 19_023_001),
+    await journal.add('First grace', 43_003_016, Date.now() - 86_400_000),
+    await journal.add('Not this one', 43_010_011),
+  ];
+  let shared = null;
+  Object.defineProperty(frame.contentWindow.navigator, 'share', { configurable: true, value: async ({ text }) => { shared = text; } });
+  doc.querySelector('[data-tab="reflections"]').click();
+  doc.getElementById('searchButton').click();
+  const field = doc.getElementById('reflectionsQuery');
+  field.value = 'grace';
+  field.dispatchEvent(new frame.contentWindow.Event('input'));
+  const cards = () => [...doc.querySelectorAll('#reflectionsList .reflection-card')];
+  ok(await until(() => cards().length === 2), 'two matches');
+  doc.querySelector('#reflectionsSearch .choose-button').click();
+  ok(field.readOnly, 'the search is locked while choosing');
+  ok(doc.getElementById('chooseShare').disabled, 'nothing to share yet');
+  for (const card of cards()) card.click();
+  eq(doc.getElementById('chooseCount').textContent, '2 reflections', 'count');
+  eq(cards().filter((c) => c.classList.contains('chosen')).length, 2, 'both ticked');
+  doc.getElementById('chooseShare').click();
+  ok(await until(() => shared), 'shared');
+  ok(shared.indexOf('First grace') < shared.indexOf('Second grace'), 'oldest first');
+  ok(shared.includes('(John 3:16') && !shared.includes('Not this one'), 'verses with their reflections');
+  doc.querySelector('#reflectionsSearch .choose-done').click();
+  ok(!doc.getElementById('reflectionsView').classList.contains('choosing') && !field.readOnly, 'Done ends choosing');
+  ok(!cards().some((c) => c.classList.contains('chosen')), 'ticks cleared');
+  for (const row of rows) await journal.delete(row);
+  frame.remove();
+});
+
 test('the Malayalam app shows its own text and keeps its data apart from English', async () => {
   const { frame, doc, appModule } = await boot('ml/index.html');
   ok(doc, 'app started');

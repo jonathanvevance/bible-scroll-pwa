@@ -16,6 +16,7 @@ function verseCard(entry) {
     el('span', { className: reflection ? 'reflection-verse' : 'liked-verse', textContent: bible.text(entry.verseKey) ?? '' }),
     ...(reflection ? [el('span', { className: 'reflection-text', textContent: entry.body })] : []));
   card.dataset.key = entry.verseKey;
+  if (reflection) card.dataset.id = entry.id;
   return card;
 }
 

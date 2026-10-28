@@ -52,8 +52,12 @@
 
   <section id="reflectionsView" class="reflections-view" aria-label="Reflections" hidden>
     <header class="reflections-header">
-      <h1>Reflections</h1>
+      <h1 id="reflectionsTitle">Reflections</h1>
+      <button class="choose-done" type="button">Done</button>
       <div class="header-buttons">
+        <button class="round-glass choose-button" aria-label="Choose reflections to share">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>
+        </button>
         <button id="searchButton" class="round-glass" aria-label="Search reflections">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         </button>
@@ -67,7 +71,11 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         <input id="reflectionsQuery" class="search" type="search" placeholder="Search" aria-label="Search reflections" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false">
       </label>
+      <button class="round-glass choose-button" type="button" aria-label="Choose reflections to share">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>
+      </button>
       <button id="searchCancel" class="search-cancel" type="button">Cancel</button>
+      <button class="choose-done" type="button">Done</button>
     </form>
     <div id="reflectionsFilter" class="segmented four">
       <button data-range="today">Today</button>
@@ -90,6 +98,13 @@
     </div>
     <div id="reflectionsList"></div>
     <p id="reflectionsEmpty" class="empty-note reflections-empty" hidden></p>
+    <div class="choose-bar">
+      <span id="chooseCount"></span>
+      <button id="chooseShare" class="choose-share" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>
+        Share
+      </button>
+    </div>
   </section>
 
   <section id="likedView" class="reflections-view" aria-label="Liked" hidden>
