@@ -235,4 +235,18 @@ composerText.addEventListener('blur', () => {
 });
 timeline.addEventListener('close', () => document.documentElement.classList.remove('writing'));
 
+// With the keyboard up, iOS can pan the whole screen, sheet and all. A drag in the writing box
+// that the box can't scroll itself (it's short, or already at that end) would do that, so it's
+// stopped. Not passive, but only the box listens, and only while writing.
+let dragY = 0;
+composerText.addEventListener('touchstart', (e) => { dragY = e.touches[0].clientY; }, { passive: true });
+composerText.addEventListener('touchmove', (e) => {
+  if (!document.documentElement.classList.contains('writing') || !e.cancelable) return;
+  const y = e.touches[0].clientY;
+  const down = y > dragY;
+  dragY = y;
+  const { scrollTop, scrollHeight, clientHeight } = composerText;
+  if (down ? scrollTop <= 0 : scrollTop + clientHeight >= scrollHeight - 1) e.preventDefault();
+}, { passive: false });
+
 // Study (Bible Hub)
