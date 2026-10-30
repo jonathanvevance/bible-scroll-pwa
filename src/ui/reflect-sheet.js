@@ -90,15 +90,25 @@ timeline.addEventListener('close', closeMenu);
 
 /** The reflection being edited in the writing area, or null when writing a new one. */
 let editing = null;
+/**
+ * The text before an edit chosen from •••, while Cancel and Save replace Done. A new reflection
+ * saved on the way to the background becomes `editing` too, but keeps Done.
+ */
+let editedFrom = null;
 const composerLabel = document.getElementById('composerLabel');
 const composerHint = document.getElementById('composerHint');
 const cancelEdit = document.getElementById('cancelEdit');
+const saveEdit = document.getElementById('saveEdit');
+const doneButton = timeline.querySelector('[data-close]');
 
 function setEditing(comment) {
   editing = comment;
-  composerLabel.textContent = comment ? 'Edit reflection' : 'New reflection';
-  composerHint.hidden = !!comment;
-  cancelEdit.hidden = !comment;
+  if (!comment) editedFrom = null;
+  const day = editedFrom != null && new Date(comment.createdAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  composerLabel.textContent = day ? `Editing your reflection from ${day}` : 'New reflection';
+  composerHint.hidden = editedFrom != null;
+  cancelEdit.hidden = saveEdit.hidden = editedFrom == null;
+  doneButton.hidden = editedFrom != null;
   composerText.value = comment?.body ?? '';
   sizeComposer();
 }
@@ -112,13 +122,38 @@ function startEditing(comment) {
     : body && body !== editing.body ? journal.update(editing, body) : null;
   saving?.then(renderTimeline)
     .catch((error) => alert(`Couldn't save: ${error?.message ?? error}`));
+  editedFrom = comment.body;
   setEditing(comment);
   composerText.focus();
 }
 
-cancelEdit.addEventListener('click', () => {
+/** Leaves an edit, back to an empty box for a new reflection and Done in the corner. */
+function endEdit() {
   setEditing(null);
   composerText.blur();
+  renderTimeline();
+}
+
+cancelEdit.addEventListener('click', async () => {
+  const original = editedFrom;
+  if (composerText.value.trim() !== original && !confirm('Discard changes?')) return;
+  try {
+    // Leaving the app mid-edit saved the changes; put the original back.
+    if (editing.body !== original) await journal.update(editing, original);
+  } catch (error) {
+    alert(`Couldn't undo: ${error?.message ?? error}`);
+  }
+  endEdit();
+});
+
+saveEdit.addEventListener('click', async () => {
+  const body = composerText.value.trim();
+  try {
+    if (body && body !== editing.body) await journal.update(editing, body);
+  } catch (error) {
+    return alert(`Couldn't save: ${error?.message ?? error}`);
+  }
+  endEdit();
 });
 
 function sizeComposer() {

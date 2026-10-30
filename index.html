@@ -158,7 +158,9 @@
     <div class="sheet-inner">
       <div class="grabber" aria-hidden="true"></div>
       <header class="note-header">
+        <button id="cancelEdit" class="glass-button leading" hidden>Cancel</button>
         <button class="glass-button" data-close>Done</button>
+        <button id="saveEdit" class="glass-button primary" hidden>Save</button>
         <h2 id="timelineTitle"></h2>
         <p id="timelineVerse" class="note-verse"></p>
       </header>
@@ -173,7 +175,6 @@
         <div class="note-label">
           <span id="composerLabel">New reflection</span>
           <span id="composerHint" class="note-hint">Saved when you tap Done</span>
-          <button id="cancelEdit" class="note-cancel" hidden>Cancel</button>
         </div>
         <div class="note-card">
           <textarea id="composerText" placeholder="What does this verse say to you today?"></textarea>

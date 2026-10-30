@@ -49,9 +49,11 @@ Every button and link should pass the **press test**:
 
 - [ ] Write a reflection, tap Done: saved, shown in the timeline and the Reflections tab.
 - [ ] Each reflection shows •••: it opens Edit, Share and Delete under it, one menu at a time; a tap elsewhere or a scroll closes it; Delete asks first.
-- [ ] Edit, change the text, tap Done: saved and marked Edited.
+- [ ] Edit: Cancel and Save replace Done, and the label says which day's reflection it is; change the text, tap Save: saved, marked Edited, Done comes back.
+- [ ] Edit, change the text, tap Cancel: asks "Discard changes?"; yes keeps the original. Cancel with no changes asks nothing.
+- [ ] Edit, change the text, swipe home, reopen, tap Cancel: the original comes back.
 - [ ] Edit one, then tap Edit on another: the first edit is kept.
-- [ ] Edit one, delete it from its row, tap Done: it stays deleted.
+- [ ] Edit one, delete it from its row: the edit ends and it stays deleted.
 - [ ] Start writing, swipe home, reopen: the text is still there and saved.
 - [ ] Reflections tab: the date filters work; press test on the filter pills and the backup banner.
 - [ ] Search (magnifier): the keyboard opens; typing lists, newest first, every reflection whose own words match, from any period; dragging the list or Return puts the keyboard away; the keyboard doesn't hide the results; Cancel brings back the title and filter.

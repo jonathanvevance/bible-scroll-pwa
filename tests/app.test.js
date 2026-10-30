@@ -173,7 +173,7 @@ test('choosing reflections from search shares them oldest first', async () => {
   frame.remove();
 });
 
-test("a verse's reflections edit, share or delete from •••", async () => {
+test("a verse's reflections edit (with Cancel and Save), share or delete from •••", async () => {
   const { frame, doc, appModule } = await boot();
   const { journal } = await appModule('src/ui/app-state.js');
   const page = doc.querySelector('.page.verse');
@@ -186,12 +186,29 @@ test("a verse's reflections edit, share or delete from •••", async () => {
   const item = await until(() => doc.querySelector('#timelineList .reflection-row'));
   ok(item, 'reflection listed');
   const menu = doc.getElementById('reflectionMenu');
-  const more = item.querySelector('.reflection-icon');
+  const more = { click: () => doc.querySelector('#timelineList .reflection-icon').click() };
   more.click();
-  ok(!menu.hidden && item.contains(menu), 'menu opens on its reflection');
+  ok(!menu.hidden && menu.closest('.reflection-row'), 'menu opens on its reflection');
   doc.getElementById('menuShare').click();
   ok(await until(() => shared?.endsWith('Shared from the sheet')), 'shared');
   ok(menu.hidden, 'menu closes');
+
+  const text = doc.getElementById('composerText');
+  const [done, cancel, save] = ['#timeline [data-close]', '#cancelEdit', '#saveEdit'].map((s) => doc.querySelector(s));
+  more.click();
+  doc.getElementById('menuEdit').click();
+  eq(text.value, 'Shared from the sheet', 'the text to edit');
+  ok(done.hidden && !cancel.hidden && !save.hidden, 'Cancel and Save replace Done');
+  text.value = 'Not kept';
+  cancel.click();
+  ok(await until(() => !done.hidden && save.hidden && text.value === ''), 'Cancel ends the edit');
+  eq((await journal.comments(key)).find((c) => c.id === row.id).body, 'Shared from the sheet', 'Cancel keeps the original');
+  more.click();
+  doc.getElementById('menuEdit').click();
+  text.value = 'Edited from the sheet';
+  save.click();
+  ok(await until(() => doc.querySelector('#timelineList .reflection-body')?.textContent === 'Edited from the sheet'), 'Save changes it');
+  ok(!done.hidden && cancel.hidden, 'Done is back');
   more.click();
   doc.getElementById('menuDelete').click();
   ok(await until(() => !doc.querySelector('#timelineList .reflection-row')), 'deleted');

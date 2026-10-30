@@ -249,7 +249,7 @@ button {
    List rows take the list highlight; bare icons and text have nothing to shade, so they dim.
    A filter, since a control's own background rule would undo a background shade. */
 .pressed { filter: brightness(var(--press-brightness)); }
-:is(.action, .text-button, .note-cancel).pressed { filter: none; opacity: 0.4; }
+:is(.action, .text-button).pressed { filter: none; opacity: 0.4; }
 /* An unselected tab or segment is see-through, so it shows the glass a selected one has. */
 :is(.tab, .segmented button):not(.selected).pressed { filter: none; background: var(--glass); }
 .links:not(#bookList, #backup *) > li > :is(a, button).pressed { filter: none; background: var(--press); }
@@ -1013,7 +1013,6 @@ html:has(.choosing) .tab-bar { display: none; }
 .reflection-menu .destructive { color: var(--destructive); }
 .reflection-menu svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
-.note-cancel { font-size: 15px; color: var(--accent); }
 .empty-note { color: var(--fg-2); font-size: 15px; }
 
 /* ---------- Reflection sheet: notes-style writing area above the timeline ---------- */
@@ -1088,6 +1087,7 @@ html:has(.choosing) .tab-bar { display: none; }
   font-size: 17px;
   font-weight: 600;
 }
+.glass-button.primary { background: var(--accent); box-shadow: none; color: #fff; }
 
 .note-label {
   display: flex;
