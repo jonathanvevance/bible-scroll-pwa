@@ -36,9 +36,11 @@ updateButton.addEventListener('click', async () => {
   if (!registration) return showVersion('Not available yet');
   updateButton.disabled = true;
   showVersion('Checking…');
-  try {
-    await registration.update();
-  } catch {
+  // A check can take a few milliseconds; held for a second, "Checking…" reads as a step, not a flicker.
+  const held = new Promise((resolve) => setTimeout(resolve, 1000));
+  const checked = await registration.update().then(() => true, () => false);
+  await held;
+  if (!checked) {
     updateButton.disabled = false;
     return showVersion('Offline');
   }
