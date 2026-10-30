@@ -63,5 +63,3 @@ async function start() {
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
 start().catch((error) => stopWith(error?.message ?? String(error)));
-
-if (new URLSearchParams(location.search).has('debug')) import('./ui/touch-debug.js');
