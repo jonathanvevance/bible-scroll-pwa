@@ -10,7 +10,7 @@ const APP = 'bible-scroll-ml';
 const BIBLE = 'mal1910.json';
 /** Where the files every language shares are, relative to this worker. */
 const SHARED = '../';
-const VERSION = 256;
+const VERSION = 259;
 const CACHE = `${APP}-v${VERSION}`;
 const ASSETS = ['./', 'index.html', 'manifest.webmanifest', BIBLE, ...[
   'style.css',
@@ -84,6 +84,11 @@ self.addEventListener('fetch', (event) => {
     tidied = true;
     event.waitUntil(deleteOldCaches());
   }
+});
+
+// The page shows the version it runs, which is this worker's: its files come from this cache.
+self.addEventListener('message', (event) => {
+  if (event.data === 'version') event.source.postMessage({ version: VERSION });
 });
 
 // Only the install step fills the cache. Anything else comes from the network and isn't kept:
