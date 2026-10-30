@@ -850,6 +850,8 @@ html:has(.choosing) .tab-bar { display: none; }
 .sheet { touch-action: none; }
 .sheet :is(.sheet-body, textarea) { touch-action: pan-y; }
 .sheet .sheet-body.still { touch-action: none; }
+/* iOS kept `none` on reflection text after `still` came off, so drags there didn't scroll. */
+#timeline .sheet-body.still { touch-action: pan-y; }
 
 .verse-card {
   margin: 0 0 20px;

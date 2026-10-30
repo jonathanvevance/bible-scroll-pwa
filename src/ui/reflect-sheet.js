@@ -206,17 +206,15 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') keepDraft();
 });
 
-// The reflections are in place before the sheet shows. Shown empty first, the body would be marked
-// too short to scroll, and iOS keeps that for text drawn then, after the mark is gone.
-onVerseAction('reflect', async (v) => {
+onVerseAction('reflect', (v) => {
   timelineVerse = v;
   document.getElementById('timelineTitle').textContent = verseName(timelineVerse);
   document.getElementById('timelineVerse').textContent = timelineVerse.text;
+  document.getElementById('timelineCount').textContent = '';
+  document.getElementById('timelineList').replaceChildren();
   setEditing(null);
-  await renderTimeline();
-  if (timelineVerse !== v || timeline.open) return;
   openSheet(timeline);
-  scrollTimelineToEnd();
+  renderTimeline().then(scrollTimelineToEnd);
 });
 
 // While writing, the sheet fills the visible screen above the keyboard. Keyed off focus because a
