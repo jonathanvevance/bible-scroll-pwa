@@ -848,7 +848,8 @@ html:has(.choosing) .tab-bar { display: none; }
 /* Only a body that can scroll, or a text box, pans; the rest of a sheet never moves the page
    behind it (see markStill in sheets.js). */
 .sheet { touch-action: none; }
-.sheet :is(.sheet-body, textarea) { touch-action: pan-y; }
+/* Rows set it themselves: iOS kept a stale "no panning" on rows that only inherited it. */
+.sheet :is(.sheet-body, textarea, .reflection-row, .reflection-row *) { touch-action: pan-y; }
 .sheet .sheet-body.still { touch-action: none; }
 
 .verse-card {
