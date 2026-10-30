@@ -150,14 +150,8 @@ document.getElementById('helpButton').addEventListener('click', async () => {
   openSheet(help);
 });
 
-// Blank until the service worker running the app answers (none on the first visit).
-navigator.serviceWorker?.addEventListener('message', (event) => {
-  if (event.data?.version) document.getElementById('appVersion').textContent = `Version ${event.data.version}`;
-});
-
 for (const button of document.querySelectorAll('.you-button')) {
   button.addEventListener('click', () => {
-    navigator.serviceWorker?.controller?.postMessage('version');
     updateStats();
     updateBackupStatus();
     prepareBackup();

@@ -17,6 +17,7 @@ import './ui/tabs.js';
 import './ui/reflections.js';
 import './ui/liked.js';
 import './ui/backup.js';
+import './ui/update.js';
 import { Bible } from './core/bible.js';
 import { Journal } from './data/journal.js';
 import { prefs } from './data/prefs.js';

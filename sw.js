@@ -9,7 +9,7 @@ const APP = 'bible-scroll';
 const BIBLE = 'bsb.json';
 /** Where the files every language shares are, relative to this worker. */
 const SHARED = '';
-const VERSION = 260;
+const VERSION = 264;
 const CACHE = `${APP}-v${VERSION}`;
 const ASSETS = ['./', 'index.html', 'manifest.webmanifest', BIBLE, ...[
   'style.css',
@@ -43,6 +43,7 @@ const ASSETS = ['./', 'index.html', 'manifest.webmanifest', BIBLE, ...[
   'src/ui/study.js',
   'src/ui/tabs.js',
   'src/ui/touch-debug.js',
+  'src/ui/update.js',
   'icons/scroll-180.png',
   'icons/scroll-192.png',
   'icons/scroll-512.png',
@@ -86,8 +87,10 @@ self.addEventListener('fetch', (event) => {
 });
 
 // The page shows the version it runs, which is this worker's: its files come from this cache.
+// Check for Update asks a waiting version to take over now; the page reloads once it has.
 self.addEventListener('message', (event) => {
   if (event.data === 'version') event.source.postMessage({ version: VERSION });
+  if (event.data === 'skipWaiting') self.skipWaiting();
 });
 
 // Only the install step fills the cache. Anything else comes from the network and isn't kept:
