@@ -903,6 +903,8 @@ html:has(.choosing) .tab-bar { display: none; }
   color: var(--fg-2);
   font-variant-numeric: tabular-nums;
 }
+#updateButton { color: var(--accent); }
+#updateButton .row-value { color: var(--fg-2); }
 .links .destructive { color: var(--destructive); }
 .links .go-to { color: var(--accent); font-weight: 600; }
 /* The book being read sits above the list, so the list can start at the top. */

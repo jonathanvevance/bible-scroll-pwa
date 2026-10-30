@@ -6,8 +6,9 @@ const versionLine = document.getElementById('appVersion');
 const updateButton = document.getElementById('updateButton');
 let version = null;
 
+/** The grey value at the end of the row: the version, or how a check is going. */
 function showVersion(note) {
-  versionLine.textContent = [version && `Version ${version}`, note].filter(Boolean).join(' · ');
+  versionLine.textContent = note ?? (version ? `Version ${version}` : '');
 }
 
 // Blank until the service worker running the app answers (none on the first visit).
@@ -32,14 +33,14 @@ const installed = (worker) => new Promise((resolve) => {
 updateButton.closest('li').hidden = !navigator.serviceWorker;
 updateButton.addEventListener('click', async () => {
   const registration = await navigator.serviceWorker.getRegistration();
-  if (!registration) return showVersion('Not installed for offline use yet');
+  if (!registration) return showVersion('Not available yet');
   updateButton.disabled = true;
   showVersion('Checking…');
   try {
     await registration.update();
   } catch {
     updateButton.disabled = false;
-    return showVersion("Couldn't check. Are you online?");
+    return showVersion('Offline');
   }
   const next = registration.installing ?? registration.waiting;
   if (!next) {
@@ -49,7 +50,7 @@ updateButton.addEventListener('click', async () => {
   showVersion('Updating…');
   if (await installed(next) === 'redundant') {
     updateButton.disabled = false;
-    return showVersion("Couldn't download the update. Try again.");
+    return showVersion("Couldn't update");
   }
   navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
   next.postMessage('skipWaiting');
