@@ -850,9 +850,6 @@ html:has(.choosing) .tab-bar { display: none; }
 .sheet { touch-action: none; }
 .sheet :is(.sheet-body, textarea) { touch-action: pan-y; }
 .sheet .sheet-body.still { touch-action: none; }
-/* Restyles everything inside when `still` changes; otherwise iOS kept text drawn while the body
-   was still from panning after it could scroll. */
-.sheet .sheet-body.still * { touch-action: none; }
 
 .verse-card {
   margin: 0 0 20px;
