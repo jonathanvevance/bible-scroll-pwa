@@ -3,7 +3,10 @@
 import { packKey, unpackKey } from './references.js';
 
 export class Bible {
-  /** `titles`: psalm superscriptions by "book:chapter"; `notes`: closing notes by "book:chapter:verse". */
+  /**
+   * `titles`: psalm superscriptions by "book:chapter", and section openings (Proverbs) by
+   * "book:chapter:verse"; `notes`: closing notes by "book:chapter:verse".
+   */
   constructor({ books, titles = {}, notes = {} }) {
     this.books = books;
     this.titles = titles;
@@ -24,7 +27,8 @@ export class Bible {
   verses(ch) {
     return this.books[ch.book - 1][ch.chapter - 1].map((text, i) => ({
       book: ch.book, chapter: ch.chapter, verse: i + 1, key: ch.key + i + 1, text,
-      title: i === 0 ? this.titles[`${ch.book}:${ch.chapter}`] : undefined,
+      title: this.titles[`${ch.book}:${ch.chapter}:${i + 1}`]
+        ?? (i === 0 ? this.titles[`${ch.book}:${ch.chapter}`] : undefined),
       note: this.notes[`${ch.book}:${ch.chapter}:${i + 1}`],
     }));
   }

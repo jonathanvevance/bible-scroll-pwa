@@ -63,3 +63,16 @@ test('advanceTarget: end caps never advance', async () => {
   const items = itemsFor(bible, [bible.chapters[0]]);
   eq(advanceTarget(items[0], 'v1001001', items), null, 'before Genesis 1');
 });
+
+test('verses: psalm titles on verse 1, Proverbs openings on their own verse', async () => {
+  const bible = await realBible();
+  const psalm3 = bible.verses(bible.chapter(19, 3));
+  ok(psalm3[0].title?.startsWith('A Psalm of David'), 'Psalm 3:1 title');
+  eq(psalm3[1].title, undefined, 'Psalm 3:2 has none');
+  const prov24 = bible.verses(bible.chapter(20, 24));
+  eq(prov24[22].title, 'These also are sayings of the wise:', 'Proverbs 24:23 title');
+  eq(prov24[22].text, 'To show partiality in judgment is not good.', 'Proverbs 24:23 text');
+  eq(prov24[0].title, undefined, 'Proverbs 24:1 has none');
+  eq(bible.verses(bible.chapter(20, 10))[0].title, 'The proverbs of Solomon:', 'Proverbs 10:1 title');
+  eq(bible.verses(bible.chapter(20, 25))[0].title, undefined, 'Proverbs 25:1 stays a verse');
+});
