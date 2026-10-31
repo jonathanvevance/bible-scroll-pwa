@@ -1,13 +1,11 @@
 """Prepare the PWA's generated assets from the iOS project's sources of truth.
 
 - books.js   from BibleCore's BookCatalog.swift (66 rows, same names and slugs)
-- bsb.json   the iOS app bundle's text, with psalm titles, three Proverbs section openings and
-             Habakkuk's closing note split out of their verses (the bundle's source, bsb.txt,
-             runs them into the verse)
+- bsb.json   the iOS app bundle's text, with psalm titles and Habakkuk's closing note split
+             out of their verses (the bundle's source, bsb.txt, runs them into the verse)
 - ml/mal1910.json   Malayalam Sathyavedapusthakam 1910 (contemporary orthography), converted
-             from eBible.org's USFM. CC BY-SA 4.0, The Free Bible Foundation. Psalm titles,
-             the same Proverbs openings and Habakkuk's closing note are kept apart from the
-             verse text.
+             from eBible.org's USFM. CC BY-SA 4.0, The Free Bible Foundation. Psalm titles
+             are kept apart from the verse text.
 - icons/*.png drawn here, so no image tooling is needed
 
 Each language's page, manifest and service worker come from release.py, not from here.
@@ -34,24 +32,14 @@ BSB = IOS / "BibleScroll/BibleScroll/Resources/bsb.json"
 # runs into the verse text. Downloaded once; only used to find where to cut.
 USFM_URL = "https://bereanbible.com/bsb_usfm.zip"
 USFM_ZIP = PWA / ".cache" / "bsb_usfm.zip"
-PSALMS, PROVERBS, HABAKKUK = 19, 20, 35
+PSALMS, HABAKKUK = 19, 35
 PSALM_TITLES = 116
-# Section openings that run into the proverb after them. No source marks them (they're plain
-# paragraph text), so they're listed. 1:1, 25:1 and 31:1 are whole verses and stay verses.
-PROVERB_INTROS = {
-    (10, 1): "The proverbs of Solomon:",
-    (24, 23): "These also are sayings of the wise:",
-    (30, 1): "These are the words of Agur son of Jakeh—the burden that this man declared to Ithiel:",
-}
-ML_PROVERB_INTROS = {
-    (10, 1): "ശലോമോന്റെ സദൃശവാക്യങ്ങൾ",
-    (24, 23): "ഇവയും ജ്ഞാനികളുടെ വാക്യങ്ങൾ.",
-    (30, 1): "യാക്കേയുടെ മകനായ ആഗൂരിന്റെ വചനങ്ങൾ; ഒരു അരുളപ്പാടു; ആ പുരുഷന്റെ വാക്യമാവിതു:",
-}
 ML_USFM = "https://ebible.org/Scriptures/mal2015_usfm.zip"
-ML_PSALM_TITLES = 117
-# This edition has no \mr marker; the note is the last poetry line of Habakkuk 3:19.
-ML_HABAKKUK_NOTE = "സംഗീതപ്രമാണിക്കു തന്ത്രിനാദത്തോടെ."
+ML_PSALM_TITLES = 116
+# This edition repeats Psalm 145's title ("A Psalm of David") over Psalm 146, which has none in
+# the Hebrew or the BSB. Habakkuk's closing line stays in 3:19: unlike the BSB's \mr, nothing
+# here sets it apart from the verse.
+ML_DUPLICATE_TITLE = 146
 
 ROW = re.compile(
     r'row\((\d+), "(\w+)", "(\w+)", "([^"]+)",(?: bsb: "([^"]+)",)? slug: "(\w+)", chapters: (\d+)\)'
@@ -116,9 +104,6 @@ def write_bible() -> None:
             verses = books[PSALMS - 1][chapter - 1]
             titles[f"{PSALMS}:{chapter}"], verses[0] = cut(verses[0], plain(line[8:]))
     assert len(titles) == PSALM_TITLES, f"found {len(titles)} psalm titles"
-    for (chapter, verse), intro in PROVERB_INTROS.items():
-        verses = books[PROVERBS - 1][chapter - 1]
-        titles[f"{PROVERBS}:{chapter}:{verse}"], verses[verse - 1] = cut(verses[verse - 1], intro)
 
     note = next(plain(l[4:]) for l in usfm("HAB").splitlines() if l.startswith("\\mr "))
     verses, notes = books[HABAKKUK - 1][2], {}
@@ -160,7 +145,8 @@ def write_malayalam() -> None:
                 continue
             if m := re.match(r"\\d (.*)", line):
                 assert code == "PSA" and verse is None, f"unexpected title in {code} {len(chapters)}"
-                titles[f"{PSALMS}:{len(chapters)}"] = ml_plain(m.group(1))
+                if len(chapters) != ML_DUPLICATE_TITLE:
+                    titles[f"{PSALMS}:{len(chapters)}"] = ml_plain(m.group(1))
                 continue
             if m := re.match(r"\\c (\d+)", line):
                 chapters.append([])
@@ -179,18 +165,9 @@ def write_malayalam() -> None:
                 chapters[-1][verse - 1] = f"{chapters[-1][verse - 1]} {text}".strip()
         books.append(chapters)
     assert len(titles) == ML_PSALM_TITLES, f"found {len(titles)} psalm titles"
-    for (chapter, verse), intro in ML_PROVERB_INTROS.items():
-        verses = books[PROVERBS - 1][chapter - 1]
-        assert verses[verse - 1].startswith(f"{intro} "), f"Proverbs {chapter}:{verse} intro not found"
-        verses[verse - 1] = verses[verse - 1][len(intro):].lstrip()
-        titles[f"{PROVERBS}:{chapter}:{verse}"] = intro
+    assert titles[f"{PSALMS}:145"] == "ദാവീദിന്റെ ഒരു സങ്കീർത്തനം.", "Psalm 145 title changed; recheck 146"
 
-    verses = books[HABAKKUK - 1][2]
-    assert verses[18].endswith(f" {ML_HABAKKUK_NOTE}"), "Habakkuk 3:19 note not found"
-    verses[18] = verses[18][: -len(ML_HABAKKUK_NOTE)].rstrip()
-    notes = {f"{HABAKKUK}:3:19": ML_HABAKKUK_NOTE}
-
-    data = {"translation": "Sathyavedapusthakam 1910", "books": books, "titles": titles, "notes": notes}
+    data = {"translation": "Sathyavedapusthakam 1910", "books": books, "titles": titles, "notes": {}}
     (PWA / "ml").mkdir(exist_ok=True)
     (PWA / "ml" / "mal1910.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
 

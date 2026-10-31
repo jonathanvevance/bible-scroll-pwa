@@ -72,8 +72,7 @@ function page(item) {
     const length = v.text.length + (v.title ?? '').length / 2;
     if (length > 220) node.classList.add('long');
     if (length > 380) node.classList.add('very-long');
-    // A psalm's title, a Proverbs section opening and Habakkuk's closing note sit outside the
-    // verse, as in printed Bibles.
+    // A psalm's title and Habakkuk's closing note sit outside the verse, as in printed Bibles.
     node.append(el('div', { className: 'verse-body' },
       v.title ? el('p', { className: 'verse-title', textContent: v.title }) : null,
       el('p', { className: 'verse-text', textContent: v.text }),

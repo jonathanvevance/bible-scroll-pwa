@@ -15,5 +15,5 @@ export default {
   attribution: 'മലയാളം സത്യവേദപുസ്തകം 1910 (contemporary orthography), © 2015 '
     + '<a href="https://ebible.org/details.php?id=mal2015">The Free Bible Foundation</a>, '
     + '<a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Changed: converted from USFM, notes and headings omitted, '
-    + 'psalm titles, three Proverbs section openings and Habakkuk\'s closing note set apart from the verses. Not endorsed by The Free Bible Foundation.',
+    + 'psalm titles set apart from the verses, Psalm 145\'s title repeated over Psalm 146 omitted. Not endorsed by The Free Bible Foundation.',
 };
