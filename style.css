@@ -263,6 +263,24 @@ button {
 
 /* ---------- Top bar ---------- */
 
+/* iOS 26+ blurs whatever sits under the status bar (the "scroll edge effect"), which softened
+   the top of the pills. WebKit turns it off only while a full-width fixed element at the top
+   edge declares a colour, then fills the status bar with that colour. This one declares the
+   page colour but paints nothing (background-clip: text on an empty box). WebKit reads the
+   colour only from boxes over 10px tall, and samples whatever is topmost 4px down. */
+.status-strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 11px;
+  z-index: 2147483647;
+  pointer-events: none;
+  background-color: var(--bg);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
 .topbar {
   position: fixed;
   top: calc(env(safe-area-inset-top) + 6px);
