@@ -113,6 +113,57 @@ test('an open Liked or Reflections tab updates when the journal changes', async 
   frame.remove();
 });
 
+test('a backup restores from its .json (iPhone) and .txt (Android) file', async () => {
+  const { frame, doc, appModule } = await boot();
+  const win = frame.contentWindow;
+  const { journal } = await appModule('src/ui/app-state.js');
+  const { LIKE } = await appModule('src/ui/actions.js');
+  const { prefs } = await appModule('src/data/prefs.js');
+  const PSALM_100_1 = 19_100_001;
+  const backedUpBefore = prefs.lastBackupAt.get();
+  const BODY = 'Round trip reflection';
+  await journal.add(BODY, 43_003_016);
+  if (!journal.isMarked(LIKE, PSALM_100_1)) await journal.toggleMark(LIKE, PSALM_100_1);
+  const forget = async () => {
+    await journal.delete((await journal.allComments()).find((c) => c.body === BODY));
+    await journal.toggleMark(LIKE, PSALM_100_1);
+  };
+  const restored = async () => (await journal.allComments()).some((c) => c.body === BODY) && journal.isMarked(LIKE, PSALM_100_1);
+  let shared = null;
+  Object.defineProperty(win.navigator, 'canShare', { configurable: true, value: () => true });
+  Object.defineProperty(win.navigator, 'share', { configurable: true, value: async ({ files }) => { shared = files[0]; } });
+  win.confirm = () => true;
+
+  doc.querySelector('.you-button').click();
+  ok(await until(() => !doc.getElementById('backupNow').disabled), 'backup ready');
+  doc.getElementById('backupNow').click();
+  ok(await until(() => shared), 'shared a file');
+  eq([shared.name, shared.type], ['Bible Scroll backup.json', 'application/json'], 'the iPhone file');
+  ok(doc.getElementById('restoreFile').accept.includes('.txt'), 'the picker offers .txt files');
+
+  // The Android file is the same text under the name and type Android shares.
+  const android = new win.File([await shared.text()], 'Bible Scroll backup.txt', { type: 'text/plain' });
+  for (const file of [shared, android]) {
+    await forget();
+    ok(!(await restored()), 'gone before restoring');
+    const input = doc.getElementById('restoreFile');
+    const picked = new win.DataTransfer();
+    picked.items.add(file);
+    input.files = picked.files;
+    input.dispatchEvent(new win.Event('change'));
+    let back = false;
+    for (const end = performance.now() + 5_000; !back && performance.now() < end;) {
+      back = await restored();
+      if (!back) await new Promise((r) => setTimeout(r, 100));
+    }
+    ok(back, `restored from ${file.name}`);
+  }
+
+  await forget();
+  if (backedUpBefore) prefs.lastBackupAt.set(backedUpBefore); else prefs.lastBackupAt.clear();
+  frame.remove();
+});
+
 test('Reflections search matches only the reflection text, from any period', async () => {
   const { frame, doc, appModule } = await boot();
   const { journal } = await appModule('src/ui/app-state.js');
