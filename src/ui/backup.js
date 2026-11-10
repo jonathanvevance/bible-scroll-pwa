@@ -11,7 +11,8 @@ import { closeSheet, openSheet } from './sheets.js';
 import { currentTab } from './tabs.js';
 
 // ---------- Backup ----------
-// A backup is one readable JSON file the person saves to iCloud Drive through the share sheet.
+// A backup is one readable JSON file the person saves to iCloud Drive (or Google Drive on Android)
+// through the share sheet.
 // Restoring only needs id, verseKey, body, createdAt, timeZoneID and updatedAt for a reflection,
 // and verseKey and createdAt for a like; the reference, verse text and ISO date are there so the
 // file still makes sense without the app. Likes were added without a new format number: older
@@ -35,6 +36,8 @@ const likedPlural = (n) => `${n} liked verse${n === 1 ? '' : 's'}`;
 /** "3 reflections and 2 liked verses", leaving out whichever is zero. */
 const contents = (reflections, likes) => [reflections || !likes ? plural(reflections) : null, likes ? likedPlural(likes) : null]
   .filter(Boolean).join(' and ');
+
+const android = /Android/i.test(navigator.userAgent);
 
 async function backupFile() {
   const likes = (await journal.marks(LIKE)).reverse().map((m) => {
@@ -71,8 +74,11 @@ async function backupFile() {
     reflections,
     likes,
   };
-  // One fixed name, so saving to the same folder offers to replace the last backup.
-  return new File([JSON.stringify(data, null, 2)], lang.backupFileName, { type: 'application/json' });
+  // One fixed name, so saving to the same folder offers to replace the last backup. Chrome on
+  // Android shares only some file types, not JSON, so there it's a .txt file (still JSON inside).
+  return android
+    ? new File([JSON.stringify(data, null, 2)], lang.backupFileName.replace(/\.json$/, '.txt'), { type: 'text/plain' })
+    : new File([JSON.stringify(data, null, 2)], lang.backupFileName, { type: 'application/json' });
 }
 
 function setBackupEnabled(on) {
@@ -129,7 +135,8 @@ function updateBackupStatus() {
   // iOS can clear what Safari keeps for a website that isn't visited for a while; an app opened
   // from the Home Screen is kept.
   const inSafariTab = !matchMedia('(display-mode: standalone)').matches && !navigator.standalone;
-  backupStatus.textContent = `${status}\nIncludes reflections and liked verses. Save to Files, then iCloud Drive.`
+  const where = android ? 'Save it to Google Drive or Files.' : 'Save to Files, then iCloud Drive.';
+  backupStatus.textContent = `${status}\nIncludes reflections and liked verses. ${where}`
     + (inSafariTab ? '\nIn a Safari tab, your reflections can be cleared if you stay away for a while. '
       + 'Add Bible Scroll to your Home Screen to keep them.' : '');
 }
