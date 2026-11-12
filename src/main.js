@@ -39,48 +39,25 @@ const failure = (what, next) => (error) => {
   throw new Error(`Couldn't ${what} (${error?.message ?? error}). ${next}`);
 };
 
-const at = {}; // TEMP-TIMING
-const mark = (name) => (value) => { at[name] = performance.now(); return value; }; // TEMP-TIMING
-mark('scripts')(); // TEMP-TIMING
-
 async function start() {
   // Reading waits for the journal too: without it, reflections written now would be lost.
   const [data, opened] = await Promise.all([
-    fetch(lang.bibleFile).then(mark('bibleFile')).then((r) => r.json()).then(mark('bible'))
+    fetch(lang.bibleFile).then((r) => r.json())
       .catch(failure('load the Bible text', 'Check the connection, then open Bible Scroll again.')),
-    Journal.open(lang.database).then(mark('journal'))
+    Journal.open(lang.database)
       .catch(failure('open your reflections', 'Close Bible Scroll completely, then open it again.')),
   ]);
   opened.addEventListener('closed', () => {
     stopWith('Bible Scroll was updated in another tab. Close this one and carry on there.');
   });
   setData(new Bible(data), opened);
-  mark('setup')(); // TEMP-TIMING
   openAt(prefs.lastVerse.get());
   document.getElementById('loading').remove();
   updateBackupReminder();
-  let timed = false; // TEMP-TIMING
-  const timeShown = () => { if (!timed) { timed = true; mark('shown')(); showTiming(); } }; // TEMP-TIMING
-  requestAnimationFrame(() => setTimeout(timeShown)); // TEMP-TIMING
-  setTimeout(timeShown, 1000); // TEMP-TIMING
 
   // Ask the browser not to evict our data under storage pressure.
   navigator.storage?.persist?.();
 }
-
-function showTiming() { // TEMP-TIMING
-  const nav = performance.getEntriesByType('navigation')[0] ?? {}; // TEMP-TIMING
-  const s = (ms) => `${(ms / 1000).toFixed(2)} s`; // TEMP-TIMING
-  const lines = [ // TEMP-TIMING
-    `Last start: ${new Date(performance.timeOrigin).toLocaleTimeString()}, ready in ${s(at.shown)}${document.hidden ? ' (in the background)' : ''}`, // TEMP-TIMING
-    `Page from the offline copy: ${s(nav.responseEnd ?? 0)} (worker ${nav.workerStart ? s(nav.workerStart) : 'none'})`, // TEMP-TIMING
-    `App code: ${s(at.scripts - (nav.responseEnd ?? 0))}`, // TEMP-TIMING
-    `Bible: ${s(at.bibleFile - at.scripts)} to open, ${s(at.bible - at.bibleFile)} to read`, // TEMP-TIMING
-    `Reflections: ${s(at.journal - at.scripts)}`, // TEMP-TIMING
-    `Setting up: ${s(at.setup - Math.max(at.bible, at.journal))}, drawing: ${s(at.shown - at.setup)}`, // TEMP-TIMING
-  ]; // TEMP-TIMING
-  document.getElementById('startupTiming').textContent = lines.join('\n'); // TEMP-TIMING
-} // TEMP-TIMING
 
 // Registered before start() so a broken version can still be replaced by the next one.
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
